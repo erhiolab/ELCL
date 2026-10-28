@@ -1,0 +1,97 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.LaunchSidebarView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="26,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel
+            Grid.Row="0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <RadioButton
+                Content="正版登录"
+                GroupName="LoginMode"
+                IsChecked="True"
+                Style="{StaticResource LoginModeStyle}" />
+            <RadioButton
+                Content="离线登录"
+                GroupName="LoginMode"
+                Style="{StaticResource LoginModeStyle}" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="1"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+            <Border
+                Width="78"
+                Height="78"
+                HorizontalAlignment="Center"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontFamily="Segoe MDL2 Assets"
+                    FontSize="31"
+                    Foreground="{StaticResource TextMutedBrush}"
+                    Text="&#xE77B;" />
+            </Border>
+            <TextBlock
+                Margin="0,16,0,0"
+                HorizontalAlignment="Center"
+                FontFamily="{StaticResource DisplayFont}"
+                FontSize="17"
+                FontWeight="SemiBold"
+                Text="尚未登录" />
+            <TextBlock
+                Margin="0,6,0,0"
+                HorizontalAlignment="Center"
+                FontSize="11"
+                Foreground="{StaticResource TextMutedBrush}"
+                Text="选择一种登录方式以继续" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2">
+            <Button Style="{StaticResource PrimaryActionStyle}">
+                <StackPanel>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="13"
+                        FontWeight="Bold"
+                        Text="下载游戏版本" />
+                    <TextBlock
+                        Margin="0,3,0,0"
+                        HorizontalAlignment="Center"
+                        FontSize="9"
+                        Opacity="0.65"
+                        Text="当前没有可启动的实例" />
+                </StackPanel>
+            </Button>
+
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Column="0"
+                    Content="版本选择"
+                    Style="{StaticResource SecondaryActionStyle}" />
+                <Button
+                    Grid.Column="2"
+                    Content="版本设置"
+                    IsEnabled="False"
+                    Style="{StaticResource SecondaryActionStyle}" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -15,6 +15,8 @@ ErhioLab Craft Launcher (ELCL) 是一个重新设计的 Minecraft 启动器.
 
 核心项目应保持跨平台: 不要在其中直接依赖 WPF, Windows 注册表, WMI, `cmd.exe` 或写死的 `java.exe`. 平台差异通过接口隔离, 并由启动器或单独的平台实现负责.
 
+项目设计与 Core 规范在 [`docs`](docs/README.md) 中.
+
 ### 构建
 
 需要安装 .NET 10 SDK:
