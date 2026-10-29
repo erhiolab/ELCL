@@ -24,4 +24,4 @@
 | `AccentTextBrush` | 主题色文字; 白昼模式中会加深, 保持可读性 |
 | `AccentMutedBrush` / `AccentHoverBrush` | 主题色低对比背景 / 悬停背景 |
 
-新增主题时, 在启动器项目的 `Settings/LauncherTheme.cs` 添加值, 在 `LauncherThemeManager` 补齐整套资源映射, 然后扩展个性化页的选择项. 不透明度作用于透明窗口中的 `WindowRoot` 内容层, 不属于颜色资源. WPF 窗口启用 `AllowsTransparency`, 内容在普通窗口状态按圆角裁剪, 最大化时恢复直角.
+新增主题时, 在启动器项目的 `Settings/LauncherTheme.cs` 添加值, 在 `LauncherThemeManager` 补齐整套资源映射, 然后扩展个性化页的选择项. 不透明度作用于透明窗口中的 `WindowRoot` 内容层, 不属于颜色资源. 拖动滑块时实时预览, 松开后保存一次; 键盘调整在短暂停顿后保存. WPF 窗口启用 `AllowsTransparency`, 内容在普通窗口状态按圆角裁剪, 最大化时恢复直角.

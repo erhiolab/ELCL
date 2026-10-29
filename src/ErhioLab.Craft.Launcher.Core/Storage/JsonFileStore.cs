@@ -6,8 +6,12 @@ namespace ErhioLab.Craft.Launcher.Core.Storage;
 /// <typeparam name="T">由调用方定义的配置或数据类型.</typeparam>
 public sealed class JsonFileStore<T> where T : class
 {
+    private const int ReplaceAttempts = 3;
     private readonly string _filePath;
     private readonly JsonSerializerOptions _jsonOptions;
+
+    /// <summary>当前 JSON 文件的完整路径.</summary>
+    public string FilePath => _filePath;
 
     /// <summary>创建 JSON 文件存储, 不决定路径和数据结构.</summary>
     /// <param name="filePath">JSON 文件路径.</param>
@@ -48,7 +52,20 @@ public sealed class JsonFileStore<T> where T : class
         try
         {
             File.WriteAllText(temporaryPath, JsonSerializer.Serialize(value, _jsonOptions));
-            File.Move(temporaryPath, _filePath, true);
+            for (int attempt = 1; attempt <= ReplaceAttempts; attempt++)
+            {
+                try
+                {
+                    File.Move(temporaryPath, _filePath, true);
+                    return;
+                }
+                catch (Exception exception) when (attempt < ReplaceAttempts
+                    && exception is IOException or UnauthorizedAccessException)
+                {
+                    // 外部程序短暂占用目标文件时重试, 保持最终写入的原子替换行为.
+                    Thread.Sleep(TimeSpan.FromMilliseconds(50 * attempt));
+                }
+            }
         }
         finally
         {

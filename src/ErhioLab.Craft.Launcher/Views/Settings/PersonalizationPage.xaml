@@ -3,7 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
-    Background="{DynamicResource InkBrush}">
+    Background="{DynamicResource InkBrush}"
+    Unloaded="PersonalizationPage_Unloaded">
     <UserControl.Resources>
         <!-- 选项卡的悬停层覆盖整个卡片, 不挤占内容空间. -->
         <Style x:Key="ThemeChoiceStyle" TargetType="RadioButton">
@@ -43,23 +44,6 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="32,28,32,36">
-            <TextBlock
-                FontFamily="{StaticResource MonoFont}"
-                FontSize="10"
-                Foreground="{DynamicResource AccentTextBrush}"
-                Text="03 / SETTINGS" />
-            <TextBlock
-                Margin="0,8,0,0"
-                FontFamily="{StaticResource DisplayFont}"
-                FontSize="29"
-                FontWeight="SemiBold"
-                Text="个性化" />
-            <TextBlock
-                Margin="0,7,0,24"
-                FontSize="12"
-                Foreground="{DynamicResource TextMutedBrush}"
-                Text="调整窗口和配色, 修改会立即生效并保存." />
-
             <Border
                 Padding="20"
                 Background="{DynamicResource PanelBrush}"

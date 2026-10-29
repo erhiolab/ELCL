@@ -92,7 +92,7 @@ public partial class App : Application
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            Logger.Error("Settings", "保存配置失败.", exception);
+            Logger.Error("Settings", $"保存配置失败, 路径: {_settingsStore!.FilePath}.", exception);
             MessageBox.Show($"无法保存外观设置:\n{exception.Message}", "ELCL 设置");
             return false;
         }
@@ -114,6 +114,16 @@ public partial class App : Application
         Logger.Information("Settings",
             $"外观设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}");
         return true;
+    }
+
+    /// <summary>只预览窗口透明度, 不在拖动滑块时反复写入配置.</summary>
+    /// <param name="opacity">当前滑块对应的不透明度.</param>
+    internal static void PreviewWindowOpacity(double opacity)
+    {
+        if (Current.MainWindow is MainWindow window)
+        {
+            window.ApplyContentOpacity(opacity);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

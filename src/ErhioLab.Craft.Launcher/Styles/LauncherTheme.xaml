@@ -28,6 +28,17 @@
     <!-- 悬停时选中按钮使用的浅蓝背景. -->
     <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF1A3445" />
 
+    <!-- 全局隐藏 Tab 导航产生的默认焦点装饰框, 保留键盘焦点和操作. -->
+    <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}" TargetType="Control">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Control">
+                    <Grid IsHitTestVisible="False" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 页面标题和品牌文字使用的展示字体. -->
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <!-- 正文/导航及按钮使用的常规字体. -->
