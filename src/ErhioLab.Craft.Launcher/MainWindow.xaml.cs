@@ -6,14 +6,17 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Views.Launch;
 using ErhioLab.Craft.Launcher.Views.Shared;
 
 namespace ErhioLab.Craft.Launcher;
 
+/// <summary>承载自绘窗口/顶部导航及当前页面的侧栏和主体.</summary>
 public partial class MainWindow : Window
 {
+    // GridLength 不能直接使用 DoubleAnimation, 因此用依赖属性驱动侧栏列宽.
     private static readonly DependencyProperty SidebarWidthProperty = DependencyProperty.Register(
         nameof(SidebarWidth),
         typeof(double),
@@ -38,6 +41,7 @@ public partial class MainWindow : Window
         set => SetValue(SidebarWidthProperty, value);
     }
 
+    /// <summary>初始化窗口并打开启动页.</summary>
     public MainWindow()
     {
         InitializeComponent();
@@ -50,19 +54,31 @@ public partial class MainWindow : Window
     {
         return new Dictionary<ShellSection, ShellRoute>
         {
-            [ShellSection.Launch] = new(310, new LaunchSidebarView(), new LaunchPage()),
-            [ShellSection.Download] = new(244,
-                new SectionSidebarView("02 / DOWNLOAD", "下载", "获取游戏与扩展内容. ", "游戏版本", "Mod 与资源", "整合包"),
-                new PlaceholderPage("02 / DOWNLOAD", "下载", "游戏版本/Mod/资源包与整合包会在这里提供. ")
-            ),
-            [ShellSection.Settings] = new(244,
-                new SectionSidebarView("03 / SETTINGS", "设置", "调整启动器和游戏行为. ", "启动器", "游戏", "网络与下载"),
-                new PlaceholderPage("03 / SETTINGS", "设置", "启动器外观/Java/内存和下载选项会在这里提供. ")
-            ),
-            [ShellSection.More] = new(220,
-                new SectionSidebarView("04 / MORE", "更多", "帮助/反馈与项目信息. ", "帮助", "关于 ELCL"),
-                new PlaceholderPage("04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. ")
-            )
+            [ShellSection.Launch] = new(
+                310,
+                new LaunchSidebarView(),
+                new LaunchPage()),
+            [ShellSection.Download] = new(
+                244,
+                new SectionSidebarView(
+                    "02 / DOWNLOAD", "下载", "获取游戏与扩展内容. ",
+                    "游戏版本", "Mod 与资源", "整合包"),
+                new PlaceholderPage(
+                    "02 / DOWNLOAD", "下载", "游戏版本/Mod/资源包与整合包会在这里提供. ")),
+            [ShellSection.Settings] = new(
+                244,
+                new SectionSidebarView(
+                    "03 / SETTINGS", "设置", "调整启动器和游戏行为. ",
+                    "启动器", "游戏", "网络与下载"),
+                new PlaceholderPage(
+                    "03 / SETTINGS", "设置", "启动器外观/Java/内存和下载选项会在这里提供. ")),
+            [ShellSection.More] = new(
+                220,
+                new SectionSidebarView(
+                    "04 / MORE", "更多", "帮助/反馈与项目信息. ",
+                    "帮助", "关于 ELCL"),
+                new PlaceholderPage(
+                    "04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. "))
         };
     }
 
@@ -96,6 +112,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        // 先把基础值设为终点, 动画结束后列宽才不会跳回旧值.
         BeginAnimation(SidebarWidthProperty, null);
         SidebarWidth = targetWidth;
         BeginAnimation(SidebarWidthProperty, new DoubleAnimation
@@ -151,7 +168,8 @@ public partial class MainWindow : Window
             return IntPtr.Zero;
         }
 
-        var bounds = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+        // 工作区已排除任务栏, 任务栏在屏幕任意边缘时都应留出空间.
+        MinMaxInfo bounds = Marshal.PtrToStructure<MinMaxInfo>(lParam);
         bounds.MaxPosition = new NativePoint(
             monitor.WorkArea.Left - monitor.MonitorArea.Left,
             monitor.WorkArea.Top - monitor.MonitorArea.Top);
@@ -209,6 +227,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        // 还原前记录鼠标的屏幕位置, 让还原后的标题栏保持在鼠标下方.
         Point screenPoint = PointToScreen(current);
         Point logicalScreenPoint = PresentationSource.FromVisual(this)?.CompositionTarget?
             .TransformFromDevice.Transform(screenPoint) ?? screenPoint;
@@ -221,10 +240,13 @@ public partial class MainWindow : Window
         Top = logicalScreenPoint.Y - 20;
         e.Handled = true;
 
-        // Start the native move loop while the same mouse press is still held.
+        // 用同一次鼠标按下进入系统拖动循环, 避免还原后必须重新点击.
         _ = ReleaseCapture();
-        _ = SendMessage(new WindowInteropHelper(this).Handle,
-            WmNcLeftButtonDown, new IntPtr(HitTestCaption), IntPtr.Zero);
+        _ = SendMessage(
+            new WindowInteropHelper(this).Handle,
+            WmNcLeftButtonDown,
+            new IntPtr(HitTestCaption),
+            IntPtr.Zero);
     }
 
     private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -314,7 +336,7 @@ public partial class MainWindow : Window
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetMonitorInfo(IntPtr monitorHandle, ref MonitorInfo monitorInfo);
 
-    // These fields are populated by Win32 when the structures are marshalled.
+    // 以下字段由 Win32 互操作封送填充, 编译器无法识别赋值过程.
 #pragma warning disable CS0649
     [StructLayout(LayoutKind.Sequential)]
     private struct NativePoint(int x, int y)

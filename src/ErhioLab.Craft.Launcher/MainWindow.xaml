@@ -32,6 +32,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- 标题栏由应用绘制, 窗口按钮仍使用系统窗口命令. -->
         <Grid
             x:Name="TitleBar"
             Grid.Row="0"
@@ -120,6 +121,7 @@
             </StackPanel>
         </Grid>
 
+        <!-- 一级页面只替换侧栏和主体内容. -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="SidebarColumn" Width="310" />

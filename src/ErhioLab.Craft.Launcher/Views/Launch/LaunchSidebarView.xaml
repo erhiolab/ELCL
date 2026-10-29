@@ -59,6 +59,7 @@
                 Text="选择一种登录方式以继续" />
         </StackPanel>
 
+        <!-- 当前无可启动版本, 主操作暂以下载入口占位. -->
         <StackPanel Grid.Row="2">
             <Button Style="{StaticResource PrimaryActionStyle}">
                 <StackPanel>
