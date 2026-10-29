@@ -14,6 +14,7 @@
     Foreground="{StaticResource TextBrush}"
     ResizeMode="CanResize"
     SourceInitialized="Window_SourceInitialized"
+    Loaded="Window_Loaded"
     StateChanged="Window_StateChanged"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None">
@@ -55,37 +56,52 @@
                 FontWeight="Bold"
                 Text="ELCL" />
 
-            <StackPanel
+            <Grid
+                x:Name="TopNavigationHost"
                 Grid.Column="1"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
-                <RadioButton
-                    x:Name="LaunchNavigation"
-                    Content="启动"
-                    GroupName="TopNavigation"
-                    Tag="Launch"
-                    Checked="PrimaryNavigation_Checked"
-                    Style="{StaticResource TopNavigationStyle}" />
-                <RadioButton
-                    Content="下载"
-                    GroupName="TopNavigation"
-                    Tag="Download"
-                    Checked="PrimaryNavigation_Checked"
-                    Style="{StaticResource TopNavigationStyle}" />
-                <RadioButton
-                    Content="设置"
-                    GroupName="TopNavigation"
-                    Tag="Settings"
-                    Checked="PrimaryNavigation_Checked"
-                    Style="{StaticResource TopNavigationStyle}" />
-                <RadioButton
-                    Content="更多"
-                    GroupName="TopNavigation"
-                    Margin="0"
-                    Tag="More"
-                    Checked="PrimaryNavigation_Checked"
-                    Style="{StaticResource TopNavigationStyle}" />
-            </StackPanel>
+                SizeChanged="TopNavigationHost_SizeChanged">
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <RadioButton
+                        x:Name="LaunchNavigation"
+                        Content="启动"
+                        GroupName="TopNavigation"
+                        Tag="Launch"
+                        Checked="PrimaryNavigation_Checked"
+                        Style="{StaticResource TopNavigationStyle}" />
+                    <RadioButton
+                        Content="下载"
+                        GroupName="TopNavigation"
+                        Tag="Download"
+                        Checked="PrimaryNavigation_Checked"
+                        Style="{StaticResource TopNavigationStyle}" />
+                    <RadioButton
+                        Content="设置"
+                        GroupName="TopNavigation"
+                        Tag="Settings"
+                        Checked="PrimaryNavigation_Checked"
+                        Style="{StaticResource TopNavigationStyle}" />
+                    <RadioButton
+                        Content="更多"
+                        GroupName="TopNavigation"
+                        Margin="0"
+                        Tag="More"
+                        Checked="PrimaryNavigation_Checked"
+                        Style="{StaticResource TopNavigationStyle}" />
+                </StackPanel>
+                <Border
+                    x:Name="NavigationIndicator"
+                    Width="18"
+                    Height="2"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Background="{StaticResource AccentBrush}"
+                    IsHitTestVisible="False"
+                    Opacity="0">
+                    <Border.RenderTransform>
+                        <TranslateTransform x:Name="NavigationIndicatorOffset" />
+                    </Border.RenderTransform>
+                </Border>
+            </Grid>
 
             <StackPanel
                 Grid.Column="2"
@@ -124,7 +140,7 @@
         <!-- 一级页面只替换侧栏和主体内容. -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidebarColumn" Width="310" />
+                <ColumnDefinition x:Name="SidebarColumn" Width="310" MinWidth="135" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 

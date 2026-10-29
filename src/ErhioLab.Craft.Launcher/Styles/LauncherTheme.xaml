@@ -21,6 +21,8 @@
     <SolidColorBrush x:Key="AccentBrush" Color="#FF80CEFF" />
     <!-- 选中导航项和登录方式的低对比度背景色. -->
     <SolidColorBrush x:Key="AccentMutedBrush" Color="#FF0F1D26" />
+    <!-- 悬停时选中按钮使用的浅蓝背景. -->
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF1A3445" />
 
     <!-- 页面标题和品牌文字使用的展示字体. -->
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
@@ -28,6 +30,40 @@
     <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <!-- 页面编号和英文状态标识使用的等宽字体. -->
     <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
+
+    <!-- 按钮悬停层渐显渐隐, 所有模板共用同一时序. -->
+    <Style x:Key="HoverLayerStyle" TargetType="Border">
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Opacity" Value="0" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation
+                                Storyboard.TargetProperty="Opacity"
+                                To="1"
+                                Duration="0:0:0.16">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation
+                                Storyboard.TargetProperty="Opacity"
+                                To="0"
+                                Duration="0:0:0.14" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
 
     <!-- 标题栏最小化和最大化/还原按钮的通用外观. -->
     <Style x:Key="CaptionButtonStyle" TargetType="Button">
@@ -41,11 +77,13 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Root" Background="{TemplateBinding Background}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid>
+                            <Border Background="{StaticResource PanelHoverBrush}" Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PanelHoverBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
@@ -66,15 +104,17 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Root" Background="{TemplateBinding Background}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid>
+                            <Border Background="#FFE5484D" Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="#FFE5484D" />
                             <Setter Property="Foreground" Value="White" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="#FFB72E33" />
+                            <Setter TargetName="Root" Property="Opacity" Value="0.7" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -82,10 +122,10 @@
         </Setter>
     </Style>
 
-    <!-- 顶部一级导航, 选中时显示主题色下划线. -->
+    <!-- 顶部一级导航, 下划线由主窗口统一绘制并移动. -->
     <Style x:Key="TopNavigationStyle" TargetType="RadioButton">
         <Setter Property="Height" Value="54" />
-        <Setter Property="Margin" Value="0,0,28,0" />
+        <Setter Property="Margin" Value="0,0,8,0" />
         <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
         <Setter Property="FontFamily" Value="{StaticResource TextFont}" />
         <Setter Property="FontSize" Value="13" />
@@ -95,26 +135,22 @@
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid Background="Transparent">
+                        <Border
+                            Margin="0,10"
+                            Background="{StaticResource PanelHoverBrush}"
+                            CornerRadius="5"
+                            Style="{StaticResource HoverLayerStyle}" />
                         <ContentPresenter
-                            Margin="0,0,0,2"
+                            Margin="12,0,12,2"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center" />
-                        <Border
-                            x:Name="Signal"
-                            Width="18"
-                            Height="2"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            Background="{StaticResource AccentBrush}"
-                            Opacity="0" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-                            <Setter TargetName="Signal" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -139,11 +175,17 @@
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
                             CornerRadius="6">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid>
+                            <Border
+                                Background="{StaticResource AccentHoverBrush}"
+                                CornerRadius="5"
+                                Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PanelHoverBrush}" />
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
@@ -162,7 +204,8 @@
     <Style x:Key="SectionNavigationStyle" TargetType="RadioButton">
         <Setter Property="Height" Value="46" />
         <Setter Property="Margin" Value="0,0,0,4" />
-        <Setter Property="Padding" Value="13,0" />
+        <Setter Property="Padding" Value="18,0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
@@ -171,48 +214,45 @@
                 <ControlTemplate TargetType="RadioButton">
                     <Border
                         x:Name="Root"
-                        Padding="{TemplateBinding Padding}"
                         Background="Transparent"
                         BorderBrush="Transparent"
                         BorderThickness="1"
                         CornerRadius="6">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="30" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                x:Name="Index"
-                                VerticalAlignment="Center"
-                                FontFamily="{StaticResource MonoFont}"
-                                FontSize="9"
-                                Foreground="{StaticResource TextMutedBrush}"
-                                Text="{TemplateBinding Tag}" />
-                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
                             <Border
-                                x:Name="Indicator"
-                                Grid.Column="2"
-                                Width="5"
-                                Height="5"
-                                VerticalAlignment="Center"
-                                Background="{StaticResource AccentBrush}"
-                                CornerRadius="3"
-                                Opacity="0" />
+                                Background="{StaticResource AccentHoverBrush}"
+                                CornerRadius="5"
+                                Style="{StaticResource HoverLayerStyle}" />
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="30" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    x:Name="Index"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    FontSize="9"
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Text="{TemplateBinding Tag}" />
+                                <ContentPresenter Grid.Column="2" VerticalAlignment="Center" />
+                            </Grid>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PanelHoverBrush}" />
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource LineBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentMutedBrush}" />
-                            <Setter TargetName="Root" Property="BorderBrush" Value="#FF24445A" />
                             <Setter TargetName="Index" Property="Foreground" Value="{StaticResource AccentBrush}" />
-                            <Setter TargetName="Indicator" Property="Opacity" Value="1" />
                             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -235,12 +275,12 @@
                         x:Name="Root"
                         Background="{TemplateBinding Background}"
                         CornerRadius="7">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid>
+                            <Border Background="#44FFFFFF" CornerRadius="7" Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="#FFA9DEFF" />
-                        </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Root" Property="Opacity" Value="0.75" />
                         </Trigger>
@@ -269,12 +309,18 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="6">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid>
+                            <Border Background="{StaticResource PanelHoverBrush}" CornerRadius="5" Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PanelHoverBrush}" />
                             <Setter TargetName="Root" Property="BorderBrush" Value="#FF46505E" />
+                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.7" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Root" Property="Opacity" Value="0.4" />

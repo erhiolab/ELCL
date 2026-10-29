@@ -31,8 +31,12 @@ public partial class MainWindow : Window
     private const int WmNcLeftButtonDown = 0x00A1;
     private const int HitTestCaption = 2;
     private const uint MonitorDefaultToNearest = 2;
+    private const double MinSidebarWidth = 135;
     private readonly IReadOnlyDictionary<ShellSection, ShellRoute> _routes;
     private bool _hasNavigated;
+    private bool _navigationIndicatorReady;
+    private int _sidebarAnimationVersion;
+    private RadioButton? _selectedNavigationButton;
     private Point? _maximizedDragStart;
 
     private double SidebarWidth
@@ -54,29 +58,20 @@ public partial class MainWindow : Window
     {
         return new Dictionary<ShellSection, ShellRoute>
         {
-            [ShellSection.Launch] = new(
-                310,
-                new LaunchSidebarView(),
-                new LaunchPage()),
+            [ShellSection.Launch] = new(310, new LaunchSidebarView(), new LaunchPage()),
             [ShellSection.Download] = new(
-                244,
-                new SectionSidebarView(
-                    "02 / DOWNLOAD", "下载", "获取游戏与扩展内容. ",
-                    "游戏版本", "Mod 与资源", "整合包"),
+                0,
+                new SectionSidebarView("游戏版本", "Mod 与资源", "整合包"),
                 new PlaceholderPage(
                     "02 / DOWNLOAD", "下载", "游戏版本/Mod/资源包与整合包会在这里提供. ")),
             [ShellSection.Settings] = new(
-                244,
-                new SectionSidebarView(
-                    "03 / SETTINGS", "设置", "调整启动器和游戏行为. ",
-                    "启动器", "游戏", "网络与下载"),
+                0,
+                new SectionSidebarView("启动器", "游戏", "网络与下载"),
                 new PlaceholderPage(
                     "03 / SETTINGS", "设置", "启动器外观/Java/内存和下载选项会在这里提供. ")),
             [ShellSection.More] = new(
-                220,
-                new SectionSidebarView(
-                    "04 / MORE", "更多", "帮助/反馈与项目信息. ",
-                    "帮助", "关于 ELCL"),
+                0,
+                new SectionSidebarView("帮助", "关于 ELCL"),
                 new PlaceholderPage(
                     "04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. "))
         };
@@ -93,36 +88,118 @@ public partial class MainWindow : Window
 
         SidebarHost.Content = route.Sidebar;
         PageHost.Content = route.Page;
+        _selectedNavigationButton = (RadioButton)sender;
+
+        if (_navigationIndicatorReady)
+        {
+            MoveNavigationIndicator(_selectedNavigationButton, true);
+        }
 
         if (!_hasNavigated)
         {
-            SidebarWidth = route.SidebarWidth;
+            SetInitialSidebarWidth(route);
             _hasNavigated = true;
             return;
         }
 
-        AnimateSidebarWidth(route.SidebarWidth);
+        AnimateSidebarWidth(route);
     }
 
-    private void AnimateSidebarWidth(double targetWidth)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        double currentWidth = SidebarWidth;
-        if (Math.Abs(currentWidth - targetWidth) < 0.5)
+        _navigationIndicatorReady = true;
+        MoveNavigationIndicator(_selectedNavigationButton ?? LaunchNavigation, false);
+    }
+
+    private void TopNavigationHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_navigationIndicatorReady && _selectedNavigationButton is not null)
         {
+            MoveNavigationIndicator(_selectedNavigationButton, false);
+        }
+    }
+
+    private void MoveNavigationIndicator(RadioButton button, bool animate)
+    {
+        double targetX = button.TransformToAncestor(TopNavigationHost)
+            .Transform(new Point(button.ActualWidth / 2, 0)).X - NavigationIndicator.Width / 2;
+
+        if (!animate)
+        {
+            NavigationIndicatorOffset.BeginAnimation(TranslateTransform.XProperty, null);
+            NavigationIndicatorOffset.X = targetX;
+            NavigationIndicator.Opacity = 1;
             return;
         }
 
-        // 先把基础值设为终点, 动画结束后列宽才不会跳回旧值.
-        BeginAnimation(SidebarWidthProperty, null);
-        SidebarWidth = targetWidth;
-        BeginAnimation(SidebarWidthProperty, new DoubleAnimation
+        double currentX = NavigationIndicatorOffset.X;
+        NavigationIndicatorOffset.BeginAnimation(TranslateTransform.XProperty, null);
+        NavigationIndicatorOffset.X = targetX;
+        NavigationIndicatorOffset.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation
         {
-            From = currentWidth,
-            To = targetWidth,
+            From = currentX,
+            To = targetX,
             Duration = TimeSpan.FromMilliseconds(300),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             FillBehavior = FillBehavior.Stop
         });
+    }
+
+    private void SetInitialSidebarWidth(ShellRoute route)
+    {
+        if (route.SidebarWidth == 0)
+        {
+            SidebarColumn.Width = GridLength.Auto;
+            return;
+        }
+
+        SidebarWidth = Math.Max(MinSidebarWidth, route.SidebarWidth);
+    }
+
+    private void AnimateSidebarWidth(ShellRoute route)
+    {
+        double currentWidth = SidebarColumn.ActualWidth;
+        bool autoWidth = route.SidebarWidth == 0;
+        double targetWidth = Math.Max(
+            MinSidebarWidth,
+            autoWidth ? MeasureSidebarWidth(route.Sidebar) : route.SidebarWidth);
+        int animationVersion = ++_sidebarAnimationVersion;
+        BeginAnimation(SidebarWidthProperty, null);
+        if (Math.Abs(currentWidth - targetWidth) < 0.5)
+        {
+            SidebarWidth = targetWidth;
+            SidebarColumn.Width = autoWidth ? GridLength.Auto : new GridLength(targetWidth);
+            return;
+        }
+
+        // 自动宽度先按内容测量并过渡, 动画结束后恢复 Auto 以响应字体和内容变化.
+        SidebarWidth = targetWidth;
+        DoubleAnimation animation = new()
+        {
+            From = currentWidth,
+            To = targetWidth,
+            Duration = TimeSpan.FromMilliseconds(360),
+            EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.55 },
+            FillBehavior = FillBehavior.Stop
+        };
+        if (autoWidth)
+        {
+            animation.Completed += (_, _) =>
+            {
+                if (animationVersion == _sidebarAnimationVersion)
+                {
+                    SidebarColumn.Width = GridLength.Auto;
+                }
+            };
+        }
+
+        BeginAnimation(SidebarWidthProperty, animation);
+    }
+
+    private double MeasureSidebarWidth(FrameworkElement sidebar)
+    {
+        sidebar.Measure(new Size(double.PositiveInfinity, Math.Max(0, ActualHeight - 54)));
+        return sidebar.DesiredSize.Width + 1;
     }
 
     private static void OnSidebarWidthChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
