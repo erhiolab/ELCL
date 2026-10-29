@@ -63,30 +63,63 @@
                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                     <RadioButton
                         x:Name="LaunchNavigation"
-                        Content="启动"
                         GroupName="TopNavigation"
                         Tag="Launch"
                         Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}" />
+                        Style="{StaticResource TopNavigationStyle}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                Text="&#xE768;" />
+                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="启动" />
+                        </StackPanel>
+                    </RadioButton>
                     <RadioButton
-                        Content="下载"
                         GroupName="TopNavigation"
                         Tag="Download"
                         Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}" />
+                        Style="{StaticResource TopNavigationStyle}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                Text="&#xE896;" />
+                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="下载" />
+                        </StackPanel>
+                    </RadioButton>
                     <RadioButton
-                        Content="设置"
                         GroupName="TopNavigation"
                         Tag="Settings"
                         Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}" />
+                        Style="{StaticResource TopNavigationStyle}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                Text="&#xE713;" />
+                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="设置" />
+                        </StackPanel>
+                    </RadioButton>
                     <RadioButton
-                        Content="更多"
                         GroupName="TopNavigation"
                         Margin="0"
                         Tag="More"
                         Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}" />
+                        Style="{StaticResource TopNavigationStyle}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path
+                                Width="14"
+                                Height="14"
+                                VerticalAlignment="Center"
+                                Data="M 0,0 H 5 V 5 H 0 Z M 8,0 H 13 V 5 H 8 Z M 0,8 H 5 V 13 H 0 Z M 8,8 H 13 V 13 H 8 Z"
+                                Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
+                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="更多" />
+                        </StackPanel>
+                    </RadioButton>
                 </StackPanel>
                 <Border
                     x:Name="NavigationIndicator"
