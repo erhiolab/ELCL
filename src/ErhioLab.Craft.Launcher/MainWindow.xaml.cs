@@ -89,6 +89,7 @@ public partial class MainWindow : Window
         SidebarHost.Content = route.Sidebar;
         PageHost.Content = route.Page;
         _selectedNavigationButton = (RadioButton)sender;
+        App.Logger.Information("Navigation", $"打开主页面: {section}");
 
         if (_navigationIndicatorReady)
         {
@@ -280,6 +281,7 @@ public partial class MainWindow : Window
                 return;
             }
 
+            App.Logger.Debug("Window", "开始拖动窗口.");
             DragMove();
         }
     }
@@ -311,6 +313,7 @@ public partial class MainWindow : Window
         double horizontalRatio = Math.Clamp(start.X / ActualWidth, 0, 1);
         double restoredWidth = RestoreBounds.Width;
 
+        App.Logger.Information("Window", "从最大化状态拖动还原窗口.");
         EndMaximizedDrag();
         SystemCommands.RestoreWindow(this);
         Left = logicalScreenPoint.X - restoredWidth * horizontalRatio;
@@ -342,6 +345,7 @@ public partial class MainWindow : Window
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
+        App.Logger.Information("Window", "最小化窗口.");
         SystemCommands.MinimizeWindow(this);
     }
 
@@ -352,12 +356,14 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
+        App.Logger.Information("Window", "关闭窗口.");
         SystemCommands.CloseWindow(this);
     }
 
     private void Window_StateChanged(object? sender, EventArgs e)
     {
         MaximizeGlyph.Text = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+        App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 
     private void ToggleMaximize()

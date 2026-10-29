@@ -14,11 +14,13 @@
             HorizontalAlignment="Center"
             Orientation="Horizontal">
             <RadioButton
+                Checked="LoginMode_Checked"
                 Content="正版登录"
                 GroupName="LoginMode"
                 IsChecked="True"
                 Style="{StaticResource LoginModeStyle}" />
             <RadioButton
+                Checked="LoginMode_Checked"
                 Content="离线登录"
                 GroupName="LoginMode"
                 Style="{StaticResource LoginModeStyle}" />
@@ -61,7 +63,7 @@
 
         <!-- 当前无可启动版本, 主操作暂以下载入口占位. -->
         <StackPanel Grid.Row="2">
-            <Button Style="{StaticResource PrimaryActionStyle}">
+            <Button Click="DownloadVersion_Click" Style="{StaticResource PrimaryActionStyle}">
                 <StackPanel>
                     <TextBlock
                         HorizontalAlignment="Center"
@@ -85,6 +87,7 @@
                 </Grid.ColumnDefinitions>
                 <Button
                     Grid.Column="0"
+                    Click="VersionSelection_Click"
                     Content="版本选择"
                     Style="{StaticResource SecondaryActionStyle}" />
                 <Button

@@ -51,6 +51,7 @@ public partial class SectionSidebarView : UserControl
         }
 
         _selectedItem = button;
+        App.Logger.Information("Navigation", $"选择侧栏项目: {button.Content}");
         if (_indicatorReady && button.IsLoaded)
         {
             MoveSelection(button, SidebarIndicator.Opacity > 0);
