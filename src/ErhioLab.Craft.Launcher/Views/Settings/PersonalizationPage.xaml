@@ -1,0 +1,159 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Settings.PersonalizationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    Background="{DynamicResource InkBrush}">
+    <UserControl.Resources>
+        <!-- 选项卡的悬停层覆盖整个卡片, 不挤占内容空间. -->
+        <Style x:Key="ThemeChoiceStyle" TargetType="RadioButton">
+            <Setter Property="Width" Value="145" />
+            <Setter Property="Height" Value="54" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border
+                            x:Name="Root"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="7">
+                            <Grid>
+                                <Border
+                                    Background="{DynamicResource AccentHoverBrush}"
+                                    CornerRadius="6"
+                                    Style="{StaticResource HoverLayerStyle}" />
+                                <ContentPresenter Margin="14,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentMutedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,36">
+            <TextBlock
+                FontFamily="{StaticResource MonoFont}"
+                FontSize="10"
+                Foreground="{DynamicResource AccentTextBrush}"
+                Text="03 / SETTINGS" />
+            <TextBlock
+                Margin="0,8,0,0"
+                FontFamily="{StaticResource DisplayFont}"
+                FontSize="29"
+                FontWeight="SemiBold"
+                Text="个性化" />
+            <TextBlock
+                Margin="0,7,0,24"
+                FontSize="12"
+                Foreground="{DynamicResource TextMutedBrush}"
+                Text="调整窗口和配色, 修改会立即生效并保存." />
+
+            <Border
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="基础" />
+                    <Border Height="1" Margin="0,13,0,10" Background="{DynamicResource LineSoftBrush}" />
+
+                    <Grid Height="42">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontSize="12" Text="窗口不透明度" />
+                            <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Text="40% - 100%" />
+                        </StackPanel>
+                        <Slider
+                            x:Name="OpacitySlider"
+                            Grid.Column="1"
+                            Margin="0,0,16,0"
+                            VerticalAlignment="Center"
+                            IsSnapToTickEnabled="True"
+                            Maximum="100"
+                            Minimum="40"
+                            TickFrequency="5"
+                            ValueChanged="OpacitySlider_ValueChanged" />
+                        <TextBlock
+                            x:Name="OpacityValueText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource MonoFont}"
+                            FontSize="12"
+                            Foreground="{DynamicResource AccentTextBrush}"
+                            TextAlignment="Right" />
+                    </Grid>
+
+                    <Border Height="1" Margin="0,10" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid Height="54">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="主题" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <RadioButton
+                                x:Name="DayThemeButton"
+                                Checked="ThemeButton_Checked"
+                                GroupName="LauncherTheme"
+                                Style="{StaticResource ThemeChoiceStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Width="28"
+                                        VerticalAlignment="Center"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="19"
+                                        Foreground="{DynamicResource AccentTextBrush}"
+                                        Text="&#xE706;" />
+                                    <TextBlock VerticalAlignment="Center" FontSize="12" Text="白昼模式" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton
+                                x:Name="NightThemeButton"
+                                Checked="ThemeButton_Checked"
+                                GroupName="LauncherTheme"
+                                Style="{StaticResource ThemeChoiceStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Width="28"
+                                        VerticalAlignment="Center"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="19"
+                                        Foreground="{DynamicResource AccentTextBrush}"
+                                        Text="&#xE708;" />
+                                    <TextBlock VerticalAlignment="Center" FontSize="12" Text="深夜模式" />
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Height="1" Margin="0,10" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid Height="38">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="主题色" />
+                        <controls:AccentColorPicker x:Name="AccentPicker" Grid.Column="1" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

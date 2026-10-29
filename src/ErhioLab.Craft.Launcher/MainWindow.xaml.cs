@@ -8,8 +8,6 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Navigation;
-using ErhioLab.Craft.Launcher.Views.Launch;
-using ErhioLab.Craft.Launcher.Views.Shared;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -49,32 +47,21 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ApplyContentOpacity(App.Settings.WindowOpacity);
 
-        _routes = CreateRoutes();
+        _routes = ShellRouteCatalog.Create();
         LaunchNavigation.IsChecked = true;
     }
 
-    private static IReadOnlyDictionary<ShellSection, ShellRoute> CreateRoutes()
+    /// <summary>在透明窗口的内容层应用不透明度, 使桌面真正透出.</summary>
+    /// <param name="opacity">配置中的窗口不透明度.</param>
+    internal void ApplyContentOpacity(double opacity)
     {
-        return new Dictionary<ShellSection, ShellRoute>
-        {
-            [ShellSection.Launch] = new(310, new LaunchSidebarView(), new LaunchPage()),
-            [ShellSection.Download] = new(
-                0,
-                new SectionSidebarView("游戏版本", "Mod 与资源", "整合包"),
-                new PlaceholderPage(
-                    "02 / DOWNLOAD", "下载", "游戏版本/Mod/资源包与整合包会在这里提供. ")),
-            [ShellSection.Settings] = new(
-                0,
-                new SectionSidebarView("启动器", "游戏", "网络与下载"),
-                new PlaceholderPage(
-                    "03 / SETTINGS", "设置", "启动器外观/Java/内存和下载选项会在这里提供. ")),
-            [ShellSection.More] = new(
-                0,
-                new SectionSidebarView("帮助", "关于 ELCL"),
-                new PlaceholderPage(
-                    "04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. "))
-        };
+        // 保持原生窗口完全透明, 只调整 WPF 内容层的 alpha.
+        Background = Brushes.Transparent;
+        Opacity = 1;
+        WindowRoot.Opacity = opacity;
+        UpdateWindowClip();
     }
 
     private void PrimaryNavigation_Checked(object sender, RoutedEventArgs e)
@@ -108,8 +95,24 @@ public partial class MainWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        UpdateWindowClip();
         _navigationIndicatorReady = true;
         MoveNavigationIndicator(_selectedNavigationButton ?? LaunchNavigation, false);
+    }
+
+    private void WindowRoot_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateWindowClip();
+
+    private void UpdateWindowClip()
+    {
+        if (WindowRoot is null)
+        {
+            return;
+        }
+
+        // 分层窗口由 WPF 绘制圆角, 最大化时保持完整的矩形工作区.
+        double radius = WindowState == WindowState.Maximized ? 0 : 10;
+        WindowRoot.Clip = new RectangleGeometry(
+            new Rect(0, 0, WindowRoot.ActualWidth, WindowRoot.ActualHeight), radius, radius);
     }
 
     private void TopNavigationHost_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -362,6 +365,7 @@ public partial class MainWindow : Window
 
     private void Window_StateChanged(object? sender, EventArgs e)
     {
+        UpdateWindowClip();
         MaximizeGlyph.Text = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }

@@ -34,8 +34,8 @@
                 Width="78"
                 Height="78"
                 HorizontalAlignment="Center"
-                Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource LineBrush}"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="1"
                 CornerRadius="12">
                 <TextBlock
@@ -43,7 +43,7 @@
                     VerticalAlignment="Center"
                     FontFamily="Segoe MDL2 Assets"
                     FontSize="31"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{DynamicResource TextMutedBrush}"
                     Text="&#xE77B;" />
             </Border>
             <TextBlock
@@ -57,7 +57,7 @@
                 Margin="0,6,0,0"
                 HorizontalAlignment="Center"
                 FontSize="11"
-                Foreground="{StaticResource TextMutedBrush}"
+                Foreground="{DynamicResource TextMutedBrush}"
                 Text="选择一种登录方式以继续" />
         </StackPanel>
 

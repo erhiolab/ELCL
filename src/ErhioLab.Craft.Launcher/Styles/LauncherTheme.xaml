@@ -19,6 +19,10 @@
     <SolidColorBrush x:Key="TextMutedBrush" Color="#FF7F8998" />
     <!-- 主题色, 用于主按钮/选中状态和强调文字. -->
     <SolidColorBrush x:Key="AccentBrush" Color="#FF80CEFF" />
+    <!-- 浅色主题中的强调文字色, 保持文字与背景的对比度. -->
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#FF80CEFF" />
+    <!-- 主题色按钮上的文字色, 随主题色明度自动选择. -->
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FF0B0E08" />
     <!-- 选中导航项和登录方式的低对比度背景色. -->
     <SolidColorBrush x:Key="AccentMutedBrush" Color="#FF0F1D26" />
     <!-- 悬停时选中按钮使用的浅蓝背景. -->
@@ -70,7 +74,7 @@
         <Setter Property="Width" Value="46" />
         <Setter Property="Height" Value="54" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -78,13 +82,15 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Root" Background="{TemplateBinding Background}">
                         <Grid>
-                            <Border Background="{StaticResource PanelHoverBrush}" Style="{StaticResource HoverLayerStyle}" />
+                            <Border
+                                Background="{DynamicResource PanelHoverBrush}"
+                                Style="{StaticResource HoverLayerStyle}" />
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Root" Property="Opacity" Value="0.65" />
@@ -126,7 +132,7 @@
     <Style x:Key="TopNavigationStyle" TargetType="RadioButton">
         <Setter Property="Height" Value="54" />
         <Setter Property="Margin" Value="0,0,8,0" />
-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
         <Setter Property="FontFamily" Value="{StaticResource TextFont}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -137,7 +143,7 @@
                     <Grid Background="Transparent">
                         <Border
                             Margin="0,10"
-                            Background="{StaticResource PanelHoverBrush}"
+                            Background="{DynamicResource PanelHoverBrush}"
                             CornerRadius="5"
                             Style="{StaticResource HoverLayerStyle}" />
                         <ContentPresenter
@@ -147,10 +153,10 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -163,7 +169,7 @@
         <Setter Property="Height" Value="34" />
         <Setter Property="Margin" Value="0,0,8,0" />
         <Setter Property="Padding" Value="14,0" />
-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -172,12 +178,12 @@
                     <Border x:Name="Root"
                             Padding="{TemplateBinding Padding}"
                             Background="Transparent"
-                            BorderBrush="{StaticResource LineBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
                             BorderThickness="1"
                             CornerRadius="6">
                         <Grid>
                             <Border
-                                Background="{StaticResource AccentHoverBrush}"
+                                Background="{DynamicResource AccentHoverBrush}"
                                 CornerRadius="5"
                                 Style="{StaticResource HoverLayerStyle}" />
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -185,13 +191,13 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentMutedBrush}" />
-                            <Setter TargetName="Root" Property="BorderBrush" Value="#FF24445A" />
-                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentMutedBrush}" />
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -206,7 +212,7 @@
         <Setter Property="Margin" Value="0,0,0,4" />
         <Setter Property="Padding" Value="18,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -218,7 +224,7 @@
                         CornerRadius="6">
                         <Grid>
                             <Border
-                                Background="{StaticResource AccentHoverBrush}"
+                                Background="{DynamicResource AccentHoverBrush}"
                                 CornerRadius="5"
                                 Style="{StaticResource HoverLayerStyle}" />
                             <Grid Margin="{TemplateBinding Padding}">
@@ -227,25 +233,31 @@
                                     <ColumnDefinition Width="30" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock
-                                    x:Name="Index"
+                                <Path
+                                    x:Name="ItemIcon"
                                     Grid.Column="1"
+                                    Width="17"
+                                    Height="17"
+                                    HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
-                                    FontFamily="{StaticResource MonoFont}"
-                                    FontSize="9"
-                                    Foreground="{StaticResource TextMutedBrush}"
-                                    Text="{TemplateBinding Tag}" />
+                                    Data="{Binding Icon}"
+                                    Stroke="{DynamicResource TextMutedBrush}"
+                                    StrokeStartLineCap="Round"
+                                    StrokeEndLineCap="Round"
+                                    StrokeLineJoin="Round"
+                                    StrokeThickness="1.7"
+                                    Stretch="Uniform" />
                                 <ContentPresenter Grid.Column="2" VerticalAlignment="Center" />
                             </Grid>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Index" Property="Foreground" Value="{StaticResource AccentBrush}" />
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter TargetName="ItemIcon" Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -257,8 +269,8 @@
     <!-- 启动页底部的主操作按钮, 当前显示下载游戏版本. -->
     <Style x:Key="PrimaryActionStyle" TargetType="Button">
         <Setter Property="Height" Value="62" />
-        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-        <Setter Property="Foreground" Value="#FF0B0E08" />
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="FontFamily" Value="{StaticResource TextFont}" />
         <Setter Property="Cursor" Value="Hand" />
@@ -288,8 +300,8 @@
     <Style x:Key="SecondaryActionStyle" TargetType="Button">
         <Setter Property="Height" Value="42" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontFamily" Value="{StaticResource TextFont}" />
         <Setter Property="FontSize" Value="12" />
@@ -304,14 +316,17 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="6">
                         <Grid>
-                            <Border Background="{StaticResource PanelHoverBrush}" CornerRadius="5" Style="{StaticResource HoverLayerStyle}" />
+                            <Border
+                                Background="{DynamicResource PanelHoverBrush}"
+                                CornerRadius="5"
+                                Style="{StaticResource HoverLayerStyle}" />
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="BorderBrush" Value="#FF46505E" />
-                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Root" Property="Opacity" Value="0.7" />

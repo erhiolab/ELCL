@@ -2,7 +2,7 @@
     x:Class="ErhioLab.Craft.Launcher.Views.Launch.LaunchPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Background="{StaticResource InkBrush}">
+    Background="{DynamicResource InkBrush}">
     <Grid Margin="34,28,34,30">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -25,21 +25,21 @@
                     Margin="0,5,0,0"
                     FontFamily="{StaticResource MonoFont}"
                     FontSize="9"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{DynamicResource TextMutedBrush}"
                     Text="ANNOUNCEMENTS" />
             </StackPanel>
             <TextBlock
                 Grid.Column="1"
                 VerticalAlignment="Bottom"
                 FontSize="11"
-                Foreground="{StaticResource TextMutedBrush}"
+                Foreground="{DynamicResource TextMutedBrush}"
                 Text="暂无更新" />
         </Grid>
 
         <Border
             Grid.Row="2"
-            Background="{StaticResource InkRaisedBrush}"
-            BorderBrush="{StaticResource LineBrush}"
+            Background="{DynamicResource InkRaisedBrush}"
+            BorderBrush="{DynamicResource LineBrush}"
             BorderThickness="1"
             CornerRadius="8">
             <StackPanel
@@ -49,13 +49,13 @@
                     HorizontalAlignment="Center"
                     FontFamily="{StaticResource MonoFont}"
                     FontSize="11"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{DynamicResource TextMutedBrush}"
                     Text="NO ANNOUNCEMENTS" />
                 <TextBlock
                     Margin="0,9,0,0"
                     HorizontalAlignment="Center"
                     FontSize="12"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{DynamicResource TextMutedBrush}"
                     Text="公告内容将在这里显示" />
             </StackPanel>
         </Border>

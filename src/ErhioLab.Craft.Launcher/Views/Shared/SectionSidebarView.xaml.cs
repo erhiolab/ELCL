@@ -3,6 +3,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
+using ErhioLab.Craft.Launcher.Navigation;
+
 namespace ErhioLab.Craft.Launcher.Views.Shared;
 
 /// <summary>显示下载/设置和更多页面共用的侧栏结构.</summary>
@@ -12,15 +14,15 @@ public partial class SectionSidebarView : UserControl
     private bool _indicatorReady;
 
     /// <summary>初始化一级页面的侧栏内容.</summary>
-    /// <param name="navigationItems">侧栏导航项名称.</param>
-    public SectionSidebarView(params string[] navigationItems)
+    /// <param name="navigationItems">带图标的侧栏导航项.</param>
+    internal SectionSidebarView(params SectionSidebarItem[] navigationItems)
     {
         InitializeComponent();
 
         NavigationItems.ItemsSource = navigationItems.Select((item, index) => new
         {
-            Index = (index + 1).ToString("D2"),
-            Title = item,
+            item.Title,
+            item.Icon,
             IsFirst = index == 0
         });
     }

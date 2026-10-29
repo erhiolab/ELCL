@@ -8,10 +8,11 @@
     Height="720"
     MinWidth="900"
     MinHeight="580"
-    Background="{StaticResource InkBrush}"
+    AllowsTransparency="True"
+    Background="Transparent"
     BorderThickness="0"
     FontFamily="{StaticResource TextFont}"
-    Foreground="{StaticResource TextBrush}"
+    Foreground="{DynamicResource TextBrush}"
     ResizeMode="CanResize"
     SourceInitialized="Window_SourceInitialized"
     Loaded="Window_Loaded"
@@ -27,7 +28,10 @@
             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
 
-    <Grid Background="{StaticResource InkBrush}">
+    <Grid
+        x:Name="WindowRoot"
+        Background="{DynamicResource InkBrush}"
+        SizeChanged="WindowRoot_SizeChanged">
         <Grid.RowDefinitions>
             <RowDefinition Height="54" />
             <RowDefinition Height="*" />
@@ -37,7 +41,7 @@
         <Grid
             x:Name="TitleBar"
             Grid.Row="0"
-            Background="{StaticResource InkRaisedBrush}"
+            Background="{DynamicResource InkRaisedBrush}"
             MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
             MouseLeftButtonUp="TitleBar_MouseLeftButtonUp"
             MouseMove="TitleBar_MouseMove">
@@ -127,7 +131,7 @@
                     Height="2"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Bottom"
-                    Background="{StaticResource AccentBrush}"
+                    Background="{DynamicResource AccentBrush}"
                     IsHitTestVisible="False"
                     Opacity="0">
                     <Border.RenderTransform>
@@ -179,8 +183,8 @@
 
             <Border
                 Grid.Column="0"
-                Background="{StaticResource InkRaisedBrush}"
-                BorderBrush="{StaticResource LineSoftBrush}"
+                Background="{DynamicResource InkRaisedBrush}"
+                BorderBrush="{DynamicResource LineSoftBrush}"
                 BorderThickness="0,1,1,0">
                 <ContentControl
                     x:Name="SidebarHost"
