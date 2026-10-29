@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Views.Launch;
 using ErhioLab.Craft.Launcher.Views.Shared;
@@ -13,11 +14,29 @@ namespace ErhioLab.Craft.Launcher;
 
 public partial class MainWindow : Window
 {
+    private static readonly DependencyProperty SidebarWidthProperty = DependencyProperty.Register(
+        nameof(SidebarWidth),
+        typeof(double),
+        typeof(MainWindow),
+        new PropertyMetadata(310.0, OnSidebarWidthChanged));
+
     private const int DwmwaNcRenderingPolicy = 2;
     private const int DwmncrpDisabled = 1;
     private const int DwmwaBorderColor = 34;
     private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
+    private const int WmGetMinMaxInfo = 0x0024;
+    private const int WmNcLeftButtonDown = 0x00A1;
+    private const int HitTestCaption = 2;
+    private const uint MonitorDefaultToNearest = 2;
     private readonly IReadOnlyDictionary<ShellSection, ShellRoute> _routes;
+    private bool _hasNavigated;
+    private Point? _maximizedDragStart;
+
+    private double SidebarWidth
+    {
+        get => (double)GetValue(SidebarWidthProperty);
+        set => SetValue(SidebarWidthProperty, value);
+    }
 
     public MainWindow()
     {
@@ -56,19 +75,92 @@ public partial class MainWindow : Window
             return;
         }
 
-        SidebarColumn.Width = new GridLength(route.SidebarWidth);
         SidebarHost.Content = route.Sidebar;
         PageHost.Content = route.Page;
+
+        if (!_hasNavigated)
+        {
+            SidebarWidth = route.SidebarWidth;
+            _hasNavigated = true;
+            return;
+        }
+
+        AnimateSidebarWidth(route.SidebarWidth);
+    }
+
+    private void AnimateSidebarWidth(double targetWidth)
+    {
+        double currentWidth = SidebarWidth;
+        if (Math.Abs(currentWidth - targetWidth) < 0.5)
+        {
+            return;
+        }
+
+        BeginAnimation(SidebarWidthProperty, null);
+        SidebarWidth = targetWidth;
+        BeginAnimation(SidebarWidthProperty, new DoubleAnimation
+        {
+            From = currentWidth,
+            To = targetWidth,
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            FillBehavior = FillBehavior.Stop
+        });
+    }
+
+    private static void OnSidebarWidthChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is MainWindow window && window.SidebarColumn is not null)
+        {
+            window.SidebarColumn.Width = new GridLength((double)e.NewValue);
+        }
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
     {
         IntPtr handle = new WindowInteropHelper(this).Handle;
+        HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         int renderingPolicy = DwmncrpDisabled;
         int borderColor = DwmColorNone;
 
         _ = DwmSetWindowAttribute(handle, DwmwaNcRenderingPolicy, ref renderingPolicy, sizeof(int));
         _ = DwmSetWindowAttribute(handle, DwmwaBorderColor, ref borderColor, sizeof(int));
+    }
+
+    private static IntPtr WindowMessageHook(
+        IntPtr windowHandle,
+        int message,
+        IntPtr wParam,
+        IntPtr lParam,
+        ref bool handled)
+    {
+        if (message != WmGetMinMaxInfo)
+        {
+            return IntPtr.Zero;
+        }
+
+        IntPtr monitorHandle = MonitorFromWindow(windowHandle, MonitorDefaultToNearest);
+        if (monitorHandle == IntPtr.Zero)
+        {
+            return IntPtr.Zero;
+        }
+
+        var monitor = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(monitorHandle, ref monitor))
+        {
+            return IntPtr.Zero;
+        }
+
+        var bounds = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+        bounds.MaxPosition = new NativePoint(
+            monitor.WorkArea.Left - monitor.MonitorArea.Left,
+            monitor.WorkArea.Top - monitor.MonitorArea.Top);
+        bounds.MaxSize = new NativePoint(
+            monitor.WorkArea.Right - monitor.WorkArea.Left,
+            monitor.WorkArea.Bottom - monitor.WorkArea.Top);
+        Marshal.StructureToPtr(bounds, lParam, false);
+        handled = true;
+        return IntPtr.Zero;
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -86,7 +178,66 @@ public partial class MainWindow : Window
 
         if (e.LeftButton == MouseButtonState.Pressed)
         {
+            if (WindowState == WindowState.Maximized)
+            {
+                _maximizedDragStart = e.GetPosition(this);
+                TitleBar.CaptureMouse();
+                return;
+            }
+
             DragMove();
+        }
+    }
+
+    private void TitleBar_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_maximizedDragStart is not Point start)
+        {
+            return;
+        }
+
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            EndMaximizedDrag();
+            return;
+        }
+
+        Point current = e.GetPosition(this);
+        if (Math.Abs(current.X - start.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(current.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        Point screenPoint = PointToScreen(current);
+        Point logicalScreenPoint = PresentationSource.FromVisual(this)?.CompositionTarget?
+            .TransformFromDevice.Transform(screenPoint) ?? screenPoint;
+        double horizontalRatio = Math.Clamp(start.X / ActualWidth, 0, 1);
+        double restoredWidth = RestoreBounds.Width;
+
+        EndMaximizedDrag();
+        SystemCommands.RestoreWindow(this);
+        Left = logicalScreenPoint.X - restoredWidth * horizontalRatio;
+        Top = logicalScreenPoint.Y - 20;
+        e.Handled = true;
+
+        // Start the native move loop while the same mouse press is still held.
+        _ = ReleaseCapture();
+        _ = SendMessage(new WindowInteropHelper(this).Handle,
+            WmNcLeftButtonDown, new IntPtr(HitTestCaption), IntPtr.Zero);
+    }
+
+    private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        EndMaximizedDrag();
+    }
+
+    private void EndMaximizedDrag()
+    {
+        _maximizedDragStart = null;
+        if (TitleBar.IsMouseCaptured)
+        {
+            TitleBar.ReleaseMouseCapture();
         }
     }
 
@@ -144,4 +295,60 @@ public partial class MainWindow : Window
         int attribute,
         ref int attributeValue,
         int attributeSize);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr windowHandle, uint flags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern IntPtr SendMessage(
+        IntPtr windowHandle,
+        int message,
+        IntPtr wParam,
+        IntPtr lParam);
+
+    [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr monitorHandle, ref MonitorInfo monitorInfo);
+
+    // These fields are populated by Win32 when the structures are marshalled.
+#pragma warning disable CS0649
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint(int x, int y)
+    {
+        public int X = x;
+        public int Y = y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect MonitorArea;
+        public NativeRect WorkArea;
+        public uint Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public NativePoint Reserved;
+        public NativePoint MaxSize;
+        public NativePoint MaxPosition;
+        public NativePoint MinTrackSize;
+        public NativePoint MaxTrackSize;
+    }
+#pragma warning restore CS0649
 }

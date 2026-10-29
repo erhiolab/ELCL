@@ -36,7 +36,9 @@
             x:Name="TitleBar"
             Grid.Row="0"
             Background="{StaticResource InkRaisedBrush}"
-            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+            MouseLeftButtonUp="TitleBar_MouseLeftButtonUp"
+            MouseMove="TitleBar_MouseMove">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="180" />
                 <ColumnDefinition Width="*" />
