@@ -24,6 +24,7 @@ public partial class VanillaVersionsPage
     private readonly MinecraftWikiClient _wikiClient = new(HttpClient);
     private readonly Dictionary<FrameworkElement, int> _groupAnimationVersions = [];
     private CancellationTokenSource? _pageCancellation;
+    private MinecraftVersionCatalog? _catalog;
     private bool _hasLoaded;
     private bool _loading;
     private VersionListSource? _loadedPreference;
@@ -75,7 +76,8 @@ public partial class VanillaVersionsPage
                 return;
             }
 
-            VersionGroups.ItemsSource = CreateGroups(catalog);
+            _catalog = catalog;
+            ApplySearch();
             App.Logger.Information("Download", $"版本列表获取完成, 实际来源: {catalog.Source}, 数量: {catalog.Versions.Count}.");
             LauncherToasts.Success(catalog.Source == preferred ? "游戏版本列表已获取." : $"已从{SourceName(catalog.Source)}获取游戏版本列表.");
         }
@@ -86,13 +88,67 @@ public partial class VanillaVersionsPage
         catch (Exception error)
         {
             App.Logger.Error("Download", "版本列表获取失败.", error);
+            _catalog = null;
             VersionGroups.ItemsSource = null;
+            EmptySearchText.Visibility = Visibility.Collapsed;
             LauncherToasts.Error("获取游戏版本失败, 请检查网络并在左侧刷新重试.");
         }
         finally
         {
             _loading = false;
         }
+    }
+
+    private void VersionSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (SearchHint is null || ClearSearchButton is null)
+        {
+            return;
+        }
+
+        bool hasText = VersionSearchBox.Text.Length > 0;
+        SearchHint.Visibility = hasText ? Visibility.Collapsed : Visibility.Visible;
+        ClearSearchButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
+        ApplySearch();
+    }
+
+    private void VersionSearchBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            VersionSearchBox.Clear();
+            e.Handled = true;
+        }
+    }
+
+    private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        VersionSearchBox.Clear();
+        VersionSearchBox.Focus();
+    }
+
+    private void ApplySearch()
+    {
+        if (_catalog is null || VersionGroups is null || EmptySearchText is null)
+        {
+            return;
+        }
+
+        string query = VersionSearchBox.Text.Trim();
+        _groupAnimationVersions.Clear();
+        if (query.Length == 0)
+        {
+            EmptySearchText.Visibility = Visibility.Collapsed;
+            VersionGroups.ItemsSource = CreateGroups(_catalog);
+            return;
+        }
+
+        VersionRow[] matches = _catalog.Versions
+            .Where(version => version.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .Select(version => new VersionRow(version, null))
+            .ToArray();
+        EmptySearchText.Visibility = matches.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        VersionGroups.ItemsSource = matches.Length == 0 ? Array.Empty<VersionGroup>() : new[] { new VersionGroup($"搜索结果 ({matches.Length})", true, matches) };
     }
 
     private void GroupContent_Loaded(object sender, RoutedEventArgs e)

@@ -14,6 +14,9 @@ public static class LauncherIcons
     /// <summary>顶部导航的下载图标.</summary>
     public const string Download = "\uE896";
 
+    /// <summary>版本搜索框图标.</summary>
+    public const string Search = "\uE721";
+
     /// <summary>顶部导航的设置图标.</summary>
     public const string Settings = "\uE713";
 
