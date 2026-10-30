@@ -17,7 +17,7 @@ public partial class App
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter<LauncherTheme>() }
+        Converters = { new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<VersionListSource>() }
     };
 
     private static SessionFileLogger? _logger;
@@ -27,8 +27,7 @@ public partial class App
     internal static LauncherSettings Settings { get; private set; } = new();
 
     /// <summary>供启动器界面记录操作的本次日志会话.</summary>
-    internal static SessionFileLogger Logger =>
-        _logger ?? throw new InvalidOperationException("日志系统尚未初始化.");
+    internal static SessionFileLogger Logger => _logger ?? throw new InvalidOperationException("日志系统尚未初始化.");
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -67,8 +66,7 @@ public partial class App
                 _settingsStore.Save(Settings);
             }
 
-            Logger.Information("Settings",
-                $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}");
+            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 版本列表源: {Settings.VersionListSource}.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -95,13 +93,11 @@ public partial class App
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Logger.Error("Settings", $"保存配置失败, 路径: {_settingsStore!.FilePath}.", exception);
-            LauncherDialogs.Error("无法保存设置", $"无法保存外观设置:\n{exception.Message}");
+            LauncherDialogs.Error("无法保存设置", $"无法保存设置:\n{exception.Message}");
             return false;
         }
 
-        bool paletteChanged = Settings.Theme != normalized.Theme
-                              || !string.Equals(Settings.AccentColor, normalized.AccentColor,
-                                  StringComparison.OrdinalIgnoreCase);
+        bool paletteChanged = Settings.Theme != normalized.Theme || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         Settings = normalized;
         if (paletteChanged)
         {
@@ -113,8 +109,7 @@ public partial class App
             window.ApplyContentOpacity(Settings.WindowOpacity);
         }
 
-        Logger.Information("Settings",
-            $"外观设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}");
+        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 版本列表源: {Settings.VersionListSource}.");
         return true;
     }
 

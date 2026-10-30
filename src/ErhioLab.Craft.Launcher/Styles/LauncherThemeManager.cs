@@ -37,9 +37,7 @@ internal static class LauncherThemeManager
     private static void SwitchLibraryTheme(LauncherTheme theme)
     {
         string themeName = theme == LauncherTheme.Day ? "Light" : "Dark";
-        Uri themeUri = new(
-            $"pack://application:,,,/Wpf.Ui;component/Resources/Theme/{themeName}.xaml",
-            UriKind.Absolute);
+        Uri themeUri = new($"pack://application:,,,/Wpf.Ui;component/Resources/Theme/{themeName}.xaml", UriKind.Absolute);
 
         if (ReplaceThemeDictionary(Application.Current.Resources, themeName, themeUri))
         {
@@ -55,8 +53,7 @@ internal static class LauncherThemeManager
         {
             ResourceDictionary dictionary = parent.MergedDictionaries[index];
             string? source = dictionary.Source?.ToString();
-            if (source is not null
-                && source.Contains("Wpf.Ui;component/Resources/Theme/", StringComparison.OrdinalIgnoreCase))
+            if (source is not null && source.Contains("Wpf.Ui;component/Resources/Theme/", StringComparison.OrdinalIgnoreCase))
             {
                 if (!source.EndsWith($"/{themeName}.xaml", StringComparison.OrdinalIgnoreCase))
                 {

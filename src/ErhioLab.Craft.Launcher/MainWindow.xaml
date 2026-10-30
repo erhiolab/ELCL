@@ -85,6 +85,7 @@
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
+                            x:Name="DownloadNavigation"
                             GroupName="TopNavigation"
                             Tag="Download"
                             Checked="PrimaryNavigation_Checked"

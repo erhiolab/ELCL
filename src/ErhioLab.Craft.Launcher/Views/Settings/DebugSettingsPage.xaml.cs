@@ -46,10 +46,7 @@ public partial class DebugSettingsPage
     private async void Second_Confirmation_Button_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Debug", "预览二次确认弹窗.");
-        bool confirmed = await LauncherDialogs.ConfirmAsync(
-            "二次确认(普通)",
-            "这是普通确认弹窗的调试预览. 确认后不会执行任何操作.",
-            LauncherDialogLevel.Information);
+        bool confirmed = await LauncherDialogs.ConfirmAsync("二次确认(普通)", "这是普通确认弹窗的调试预览. 确认后不会执行任何操作.", LauncherDialogLevel.Information);
         App.Logger.Information("Debug", $"普通确认弹窗调试结果: {(confirmed ? "确认" : "取消")}.");
     }
 

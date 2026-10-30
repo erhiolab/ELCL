@@ -23,6 +23,10 @@ public partial class LaunchSidebarView
     private void DownloadVersion_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Launch", "点击下载游戏版本入口.");
+        if (Application.Current.MainWindow is MainWindow window)
+        {
+            window.OpenDownloadPage();
+        }
     }
 
     private void VersionSelection_Click(object sender, RoutedEventArgs e)

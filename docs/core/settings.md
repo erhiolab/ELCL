@@ -10,11 +10,14 @@
 {
   "Theme": "Day",
   "AccentColor": "#80CEFF",
-  "WindowOpacity": 1
+  "WindowOpacity": 1,
+  "VersionListSource": "OfficialFirst"
 }
 ```
 
-`Theme` 为 `Day` 或 `Night`. `AccentColor` 为 `#RRGGBB`. `WindowOpacity` 为 `0.40` 到 `1.00`. 这些字段以及 `LauncherSettings.Normalize()` 都由启动器项目定义; 不认识的主题/颜色恢复默认值, 超出范围的不透明度会被限制到范围内. 启动器传入枚举序列化规则, 保持已有 JSON 格式兼容.
+`Theme` 为 `Day` 或 `Night`. `AccentColor` 为 `#RRGGBB`. `WindowOpacity` 为 `0.40` 到 `1.00`. `VersionListSource` 为 `OfficialFirst` 或 `MirrorFirst`, 仅指定首选来源, 另一来源仍会作为备用. 这些字段以及 `LauncherSettings.Normalize()` 都由启动器项目定义; 不认识的枚举值/颜色恢复默认值, 超出范围的不透明度会被限制到范围内. 启动器传入枚举序列化规则, 保持已有 JSON 格式兼容.
+
+设置侧栏的下载重置按钮只将 `VersionListSource` 恢复为 `OfficialFirst`, 不会改变外观设置.
 
 ## 保存流程
 

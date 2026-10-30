@@ -1,0 +1,46 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Settings.DownloadSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{DynamicResource InkBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,36">
+            <Border
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="下载源" />
+                    <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontSize="12" Text="版本列表源" />
+                            <TextBlock
+                                Margin="0,3,0,0"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="首选来源不可用时自动切换" />
+                        </StackPanel>
+                        <ComboBox
+                            x:Name="VersionListSourceBox"
+                            Grid.Column="1"
+                            Height="36"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
+                            Foreground="{DynamicResource TextBrush}"
+                            SelectionChanged="VersionListSourceBox_SelectionChanged">
+                            <ComboBoxItem Content="尽量使用官方源" />
+                            <ComboBoxItem Content="尽量使用镜像源" />
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

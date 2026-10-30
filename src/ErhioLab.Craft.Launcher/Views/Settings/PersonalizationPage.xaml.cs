@@ -34,7 +34,13 @@ public partial class PersonalizationPage
     {
         _opacitySaveTimer.Stop();
         _draggingOpacity = false;
-        if (App.UpdateSettings(new LauncherSettings()))
+        if (App.UpdateSettings(App.Settings with
+            {
+                Theme = LauncherTheme.Day,
+                AccentColor = "#80CEFF",
+                WindowOpacity = 1.0
+            })
+           )
         {
             App.Logger.Information("Settings", "个性化设置已重置为默认值.");
         }

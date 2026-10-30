@@ -109,9 +109,7 @@ public partial class AccentColorPicker
     private static bool TryParseHex(string value, out Color color)
     {
         color = default;
-        if (value.Length != 7 || value[0] != '#'
-                              || !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture,
-                                  out uint rgb))
+        if (value.Length != 7 || value[0] != '#' || !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint rgb))
         {
             return false;
         }

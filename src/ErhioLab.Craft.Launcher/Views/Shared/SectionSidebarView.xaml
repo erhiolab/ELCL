@@ -28,24 +28,24 @@
                         <RadioButton
                             Checked="NavigationItem_Checked"
                             Content="{Binding Title}"
-                            GroupName="SectionNavigation"
+                            GroupName="{Binding GroupName}"
                             Tag="{Binding Item}"
                             IsChecked="{Binding IsFirst, Mode=OneTime}"
                             Loaded="NavigationItem_Loaded"
                             Style="{StaticResource SectionNavigationStyle}" />
                         <Button
-                            x:Name="ResetButton"
+                            x:Name="ActionButton"
                             Width="26"
                             Height="26"
                             Margin="0,0,10,4"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
-                            Click="ResetButton_Click"
+                            Click="ActionButton_Click"
                             Cursor="Hand"
                             FocusVisualStyle="{x:Null}"
                             Style="{StaticResource SidebarResetButtonStyle}"
                             Tag="{Binding Item}"
-                            ToolTip="重置个性化设置"
+                            ToolTip="{Binding ActionToolTip}"
                             Visibility="Collapsed">
                             <TextBlock
                                 FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
@@ -56,10 +56,10 @@
                     <DataTemplate.Triggers>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding CanReset}" Value="True" />
+                                <Condition Binding="{Binding CanShowAction}" Value="True" />
                                 <Condition Binding="{Binding IsMouseOver, ElementName=NavigationRow}" Value="True" />
                             </MultiDataTrigger.Conditions>
-                            <Setter TargetName="ResetButton" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="ActionButton" Property="Visibility" Value="Visible" />
                         </MultiDataTrigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>

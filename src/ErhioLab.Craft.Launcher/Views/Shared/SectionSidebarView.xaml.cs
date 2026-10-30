@@ -13,8 +13,8 @@ public partial class SectionSidebarView
     private RadioButton? _selectedItem;
     private bool _indicatorReady;
 
-    /// <summary>用户请求重置某个侧栏条目对应的设置.</summary>
-    internal event Action<SectionSidebarItem>? ResetRequested;
+    /// <summary>用户点击侧栏条目的悬浮操作按钮.</summary>
+    internal event Action<SectionSidebarItem>? ActionRequested;
 
     /// <summary>用户切换侧栏条目时通知所属页面.</summary>
     internal event Action<SectionSidebarItem>? SelectionChanged;
@@ -25,15 +25,16 @@ public partial class SectionSidebarView
     {
         InitializeComponent();
 
-        NavigationItems.ItemsSource = navigationItems.Select((item, index) =>
-            new SectionSidebarEntry(item, index == 0)).ToArray();
+        // 不同一级页面各自保留选中项, 不能共享 RadioButton 的组名.
+        string groupName = $"SectionNavigation_{Guid.NewGuid():N}";
+        NavigationItems.ItemsSource = navigationItems.Select((item, index) => new SectionSidebarEntry(item, index == 0, groupName)).ToArray();
     }
 
-    private void ResetButton_Click(object sender, RoutedEventArgs e)
+    private void ActionButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: SectionSidebarItem item })
         {
-            ResetRequested?.Invoke(item);
+            ActionRequested?.Invoke(item);
         }
     }
 

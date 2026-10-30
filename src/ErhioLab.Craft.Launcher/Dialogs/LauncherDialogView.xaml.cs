@@ -37,15 +37,9 @@ public partial class LauncherDialogView
         bool day = App.Settings.Theme == LauncherTheme.Day;
         Brush levelBrush = level switch
         {
-            LauncherDialogLevel.Warning => new SolidColorBrush(day
-                ? Color.FromRgb(171, 85, 27)
-                : Color.FromRgb(255, 175, 92)),
-            LauncherDialogLevel.Error => new SolidColorBrush(day
-                ? Color.FromRgb(189, 45, 55)
-                : Color.FromRgb(255, 113, 125)),
-            LauncherDialogLevel.Danger => new SolidColorBrush(day
-                ? Color.FromRgb(143, 24, 54)
-                : Color.FromRgb(255, 91, 118)),
+            LauncherDialogLevel.Warning => new SolidColorBrush(day ? Color.FromRgb(171, 85, 27) : Color.FromRgb(255, 175, 92)),
+            LauncherDialogLevel.Error => new SolidColorBrush(day ? Color.FromRgb(189, 45, 55) : Color.FromRgb(255, 113, 125)),
+            LauncherDialogLevel.Danger => new SolidColorBrush(day ? Color.FromRgb(143, 24, 54) : Color.FromRgb(255, 91, 118)),
             _ => (Brush)FindResource("AccentTextBrush")
         };
         BaseShade.Background = new SolidColorBrush(Color.FromArgb(level switch

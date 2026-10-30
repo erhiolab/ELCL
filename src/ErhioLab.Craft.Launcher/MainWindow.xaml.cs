@@ -71,6 +71,9 @@ public partial class MainWindow
     /// <summary>在左下角显示一条不阻塞操作的通知.</summary>
     internal void ShowToast(ToastNotification notification) => ToastHost.Show(notification);
 
+    /// <summary>从启动页的无版本入口打开原版游戏下载页面.</summary>
+    internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
+
     /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
     internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,
         bool requiresConfirmation, string confirmText)
@@ -109,9 +112,11 @@ public partial class MainWindow
 
     private void PrimaryNavigation_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is not RadioButton { Tag: string sectionName } button
-            || !Enum.TryParse(sectionName, out ShellSection section)
-            || !_routes.TryGetValue(section, out ShellRoute? route))
+        if (
+            sender is not RadioButton { Tag: string sectionName } button ||
+            !Enum.TryParse(sectionName, out ShellSection section) ||
+            !_routes.TryGetValue(section, out ShellRoute? route)
+        )
         {
             return;
         }
@@ -154,10 +159,8 @@ public partial class MainWindow
 
         // 分层窗口由 WPF 绘制圆角, 最大化时保持完整的矩形工作区.
         double radius = WindowState == WindowState.Maximized ? 0 : 10;
-        WindowRoot.Clip = new RectangleGeometry(
-            new Rect(0, 0, WindowRoot.ActualWidth, WindowRoot.ActualHeight), radius, radius);
-        ShellRoot.Clip = new RectangleGeometry(
-            new Rect(0, 0, ShellRoot.ActualWidth, ShellRoot.ActualHeight), radius, radius);
+        WindowRoot.Clip = new RectangleGeometry(new Rect(0, 0, WindowRoot.ActualWidth, WindowRoot.ActualHeight), radius, radius);
+        ShellRoot.Clip = new RectangleGeometry(new Rect(0, 0, ShellRoot.ActualWidth, ShellRoot.ActualHeight), radius, radius);
     }
 
     private void TopNavigationHost_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -170,8 +173,7 @@ public partial class MainWindow
 
     private void MoveNavigationIndicator(RadioButton button, bool animate)
     {
-        double targetX = button.TransformToAncestor(TopNavigationHost)
-            .Transform(new Point(button.ActualWidth / 2, 0)).X - NavigationIndicator.Width / 2;
+        double targetX = button.TransformToAncestor(TopNavigationHost).Transform(new Point(button.ActualWidth / 2, 0)).X - NavigationIndicator.Width / 2;
 
         if (!animate)
         {
@@ -209,9 +211,7 @@ public partial class MainWindow
     {
         double currentWidth = SidebarColumn.ActualWidth;
         bool autoWidth = route.SidebarWidth == 0;
-        double targetWidth = Math.Max(
-            MinSidebarWidth,
-            autoWidth ? MeasureSidebarWidth(route.Sidebar) : route.SidebarWidth);
+        double targetWidth = Math.Max(MinSidebarWidth, autoWidth ? MeasureSidebarWidth(route.Sidebar) : route.SidebarWidth);
         int animationVersion = ++_sidebarAnimationVersion;
         BeginAnimation(SidebarWidthProperty, null);
         if (Math.Abs(currentWidth - targetWidth) < 0.5)
@@ -296,12 +296,8 @@ public partial class MainWindow
 
         // 工作区已排除任务栏, 任务栏在屏幕任意边缘时都应留出空间.
         MinMaxInfo bounds = Marshal.PtrToStructure<MinMaxInfo>(lParam);
-        bounds.MaxPosition = new NativePoint(
-            monitor.WorkArea.Left - monitor.MonitorArea.Left,
-            monitor.WorkArea.Top - monitor.MonitorArea.Top);
-        bounds.MaxSize = new NativePoint(
-            monitor.WorkArea.Right - monitor.WorkArea.Left,
-            monitor.WorkArea.Bottom - monitor.WorkArea.Top);
+        bounds.MaxPosition = new NativePoint(monitor.WorkArea.Left - monitor.MonitorArea.Left, monitor.WorkArea.Top - monitor.MonitorArea.Top);
+        bounds.MaxSize = new NativePoint(monitor.WorkArea.Right - monitor.WorkArea.Left, monitor.WorkArea.Bottom - monitor.WorkArea.Top);
         Marshal.StructureToPtr(bounds, lParam, false);
         handled = true;
         return IntPtr.Zero;
@@ -352,16 +348,14 @@ public partial class MainWindow
         }
 
         Point current = e.GetPosition(this);
-        if (Math.Abs(current.X - start.X) < SystemParameters.MinimumHorizontalDragDistance
-            && Math.Abs(current.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance)
+        if (Math.Abs(current.X - start.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(current.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance)
         {
             return;
         }
 
         // 还原前记录鼠标的屏幕位置, 让还原后的标题栏保持在鼠标下方.
         Point screenPoint = PointToScreen(current);
-        Point logicalScreenPoint = PresentationSource.FromVisual(this)?.CompositionTarget?
-            .TransformFromDevice.Transform(screenPoint) ?? screenPoint;
+        Point logicalScreenPoint = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformFromDevice.Transform(screenPoint) ?? screenPoint;
         double horizontalRatio = Math.Clamp(start.X / ActualWidth, 0, 1);
         double restoredWidth = RestoreBounds.Width;
 
@@ -378,7 +372,8 @@ public partial class MainWindow
             new WindowInteropHelper(this).Handle,
             WmNcLeftButtonDown,
             new IntPtr(HitTestCaption),
-            IntPtr.Zero);
+            IntPtr.Zero
+        );
     }
 
     private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -415,9 +410,7 @@ public partial class MainWindow
     private void Window_StateChanged(object? sender, EventArgs e)
     {
         UpdateWindowClip();
-        MaximizeGlyph.Text = WindowState == WindowState.Maximized
-            ? LauncherIcons.Restore
-            : LauncherIcons.Maximize;
+        MaximizeGlyph.Text = WindowState == WindowState.Maximized ? LauncherIcons.Restore : LauncherIcons.Maximize;
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 
