@@ -20,9 +20,7 @@ public sealed class JsonFileStore<T> where T : class
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         _filePath = Path.GetFullPath(filePath);
-        _jsonOptions = jsonOptions is null
-            ? new JsonSerializerOptions { WriteIndented = true }
-            : new JsonSerializerOptions(jsonOptions);
+        _jsonOptions = jsonOptions is null ? new JsonSerializerOptions { WriteIndented = true } : new JsonSerializerOptions(jsonOptions);
     }
 
     /// <summary>读取 JSON, 文件不存在或内容为 null 时返回调用方提供的默认对象.</summary>
@@ -59,8 +57,7 @@ public sealed class JsonFileStore<T> where T : class
                     File.Move(temporaryPath, _filePath, true);
                     return;
                 }
-                catch (Exception exception) when (attempt < ReplaceAttempts
-                    && exception is IOException or UnauthorizedAccessException)
+                catch (Exception exception) when (attempt < ReplaceAttempts && exception is IOException or UnauthorizedAccessException)
                 {
                     // 外部程序短暂占用目标文件时重试, 保持最终写入的原子替换行为.
                     Thread.Sleep(TimeSpan.FromMilliseconds(50 * attempt));

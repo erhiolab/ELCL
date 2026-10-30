@@ -74,8 +74,7 @@ public sealed class SessionFileLogger : IDisposable
     public void Warning(string source, string message) => Write(LogLevel.Warning, source, message);
 
     /// <summary>记录失败和可选的异常信息.</summary>
-    public void Error(string source, string message, Exception? exception = null) =>
-        Write(LogLevel.Error, source, message, exception);
+    public void Error(string source, string message, Exception? exception = null) => Write(LogLevel.Error, source, message, exception);
 
     /// <summary>以统一格式写入一条日志.</summary>
     /// <param name="level">日志级别.</param>
