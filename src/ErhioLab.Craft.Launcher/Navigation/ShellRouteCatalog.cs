@@ -36,7 +36,6 @@ internal static class ShellRouteCatalog
             if (await LauncherDialogs.ConfirmAsync(
                     "重置个性化设置",
                     "是否要重置 个性化 的所有设置? 此操作不可逆.",
-                    LauncherDialogLevel.Danger,
                     confirmText: "重置"))
             {
                 personalizationPage.ResetToDefaults();
