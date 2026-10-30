@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace ErhioLab.Craft.Launcher.Controls;
 
 /// <summary>可复用的 RGB 主题色选择器, 同步 HEX 输入与 HSV 拉条.</summary>
-public partial class AccentColorPicker : UserControl
+public partial class AccentColorPicker
 {
     private bool _syncing = true;
 
@@ -127,18 +127,20 @@ public partial class AccentColorPicker : UserControl
         double red = color.R / 255.0;
         double green = color.G / 255.0;
         double blue = color.B / 255.0;
-        double maximum = Math.Max(red, Math.Max(green, blue));
-        double minimum = Math.Min(red, Math.Min(green, blue));
+        byte maximumChannel = Math.Max(color.R, Math.Max(color.G, color.B));
+        byte minimumChannel = Math.Min(color.R, Math.Min(color.G, color.B));
+        double maximum = maximumChannel / 255.0;
+        double minimum = minimumChannel / 255.0;
         double difference = maximum - minimum;
         double hue = 0;
 
         if (difference > 0)
         {
-            if (maximum == red)
+            if (maximumChannel == color.R)
             {
-                hue = 60 * (((green - blue) / difference) % 6);
+                hue = 60 * ((green - blue) / difference % 6);
             }
-            else if (maximum == green)
+            else if (maximumChannel == color.G)
             {
                 hue = 60 * ((blue - red) / difference + 2);
             }
@@ -148,7 +150,7 @@ public partial class AccentColorPicker : UserControl
             }
         }
 
-        return ((hue + 360) % 360, maximum == 0 ? 0 : difference / maximum * 100, maximum * 100);
+        return ((hue + 360) % 360, maximumChannel == 0 ? 0 : difference / maximum * 100, maximum * 100);
     }
 
     private static Color FromHsv(double hue, double saturation, double brightness)

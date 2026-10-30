@@ -2,7 +2,11 @@
     x:Class="ErhioLab.Craft.Launcher.Views.Shared.SectionSidebarView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:navigation="clr-namespace:ErhioLab.Craft.Launcher.Navigation"
+    mc:Ignorable="d"
     Loaded="Sidebar_Loaded">
     <Grid Margin="20,24">
         <Border
@@ -19,7 +23,7 @@
         </Border>
         <ItemsControl x:Name="NavigationItems">
             <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate d:DataContext="{d:DesignInstance Type=navigation:SectionSidebarEntry}">
                     <Grid x:Name="NavigationRow">
                         <RadioButton
                             Checked="NavigationItem_Checked"

@@ -18,7 +18,7 @@ public sealed record LauncherSettings
     /// <returns>规范化后的设置.</returns>
     public LauncherSettings Normalize()
     {
-        string accent = AccentColor?.Trim() ?? string.Empty;
+        string accent = AccentColor.Trim();
         bool validAccent = accent.Length == 7
                            && accent[0] == '#'
                            && uint.TryParse(accent.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture,

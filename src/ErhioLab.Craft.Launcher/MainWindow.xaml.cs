@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -16,7 +15,7 @@ using ErhioLab.Craft.Launcher.Notifications;
 namespace ErhioLab.Craft.Launcher;
 
 /// <summary>承载自绘窗口/顶部导航及当前页面的侧栏和主体.</summary>
-public partial class MainWindow : Window
+public partial class MainWindow
 {
     // GridLength 不能直接使用 DoubleAnimation, 因此用依赖属性驱动侧栏列宽.
     private static readonly DependencyProperty SidebarWidthProperty = DependencyProperty.Register(
@@ -81,9 +80,9 @@ public partial class MainWindow : Window
         {
             TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
             void Complete(bool confirmed) => completion.TrySetResult(confirmed);
-            void OnClosed(object? sender, EventArgs e) => completion.TrySetResult(false);
+            void OnDialogWindowClosed(object? sender, EventArgs e) => completion.TrySetResult(false);
             DialogOverlay.Completed += Complete;
-            Closed += OnClosed;
+            Closed += OnDialogWindowClosed;
             try
             {
                 DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText);
@@ -96,7 +95,7 @@ public partial class MainWindow : Window
             finally
             {
                 DialogOverlay.Completed -= Complete;
-                Closed -= OnClosed;
+                Closed -= OnDialogWindowClosed;
                 DialogOverlay.Visibility = Visibility.Collapsed;
                 TopNavigationHost.IsHitTestVisible = true;
                 WindowControls.IsHitTestVisible = true;
@@ -110,7 +109,7 @@ public partial class MainWindow : Window
 
     private void PrimaryNavigation_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is not RadioButton { Tag: string sectionName }
+        if (sender is not RadioButton { Tag: string sectionName } button
             || !Enum.TryParse(sectionName, out ShellSection section)
             || !_routes.TryGetValue(section, out ShellRoute? route))
         {
@@ -119,7 +118,7 @@ public partial class MainWindow : Window
 
         SidebarHost.Content = route.Sidebar;
         PageHost.Content = route.Page;
-        _selectedNavigationButton = (RadioButton)sender;
+        _selectedNavigationButton = button;
         App.Logger.Information("Navigation", $"打开主页面: {section}");
 
         if (_navigationIndicatorReady)
@@ -341,7 +340,7 @@ public partial class MainWindow : Window
 
     private void TitleBar_MouseMove(object sender, MouseEventArgs e)
     {
-        if (_maximizedDragStart is not Point start)
+        if (_maximizedDragStart is not { } start)
         {
             return;
         }

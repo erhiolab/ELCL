@@ -8,7 +8,7 @@ using ErhioLab.Craft.Launcher.Settings;
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
 /// <summary>提供窗口不透明度/明暗模式和主题色设置.</summary>
-public partial class PersonalizationPage : UserControl
+public partial class PersonalizationPage
 {
     private readonly DispatcherTimer _opacitySaveTimer = new()
     {

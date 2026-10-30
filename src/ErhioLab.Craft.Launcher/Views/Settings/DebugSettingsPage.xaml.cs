@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Dialogs;
@@ -8,7 +7,7 @@ using ErhioLab.Craft.Launcher.Notifications;
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
 /// <summary>集中提供弹窗和通知条的调试入口.</summary>
-public partial class DebugSettingsPage : UserControl
+public partial class DebugSettingsPage
 {
     private const int StressToastCount = 1000;
 

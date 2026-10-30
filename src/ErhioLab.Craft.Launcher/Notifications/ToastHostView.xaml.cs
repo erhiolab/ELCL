@@ -7,7 +7,7 @@ using System.Windows.Threading;
 namespace ErhioLab.Craft.Launcher.Notifications;
 
 /// <summary>在窗口左下角叠放通知条, 每条通知分别计时和退场.</summary>
-public partial class ToastHostView : UserControl
+public partial class ToastHostView
 {
     private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(4);
     private static readonly Brush InformationBrush = CreateBrush(46, 155, 232);

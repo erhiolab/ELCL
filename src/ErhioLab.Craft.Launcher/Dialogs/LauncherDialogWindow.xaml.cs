@@ -1,9 +1,7 @@
-using System.Windows;
-
 namespace ErhioLab.Craft.Launcher.Dialogs;
 
 /// <summary>主窗口尚未显示时承载同一套自绘弹窗.</summary>
-public partial class LauncherDialogWindow : Window
+public partial class LauncherDialogWindow
 {
     /// <summary>初始化独立弹窗.</summary>
     internal LauncherDialogWindow(string title, string message, LauncherDialogLevel level,

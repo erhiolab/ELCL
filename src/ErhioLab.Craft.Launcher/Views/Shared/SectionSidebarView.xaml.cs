@@ -8,7 +8,7 @@ using ErhioLab.Craft.Launcher.Navigation;
 namespace ErhioLab.Craft.Launcher.Views.Shared;
 
 /// <summary>显示下载/设置和更多页面共用的侧栏结构.</summary>
-public partial class SectionSidebarView : UserControl
+public partial class SectionSidebarView
 {
     private RadioButton? _selectedItem;
     private bool _indicatorReady;
@@ -25,14 +25,8 @@ public partial class SectionSidebarView : UserControl
     {
         InitializeComponent();
 
-        NavigationItems.ItemsSource = navigationItems.Select((item, index) => new
-        {
-            Item = item,
-            item.Title,
-            item.Icon,
-            item.CanReset,
-            IsFirst = index == 0
-        });
+        NavigationItems.ItemsSource = navigationItems.Select((item, index) =>
+            new SectionSidebarEntry(item, index == 0)).ToArray();
     }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)

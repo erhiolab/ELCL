@@ -12,7 +12,7 @@ using ErhioLab.Craft.Launcher.Styles;
 namespace ErhioLab.Craft.Launcher;
 
 /// <summary>启动器的 WPF 应用程序入口.</summary>
-public partial class App : Application
+public partial class App
 {
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
@@ -61,7 +61,7 @@ public partial class App : Application
 
         try
         {
-            Settings = _settingsStore!.Load(new LauncherSettings()).Normalize();
+            Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
             if (!File.Exists(settingsPath))
             {
                 _settingsStore.Save(Settings);

@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -9,7 +8,7 @@ using ErhioLab.Craft.Launcher.Settings;
 namespace ErhioLab.Craft.Launcher.Dialogs;
 
 /// <summary>主窗口内复用的自绘弹窗内容和缓动动画.</summary>
-public partial class LauncherDialogView : UserControl
+public partial class LauncherDialogView
 {
     private bool _closing;
     private bool _requiresConfirmation;
