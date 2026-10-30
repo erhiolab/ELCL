@@ -10,6 +10,7 @@ using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Icons;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -411,7 +412,9 @@ public partial class MainWindow : Window
     private void Window_StateChanged(object? sender, EventArgs e)
     {
         UpdateWindowClip();
-        MaximizeGlyph.Text = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+        MaximizeGlyph.Text = WindowState == WindowState.Maximized
+            ? LauncherIcons.Restore
+            : LauncherIcons.Maximize;
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 

@@ -1,0 +1,51 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Settings.OtherSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{DynamicResource InkBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,36">
+            <Border
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="调试" />
+                    <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="手动预览不同等级的弹窗. 调试操作不会更改设置." />
+                    <WrapPanel Margin="0,16,0,0">
+                        <Button
+                            Width="116"
+                            Margin="0,0,10,10"
+                            Click="InformationButton_Click"
+                            Content="普通提示"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            Width="116"
+                            Margin="0,0,10,10"
+                            Click="WarningButton_Click"
+                            Content="警告"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            Width="116"
+                            Margin="0,0,10,10"
+                            Click="ErrorButton_Click"
+                            Content="错误"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            Width="116"
+                            Margin="0,0,10,10"
+                            Click="Second_Confirmation_Button_Click"
+                            Content="二次确认"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

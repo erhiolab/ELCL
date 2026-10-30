@@ -50,7 +50,7 @@
     <Grid>
         <!-- 灰色暗层与等级色层共同覆盖主窗口. -->
         <Grid x:Name="Backdrop" IsHitTestVisible="False" Opacity="0">
-            <Border Background="#99000000" />
+            <Border x:Name="BaseShade" Background="#99000000" />
             <Border x:Name="LevelTint" Background="#332C8BCF" />
         </Grid>
         <!-- 只拦截页面区域, 标题栏仍接收窗口拖动手势. -->

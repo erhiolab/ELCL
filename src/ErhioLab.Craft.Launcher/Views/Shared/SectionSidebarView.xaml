@@ -2,6 +2,7 @@
     x:Class="ErhioLab.Craft.Launcher.Views.Shared.SectionSidebarView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     Loaded="Sidebar_Loaded">
     <Grid Margin="20,24">
         <Border
@@ -24,6 +25,7 @@
                             Checked="NavigationItem_Checked"
                             Content="{Binding Title}"
                             GroupName="SectionNavigation"
+                            Tag="{Binding Item}"
                             IsChecked="{Binding IsFirst, Mode=OneTime}"
                             Loaded="NavigationItem_Loaded"
                             Style="{StaticResource SectionNavigationStyle}" />
@@ -41,7 +43,10 @@
                             Tag="{Binding Item}"
                             ToolTip="重置个性化设置"
                             Visibility="Collapsed">
-                            <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE777;" />
+                            <TextBlock
+                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                FontSize="14"
+                                Text="{x:Static icons:LauncherIcons.Reset}" />
                         </Button>
                     </Grid>
                     <DataTemplate.Triggers>

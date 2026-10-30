@@ -1,7 +1,8 @@
 <UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Launch.LaunchSidebarView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
     <Grid Margin="26,24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -41,10 +42,10 @@
                 <TextBlock
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontFamily="Segoe MDL2 Assets"
+                    FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                     FontSize="31"
                     Foreground="{DynamicResource TextMutedBrush}"
-                    Text="&#xE77B;" />
+                    Text="{x:Static icons:LauncherIcons.User}" />
             </Border>
             <TextBlock
                 Margin="0,16,0,0"

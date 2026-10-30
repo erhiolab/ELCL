@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="ErhioLab Craft Launcher"
     Width="1120"
@@ -30,179 +31,180 @@
     </shell:WindowChrome.WindowChrome>
 
     <Grid x:Name="ShellRoot">
-    <Grid
-        x:Name="WindowRoot"
-        Background="{DynamicResource InkBrush}"
-        SizeChanged="WindowRoot_SizeChanged">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="54" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- 标题栏由应用绘制, 窗口按钮仍使用系统窗口命令. -->
         <Grid
-            x:Name="TitleBar"
-            Grid.Row="0"
-            Background="{DynamicResource InkRaisedBrush}"
-            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
-            MouseLeftButtonUp="TitleBar_MouseLeftButtonUp"
-            MouseMove="TitleBar_MouseMove">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="150" />
-            </Grid.ColumnDefinitions>
+            x:Name="WindowRoot"
+            Background="{DynamicResource InkBrush}"
+            SizeChanged="WindowRoot_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="54" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <TextBlock
-                Grid.Column="0"
-                Margin="20,0,0,0"
-                VerticalAlignment="Center"
-                FontFamily="{StaticResource DisplayFont}"
-                FontSize="15"
-                FontWeight="Bold"
-                Text="ELCL" />
-
+            <!-- 标题栏由应用绘制, 窗口按钮仍使用系统窗口命令. -->
             <Grid
-                x:Name="TopNavigationHost"
-                Grid.Column="1"
-                SizeChanged="TopNavigationHost_SizeChanged">
-                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                    <RadioButton
-                        x:Name="LaunchNavigation"
-                        GroupName="TopNavigation"
-                        Tag="Launch"
-                        Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="14"
-                                Text="&#xE768;" />
-                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="启动" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton
-                        GroupName="TopNavigation"
-                        Tag="Download"
-                        Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="14"
-                                Text="&#xE896;" />
-                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="下载" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton
-                        GroupName="TopNavigation"
-                        Tag="Settings"
-                        Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="14"
-                                Text="&#xE713;" />
-                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="设置" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton
-                        GroupName="TopNavigation"
-                        Margin="0"
-                        Tag="More"
-                        Checked="PrimaryNavigation_Checked"
-                        Style="{StaticResource TopNavigationStyle}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Path
-                                Width="14"
-                                Height="14"
-                                VerticalAlignment="Center"
-                                Data="M 0,0 H 5 V 5 H 0 Z M 8,0 H 13 V 5 H 8 Z M 0,8 H 5 V 13 H 0 Z M 8,8 H 13 V 13 H 8 Z"
-                                Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
-                            <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="更多" />
-                        </StackPanel>
-                    </RadioButton>
+                x:Name="TitleBar"
+                Grid.Row="0"
+                Background="{DynamicResource InkRaisedBrush}"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                MouseLeftButtonUp="TitleBar_MouseLeftButtonUp"
+                MouseMove="TitleBar_MouseMove">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="150" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Margin="20,0,0,0"
+                    VerticalAlignment="Center"
+                    FontFamily="{StaticResource DisplayFont}"
+                    FontSize="15"
+                    FontWeight="Bold"
+                    Text="ELCL" />
+
+                <Grid
+                    x:Name="TopNavigationHost"
+                    Grid.Column="1"
+                    SizeChanged="TopNavigationHost_SizeChanged">
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <RadioButton
+                            x:Name="LaunchNavigation"
+                            GroupName="TopNavigation"
+                            Tag="Launch"
+                            Checked="PrimaryNavigation_Checked"
+                            Style="{StaticResource TopNavigationStyle}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                    FontSize="14"
+                                    Text="{x:Static icons:LauncherIcons.Launch}" />
+                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="启动" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton
+                            GroupName="TopNavigation"
+                            Tag="Download"
+                            Checked="PrimaryNavigation_Checked"
+                            Style="{StaticResource TopNavigationStyle}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                    FontSize="14"
+                                    Text="{x:Static icons:LauncherIcons.Download}" />
+                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="下载" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton
+                            GroupName="TopNavigation"
+                            Tag="Settings"
+                            Checked="PrimaryNavigation_Checked"
+                            Style="{StaticResource TopNavigationStyle}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                    FontSize="14"
+                                    Text="{x:Static icons:LauncherIcons.Settings}" />
+                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="设置" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton
+                            GroupName="TopNavigation"
+                            Margin="0"
+                            Tag="More"
+                            Checked="PrimaryNavigation_Checked"
+                            Style="{StaticResource TopNavigationStyle}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path
+                                    Width="14"
+                                    Height="14"
+                                    VerticalAlignment="Center"
+                                    Data="{x:Static icons:LauncherIcons.More}"
+                                    Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
+                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="更多" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                    <Border
+                        x:Name="NavigationIndicator"
+                        Width="18"
+                        Height="2"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource AccentBrush}"
+                        IsHitTestVisible="False"
+                        Opacity="0">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="NavigationIndicatorOffset" />
+                        </Border.RenderTransform>
+                    </Border>
+                </Grid>
+
+                <StackPanel
+                    x:Name="WindowControls"
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <Button
+                        Click="MinimizeButton_Click"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        ToolTip="最小化">
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            FontSize="10"
+                            Text="{x:Static icons:LauncherIcons.Minimize}" />
+                    </Button>
+                    <Button
+                        Click="MaximizeButton_Click"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        ToolTip="最大化/还原">
+                        <TextBlock
+                            x:Name="MaximizeGlyph"
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            FontSize="10"
+                            Text="{x:Static icons:LauncherIcons.Maximize}" />
+                    </Button>
+                    <Button
+                        Click="CloseButton_Click"
+                        Style="{StaticResource CloseCaptionButtonStyle}"
+                        ToolTip="关闭">
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            FontSize="10"
+                            Text="{x:Static icons:LauncherIcons.Close}" />
+                    </Button>
                 </StackPanel>
-                <Border
-                    x:Name="NavigationIndicator"
-                    Width="18"
-                    Height="2"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Bottom"
-                    Background="{DynamicResource AccentBrush}"
-                    IsHitTestVisible="False"
-                    Opacity="0">
-                    <Border.RenderTransform>
-                        <TranslateTransform x:Name="NavigationIndicatorOffset" />
-                    </Border.RenderTransform>
-                </Border>
             </Grid>
 
-            <StackPanel
-                x:Name="WindowControls"
-                Grid.Column="2"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal">
-                <Button
-                    Click="MinimizeButton_Click"
-                    Style="{StaticResource CaptionButtonStyle}"
-                    ToolTip="最小化">
-                    <TextBlock
-                        FontFamily="Segoe MDL2 Assets"
-                        FontSize="10"
-                        Text="&#xE921;" />
-                </Button>
-                <Button
-                    Click="MaximizeButton_Click"
-                    Style="{StaticResource CaptionButtonStyle}"
-                    ToolTip="最大化/还原">
-                    <TextBlock x:Name="MaximizeGlyph"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="10"
-                               Text="&#xE922;" />
-                </Button>
-                <Button
-                    Click="CloseButton_Click"
-                    Style="{StaticResource CloseCaptionButtonStyle}"
-                    ToolTip="关闭">
-                    <TextBlock
-                        FontFamily="Segoe MDL2 Assets"
-                        FontSize="10"
-                        Text="&#xE8BB;" />
-                </Button>
-            </StackPanel>
-        </Grid>
+            <!-- 一级页面只替换侧栏和主体内容. -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="SidebarColumn" Width="310" MinWidth="135" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-        <!-- 一级页面只替换侧栏和主体内容. -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidebarColumn" Width="310" MinWidth="135" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+                <Border
+                    Grid.Column="0"
+                    Background="{DynamicResource InkRaisedBrush}"
+                    BorderBrush="{DynamicResource LineSoftBrush}"
+                    BorderThickness="0,1,1,0">
+                    <ContentControl
+                        x:Name="SidebarHost"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch" />
+                </Border>
 
-            <Border
-                Grid.Column="0"
-                Background="{DynamicResource InkRaisedBrush}"
-                BorderBrush="{DynamicResource LineSoftBrush}"
-                BorderThickness="0,1,1,0">
                 <ContentControl
-                    x:Name="SidebarHost"
+                    x:Name="PageHost"
+                    Grid.Column="1"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch" />
-            </Border>
-
-            <ContentControl
-                x:Name="PageHost"
-                Grid.Column="1"
-                HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch" />
+            </Grid>
         </Grid>
-    </Grid>
-    <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->
-    <dialogs:LauncherDialogView x:Name="DialogOverlay" Visibility="Collapsed" />
+        <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->
+        <dialogs:LauncherDialogView x:Name="DialogOverlay" Visibility="Collapsed" />
     </Grid>
 </Window>

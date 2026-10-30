@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     Background="{DynamicResource InkBrush}"
     Unloaded="PersonalizationPage_Unloaded">
     <UserControl.Resources>
@@ -101,10 +102,10 @@
                                     <TextBlock
                                         Width="28"
                                         VerticalAlignment="Center"
-                                        FontFamily="Segoe MDL2 Assets"
+                                        FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                         FontSize="19"
                                         Foreground="{DynamicResource AccentTextBrush}"
-                                        Text="&#xE706;" />
+                                        Text="{x:Static icons:LauncherIcons.DayTheme}" />
                                     <TextBlock VerticalAlignment="Center" FontSize="12" Text="白昼模式" />
                                 </StackPanel>
                             </RadioButton>
@@ -117,10 +118,10 @@
                                     <TextBlock
                                         Width="28"
                                         VerticalAlignment="Center"
-                                        FontFamily="Segoe MDL2 Assets"
+                                        FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                         FontSize="19"
                                         Foreground="{DynamicResource AccentTextBrush}"
-                                        Text="&#xE708;" />
+                                        Text="{x:Static icons:LauncherIcons.NightTheme}" />
                                     <TextBlock VerticalAlignment="Center" FontSize="12" Text="深夜模式" />
                                 </StackPanel>
                             </RadioButton>

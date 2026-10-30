@@ -16,6 +16,9 @@ public partial class SectionSidebarView : UserControl
     /// <summary>用户请求重置某个侧栏条目对应的设置.</summary>
     internal event Action<SectionSidebarItem>? ResetRequested;
 
+    /// <summary>用户切换侧栏条目时通知所属页面.</summary>
+    internal event Action<SectionSidebarItem>? SelectionChanged;
+
     /// <summary>初始化一级页面的侧栏内容.</summary>
     /// <param name="navigationItems">带图标的侧栏导航项.</param>
     internal SectionSidebarView(params SectionSidebarItem[] navigationItems)
@@ -67,6 +70,11 @@ public partial class SectionSidebarView : UserControl
 
         _selectedItem = button;
         App.Logger.Information("Navigation", $"选择侧栏项目: {button.Content}");
+        if (button.Tag is SectionSidebarItem item)
+        {
+            SelectionChanged?.Invoke(item);
+        }
+
         if (_indicatorReady && button.IsLoaded)
         {
             MoveSelection(button, SidebarIndicator.Opacity > 0);

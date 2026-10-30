@@ -38,19 +38,44 @@ public partial class LauncherDialogView : UserControl
         bool day = App.Settings.Theme == LauncherTheme.Day;
         Brush levelBrush = level switch
         {
-            LauncherDialogLevel.Warning or LauncherDialogLevel.Error or LauncherDialogLevel.Danger =>
-                new SolidColorBrush(day
-                    ? Color.FromRgb(181, 45, 54)
-                    : Color.FromRgb(240, 108, 116)),
+            LauncherDialogLevel.Warning => new SolidColorBrush(day
+                ? Color.FromRgb(171, 85, 27)
+                : Color.FromRgb(255, 175, 92)),
+            LauncherDialogLevel.Error => new SolidColorBrush(day
+                ? Color.FromRgb(189, 45, 55)
+                : Color.FromRgb(255, 113, 125)),
+            LauncherDialogLevel.Danger => new SolidColorBrush(day
+                ? Color.FromRgb(143, 24, 54)
+                : Color.FromRgb(255, 91, 118)),
             _ => (Brush)FindResource("AccentTextBrush")
         };
-        LevelTint.Background = new SolidColorBrush(level == LauncherDialogLevel.Information
-            ? Color.FromArgb(51, 44, 139, 207)
-            : Color.FromArgb(85, 227, 92, 106));
+        BaseShade.Background = new SolidColorBrush(Color.FromArgb(level switch
+        {
+            LauncherDialogLevel.Warning => 137,
+            LauncherDialogLevel.Error => 154,
+            LauncherDialogLevel.Danger => 164,
+            _ => 153
+        }, 0, 0, 0));
+        LevelTint.Background = new SolidColorBrush(level switch
+        {
+            LauncherDialogLevel.Warning => Color.FromArgb(67, 218, 109, 86),
+            LauncherDialogLevel.Error => Color.FromArgb(101, 222, 67, 83),
+            LauncherDialogLevel.Danger => Color.FromArgb(123, 158, 26, 59),
+            _ => Color.FromArgb(51, 44, 139, 207)
+        });
         DialogTitle.Foreground = levelBrush;
         TitleRule.Background = levelBrush;
         ConfirmButton.BorderBrush = levelBrush;
-        ConfirmButton.Foreground = levelBrush;
+        if (level == LauncherDialogLevel.Danger)
+        {
+            ConfirmButton.Background = levelBrush;
+            ConfirmButton.Foreground = Brushes.White;
+        }
+        else
+        {
+            ConfirmButton.SetResourceReference(BackgroundProperty, "InkRaisedBrush");
+            ConfirmButton.Foreground = levelBrush;
+        }
     }
 
     /// <summary>立即显示遮罩并将卡片缓动到最终位置.</summary>
