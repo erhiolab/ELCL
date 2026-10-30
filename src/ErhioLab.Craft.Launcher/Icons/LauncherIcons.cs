@@ -61,6 +61,10 @@ public static class LauncherIcons
     public static readonly Geometry Personalization = Parse(
         "M 5,2 L 8,1 L 10,4 L 12,1 L 15,2 L 18,6 L 15,8 L 14,6 L 14,17 L 6,17 L 6,6 L 5,8 L 2,6 Z");
 
+    /// <summary>调试侧栏的终端图标.</summary>
+    public static readonly Geometry Debug = Parse(
+        "M 2,3 L 16,3 L 16,15 L 2,15 Z M 5,7 L 8,9 L 5,11 M 10,12 L 13,12");
+
     /// <summary>帮助图标.</summary>
     public static readonly Geometry Help = Parse(
         "M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 7,7 A 2,2 0 0 1 11,7 C 11,9 9,9 9,11 M 9,13 L 9,13.2");

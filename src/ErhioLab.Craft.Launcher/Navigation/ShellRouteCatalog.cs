@@ -17,12 +17,15 @@ internal static class ShellRouteCatalog
     internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create()
     {
         PersonalizationPage personalizationPage = new();
+        DebugSettingsPage debugSettingsPage = new();
         OtherSettingsPage otherSettingsPage = new();
         SectionSidebarItem personalizationItem = new("个性化", LauncherIcons.Personalization, CanReset: true);
         SectionSidebarItem otherItem = new("其他", LauncherIcons.More);
+        SectionSidebarItem debugItem = new("调试", LauncherIcons.Debug);
         SectionSidebarView settingsSidebar = new(
             personalizationItem,
-            otherItem);
+            otherItem,
+            debugItem);
         ContentControl settingsContent = new()
         {
             Content = personalizationPage,
@@ -30,7 +33,9 @@ internal static class ShellRouteCatalog
             VerticalContentAlignment = VerticalAlignment.Stretch
         };
         settingsSidebar.SelectionChanged += item =>
-            settingsContent.Content = ReferenceEquals(item, otherItem) ? otherSettingsPage : personalizationPage;
+            settingsContent.Content = ReferenceEquals(item, debugItem)
+                ? debugSettingsPage
+                : ReferenceEquals(item, otherItem) ? otherSettingsPage : personalizationPage;
         settingsSidebar.ResetRequested += async _ =>
         {
             if (await LauncherDialogs.ConfirmAsync(

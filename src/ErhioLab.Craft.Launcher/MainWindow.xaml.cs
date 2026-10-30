@@ -11,6 +11,7 @@ using System.Windows.Media.Animation;
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
+using ErhioLab.Craft.Launcher.Notifications;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -67,6 +68,9 @@ public partial class MainWindow : Window
         WindowRoot.Opacity = opacity;
         UpdateWindowClip();
     }
+
+    /// <summary>在左下角显示一条不阻塞操作的通知.</summary>
+    internal void ShowToast(ToastNotification notification) => ToastHost.Show(notification);
 
     /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
     internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,

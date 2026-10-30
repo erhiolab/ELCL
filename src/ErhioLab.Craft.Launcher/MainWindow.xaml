@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:notifications="clr-namespace:ErhioLab.Craft.Launcher.Notifications"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="ErhioLab Craft Launcher"
     Width="1120"
@@ -204,6 +205,8 @@
                     VerticalContentAlignment="Stretch" />
             </Grid>
         </Grid>
+        <!-- 左下角的非阻塞通知始终跟随主窗口. -->
+        <notifications:ToastHostView x:Name="ToastHost" />
         <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->
         <dialogs:LauncherDialogView x:Name="DialogOverlay" Visibility="Collapsed" />
     </Grid>
