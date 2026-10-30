@@ -1,0 +1,15 @@
+<Window
+    x:Class="ErhioLab.Craft.Launcher.Dialogs.LauncherDialogWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
+    Width="500"
+    Height="270"
+    AllowsTransparency="True"
+    Background="Transparent"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+    <dialogs:LauncherDialogView x:Name="DialogView" />
+</Window>

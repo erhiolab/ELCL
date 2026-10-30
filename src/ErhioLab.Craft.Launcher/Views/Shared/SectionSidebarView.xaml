@@ -19,13 +19,40 @@
         <ItemsControl x:Name="NavigationItems">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <RadioButton
-                        Checked="NavigationItem_Checked"
-                        Content="{Binding Title}"
-                        GroupName="SectionNavigation"
-                        IsChecked="{Binding IsFirst, Mode=OneTime}"
-                        Loaded="NavigationItem_Loaded"
-                        Style="{StaticResource SectionNavigationStyle}" />
+                    <Grid x:Name="NavigationRow">
+                        <RadioButton
+                            Checked="NavigationItem_Checked"
+                            Content="{Binding Title}"
+                            GroupName="SectionNavigation"
+                            IsChecked="{Binding IsFirst, Mode=OneTime}"
+                            Loaded="NavigationItem_Loaded"
+                            Style="{StaticResource SectionNavigationStyle}" />
+                        <Button
+                            x:Name="ResetButton"
+                            Width="26"
+                            Height="26"
+                            Margin="0,0,10,4"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Click="ResetButton_Click"
+                            Cursor="Hand"
+                            FocusVisualStyle="{x:Null}"
+                            Style="{StaticResource SidebarResetButtonStyle}"
+                            Tag="{Binding Item}"
+                            ToolTip="重置个性化设置"
+                            Visibility="Collapsed">
+                            <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE777;" />
+                        </Button>
+                    </Grid>
+                    <DataTemplate.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding CanReset}" Value="True" />
+                                <Condition Binding="{Binding IsMouseOver, ElementName=NavigationRow}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter TargetName="ResetButton" Property="Visibility" Value="Visible" />
+                        </MultiDataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

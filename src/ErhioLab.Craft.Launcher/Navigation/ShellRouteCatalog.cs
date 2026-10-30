@@ -1,6 +1,7 @@
 using ErhioLab.Craft.Launcher.Views.Launch;
 using ErhioLab.Craft.Launcher.Views.Settings;
 using ErhioLab.Craft.Launcher.Views.Shared;
+using ErhioLab.Craft.Launcher.Dialogs;
 
 namespace ErhioLab.Craft.Launcher.Navigation;
 
@@ -9,8 +10,24 @@ internal static class ShellRouteCatalog
 {
     /// <summary>为主窗口创建本次使用的页面路由.</summary>
     /// <returns>按顶部导航项索引的页面路由.</returns>
-    internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create() =>
-        new Dictionary<ShellSection, ShellRoute>
+    internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create()
+    {
+        PersonalizationPage personalizationPage = new();
+        SectionSidebarView settingsSidebar = new(
+            new SectionSidebarItem("个性化", SectionSidebarIcons.Personalization, CanReset: true));
+        settingsSidebar.ResetRequested += async _ =>
+        {
+            if (await LauncherDialogs.ConfirmAsync(
+                    "重置个性化设置",
+                    "是否要重置 个性化 的所有设置? 此操作不可逆.",
+                    LauncherDialogLevel.Danger,
+                    confirmText: "重置"))
+            {
+                personalizationPage.ResetToDefaults();
+            }
+        };
+
+        return new Dictionary<ShellSection, ShellRoute>
         {
             [ShellSection.Launch] = new(310, new LaunchSidebarView(), new LaunchPage()),
             [ShellSection.Download] = new(
@@ -21,11 +38,7 @@ internal static class ShellRouteCatalog
                     new SectionSidebarItem("整合包", SectionSidebarIcons.Modpacks)),
                 new PlaceholderPage(
                     "02 / DOWNLOAD", "下载", "游戏版本/Mod/资源包与整合包会在这里提供. ")),
-            [ShellSection.Settings] = new(
-                0,
-                new SectionSidebarView(
-                    new SectionSidebarItem("个性化", SectionSidebarIcons.Personalization)),
-                new PersonalizationPage()),
+            [ShellSection.Settings] = new(0, settingsSidebar, personalizationPage),
             [ShellSection.More] = new(
                 0,
                 new SectionSidebarView(
@@ -34,4 +47,5 @@ internal static class ShellRouteCatalog
                 new PlaceholderPage(
                     "04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. "))
         };
+    }
 }

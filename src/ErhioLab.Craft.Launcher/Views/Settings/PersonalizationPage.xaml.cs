@@ -29,6 +29,19 @@ public partial class PersonalizationPage : UserControl
         RefreshControls();
     }
 
+    /// <summary>恢复全部个性化设置并立即更新页面和窗口.</summary>
+    internal void ResetToDefaults()
+    {
+        _opacitySaveTimer.Stop();
+        _draggingOpacity = false;
+        if (App.UpdateSettings(new LauncherSettings()))
+        {
+            App.Logger.Information("Settings", "个性化设置已重置为默认值.");
+        }
+
+        RefreshControls();
+    }
+
     private void RefreshControls()
     {
         _opacitySaveTimer.Stop();

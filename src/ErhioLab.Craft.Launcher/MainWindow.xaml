@@ -2,6 +2,7 @@
     x:Class="ErhioLab.Craft.Launcher.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="ErhioLab Craft Launcher"
     Width="1120"
@@ -28,6 +29,7 @@
             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
 
+    <Grid x:Name="ShellRoot">
     <Grid
         x:Name="WindowRoot"
         Background="{DynamicResource InkBrush}"
@@ -141,6 +143,7 @@
             </Grid>
 
             <StackPanel
+                x:Name="WindowControls"
                 Grid.Column="2"
                 HorizontalAlignment="Right"
                 Orientation="Horizontal">
@@ -198,5 +201,8 @@
                 HorizontalContentAlignment="Stretch"
                 VerticalContentAlignment="Stretch" />
         </Grid>
+    </Grid>
+    <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->
+    <dialogs:LauncherDialogView x:Name="DialogOverlay" Visibility="Collapsed" />
     </Grid>
 </Window>

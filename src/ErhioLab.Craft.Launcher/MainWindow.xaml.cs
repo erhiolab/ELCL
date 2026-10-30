@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -8,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Navigation;
+using ErhioLab.Craft.Launcher.Dialogs;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -31,6 +33,7 @@ public partial class MainWindow : Window
     private const uint MonitorDefaultToNearest = 2;
     private const double MinSidebarWidth = 135;
     private readonly IReadOnlyDictionary<ShellSection, ShellRoute> _routes;
+    private readonly SemaphoreSlim _dialogGate = new(1, 1);
     private bool _hasNavigated;
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
@@ -62,6 +65,42 @@ public partial class MainWindow : Window
         Opacity = 1;
         WindowRoot.Opacity = opacity;
         UpdateWindowClip();
+    }
+
+    /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
+    internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,
+        bool requiresConfirmation, string confirmText)
+    {
+        await _dialogGate.WaitAsync();
+        try
+        {
+            TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            void Complete(bool confirmed) => completion.TrySetResult(confirmed);
+            void OnClosed(object? sender, EventArgs e) => completion.TrySetResult(false);
+            DialogOverlay.Completed += Complete;
+            Closed += OnClosed;
+            try
+            {
+                DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText);
+                TopNavigationHost.IsHitTestVisible = false;
+                WindowControls.IsHitTestVisible = false;
+                DialogOverlay.Visibility = Visibility.Visible;
+                DialogOverlay.Open();
+                return await completion.Task;
+            }
+            finally
+            {
+                DialogOverlay.Completed -= Complete;
+                Closed -= OnClosed;
+                DialogOverlay.Visibility = Visibility.Collapsed;
+                TopNavigationHost.IsHitTestVisible = true;
+                WindowControls.IsHitTestVisible = true;
+            }
+        }
+        finally
+        {
+            _dialogGate.Release();
+        }
     }
 
     private void PrimaryNavigation_Checked(object sender, RoutedEventArgs e)
@@ -113,6 +152,8 @@ public partial class MainWindow : Window
         double radius = WindowState == WindowState.Maximized ? 0 : 10;
         WindowRoot.Clip = new RectangleGeometry(
             new Rect(0, 0, WindowRoot.ActualWidth, WindowRoot.ActualHeight), radius, radius);
+        ShellRoot.Clip = new RectangleGeometry(
+            new Rect(0, 0, ShellRoot.ActualWidth, ShellRoot.ActualHeight), radius, radius);
     }
 
     private void TopNavigationHost_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -271,7 +312,11 @@ public partial class MainWindow : Window
 
         if (e.ClickCount == 2)
         {
-            ToggleMaximize();
+            if (DialogOverlay.Visibility != Visibility.Visible)
+            {
+                ToggleMaximize();
+            }
+
             return;
         }
 

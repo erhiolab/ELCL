@@ -13,6 +13,9 @@ public partial class SectionSidebarView : UserControl
     private RadioButton? _selectedItem;
     private bool _indicatorReady;
 
+    /// <summary>用户请求重置某个侧栏条目对应的设置.</summary>
+    internal event Action<SectionSidebarItem>? ResetRequested;
+
     /// <summary>初始化一级页面的侧栏内容.</summary>
     /// <param name="navigationItems">带图标的侧栏导航项.</param>
     internal SectionSidebarView(params SectionSidebarItem[] navigationItems)
@@ -21,10 +24,20 @@ public partial class SectionSidebarView : UserControl
 
         NavigationItems.ItemsSource = navigationItems.Select((item, index) => new
         {
+            Item = item,
             item.Title,
             item.Icon,
+            item.CanReset,
             IsFirst = index == 0
         });
+    }
+
+    private void ResetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: SectionSidebarItem item })
+        {
+            ResetRequested?.Invoke(item);
+        }
     }
 
     private void Sidebar_Loaded(object sender, RoutedEventArgs e)

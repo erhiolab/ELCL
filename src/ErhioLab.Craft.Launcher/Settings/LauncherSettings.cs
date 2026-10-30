@@ -6,7 +6,7 @@ namespace ErhioLab.Craft.Launcher.Settings;
 public sealed record LauncherSettings
 {
     /// <summary>当前明暗主题.</summary>
-    public LauncherTheme Theme { get; init; } = LauncherTheme.Night;
+    public LauncherTheme Theme { get; init; } = LauncherTheme.Day;
 
     /// <summary>六位 RGB 主题色, 默认值为 #80CEFF.</summary>
     public string AccentColor { get; init; } = "#80CEFF";
@@ -26,7 +26,7 @@ public sealed record LauncherSettings
 
         return this with
         {
-            Theme = Enum.IsDefined(Theme) ? Theme : LauncherTheme.Night,
+            Theme = Enum.IsDefined(Theme) ? Theme : LauncherTheme.Day,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0
         };

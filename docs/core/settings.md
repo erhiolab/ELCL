@@ -8,7 +8,7 @@
 
 ```json
 {
-  "Theme": "Night",
+  "Theme": "Day",
   "AccentColor": "#80CEFF",
   "WindowOpacity": 1
 }

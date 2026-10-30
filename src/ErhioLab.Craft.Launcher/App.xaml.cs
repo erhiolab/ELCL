@@ -5,6 +5,7 @@ using System.Windows;
 
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Core.Storage;
+using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
 
@@ -42,7 +43,8 @@ public partial class App : Application
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show($"无法初始化启动器数据目录:\n{exception.Message}", "ELCL 启动失败");
+            LauncherThemeManager.Apply(Settings);
+            LauncherDialogs.Error("ELCL 启动失败", $"无法初始化启动器数据目录:\n{exception.Message}");
             Shutdown(1);
             return;
         }
@@ -93,7 +95,7 @@ public partial class App : Application
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Logger.Error("Settings", $"保存配置失败, 路径: {_settingsStore!.FilePath}.", exception);
-            MessageBox.Show($"无法保存外观设置:\n{exception.Message}", "ELCL 设置");
+            LauncherDialogs.Error("无法保存设置", $"无法保存外观设置:\n{exception.Message}");
             return false;
         }
 
