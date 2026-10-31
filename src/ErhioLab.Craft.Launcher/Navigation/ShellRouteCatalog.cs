@@ -3,6 +3,7 @@ using System.Windows.Controls;
 
 using ErhioLab.Craft.Launcher.Views.Download;
 using ErhioLab.Craft.Launcher.Views.Launch;
+using ErhioLab.Craft.Launcher.Views.More;
 using ErhioLab.Craft.Launcher.Views.Settings;
 using ErhioLab.Craft.Launcher.Views.Shared;
 using ErhioLab.Craft.Launcher.Dialogs;
@@ -82,8 +83,8 @@ internal static class ShellRouteCatalog
             [ShellSection.Settings] = new(0, settingsSidebar, settingsContent),
             [ShellSection.More] = new(
                 0,
-                new SectionSidebarView(new SectionSidebarItem("帮助", LauncherIcons.Help), new SectionSidebarItem("关于 ELCL", LauncherIcons.About)),
-                new PlaceholderPage("04 / MORE", "更多", "帮助文档/反馈入口和关于信息会在这里提供. "))
+                new SectionSidebarView(new SectionSidebarItem("关于与鸣谢", LauncherIcons.About)),
+                new AboutPage())
         };
     }
 }

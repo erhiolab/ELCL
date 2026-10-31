@@ -11,6 +11,8 @@
   <ItemGroup>
     <PackageReference Include="WPF-UI" Version="4.3.0" />
     <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
+    <Resource Include="Assets/Credits/Pcl.ico" />
+    <Resource Include="Assets/Credits/Bmclapi.jpg" />
   </ItemGroup>
 </Project>
 

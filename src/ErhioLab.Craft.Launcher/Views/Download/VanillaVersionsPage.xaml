@@ -37,27 +37,30 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="HeaderRoot" Background="{TemplateBinding Background}" CornerRadius="8">
-                            <Grid Margin="12,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ContentPresenter VerticalAlignment="Center" />
-                                <Path
-                                    x:Name="Chevron"
-                                    Grid.Column="1"
-                                    Width="10"
-                                    Height="6"
-                                    VerticalAlignment="Center"
-                                    Data="M 1,1 L 5,5 L 9,1"
-                                    Stroke="{DynamicResource TextMutedBrush}"
-                                    StrokeThickness="1.5" />
+                            <Grid>
+                                <Border
+                                    Background="{DynamicResource AccentHoverBrush}"
+                                    CornerRadius="8"
+                                    Style="{StaticResource HoverLayerStyle}" />
+                                <Grid Margin="12,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter VerticalAlignment="Center" />
+                                    <Path
+                                        x:Name="Chevron"
+                                        Grid.Column="1"
+                                        Width="10"
+                                        Height="6"
+                                        VerticalAlignment="Center"
+                                        Data="M 1,1 L 5,5 L 9,1"
+                                        Stroke="{DynamicResource TextMutedBrush}"
+                                        StrokeThickness="1.5" />
+                                </Grid>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="HeaderRoot" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
-                            </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Chevron" Property="Data" Value="M 1,5 L 5,1 L 9,5" />
                             </Trigger>
@@ -79,11 +82,17 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Grid>
+                                <Border
+                                    Background="{DynamicResource AccentHoverBrush}"
+                                    CornerRadius="5"
+                                    Style="{StaticResource HoverLayerStyle}" />
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.7" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -104,6 +113,14 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <!-- 高亮层的透明度缓动, 不改变列表行的布局. -->
+                    <Border
+                        x:Name="VersionRowHover"
+                        Grid.ColumnSpan="3"
+                        Background="{DynamicResource AccentMutedBrush}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False"
+                        Opacity="0" />
                     <Path
                         Width="20"
                         Height="20"
@@ -128,7 +145,8 @@
                         Grid.Column="2"
                         VerticalAlignment="Center"
                         Orientation="Horizontal"
-                        Visibility="Collapsed">
+                        IsHitTestVisible="False"
+                        Opacity="0">
                         <Button
                             Click="ChangelogButton_Click"
                             MouseEnter="ChangelogButton_MouseEnter"
@@ -147,8 +165,43 @@
             </Border>
             <DataTemplate.Triggers>
                 <Trigger SourceName="VersionRow" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="VersionRow" Property="Background" Value="{DynamicResource AccentMutedBrush}" />
-                    <Setter TargetName="RowActions" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="RowActions" Property="IsHitTestVisible" Value="True" />
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="VersionRowHover"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="1"
+                                    Duration="0:0:0.16">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="RowActions"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="1"
+                                    Duration="0:0:0.16" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="VersionRowHover"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0"
+                                    Duration="0:0:0.14" />
+                                <DoubleAnimation
+                                    Storyboard.TargetName="RowActions"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0"
+                                    Duration="0:0:0.14" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
                 </Trigger>
             </DataTemplate.Triggers>
         </DataTemplate>
