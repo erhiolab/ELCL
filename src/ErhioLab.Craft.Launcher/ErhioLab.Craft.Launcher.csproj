@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>ErhioLab.Craft.Launcher</AssemblyName>
     <RootNamespace>ErhioLab.Craft.Launcher</RootNamespace>
+    <Version>0.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

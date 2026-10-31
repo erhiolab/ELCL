@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>ErhioLab.Craft.Launcher.Core</AssemblyName>
     <RootNamespace>ErhioLab.Craft.Launcher.Core</RootNamespace>
+    <Version>0.0.1</Version>
     <Description>Cross-platform core library for ErhioLab Craft Launcher.</Description>
   </PropertyGroup>
 </Project>

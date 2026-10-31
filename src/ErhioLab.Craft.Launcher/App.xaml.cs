@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 
+using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Dialogs;
@@ -76,7 +77,7 @@ public partial class App
         }
 
         LauncherThemeManager.Apply(Settings);
-        Logger.Information("App", $"启动器启动, 数据目录: {dataDirectory}");
+        Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
     }
 
