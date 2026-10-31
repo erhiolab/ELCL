@@ -14,6 +14,12 @@ public sealed record LauncherSettings
     /// <summary>窗口不透明度, 范围为 0.40 到 1.00.</summary>
     public double WindowOpacity { get; init; } = 1.0;
 
+    /// <summary>自绘标题栏左侧文字的显示方式.</summary>
+    public TitleBarMode TitleBarMode { get; init; } = TitleBarMode.Default;
+
+    /// <summary>标题栏选择文本模式时显示的内容.</summary>
+    public string TitleBarText { get; init; } = "ELCL";
+
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;
 
@@ -22,11 +28,14 @@ public sealed record LauncherSettings
     public LauncherSettings Normalize()
     {
         string accent = AccentColor.Trim();
+        string titleText = TitleBarText ?? string.Empty;
         bool validAccent = accent.Length == 7 && accent[0] == '#' && uint.TryParse(accent.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _);
 
         return this with
         {
             Theme = Enum.IsDefined(Theme) ? Theme : LauncherTheme.Day,
+            TitleBarMode = Enum.IsDefined(TitleBarMode) ? TitleBarMode : TitleBarMode.Default,
+            TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
             VersionListSource = Enum.IsDefined(VersionListSource) ? VersionListSource : VersionListSource.OfficialFirst,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0

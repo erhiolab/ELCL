@@ -56,12 +56,14 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock
+                    x:Name="TitleBarLabel"
                     Grid.Column="0"
                     Margin="20,0,0,0"
                     VerticalAlignment="Center"
                     FontFamily="{StaticResource DisplayFont}"
                     FontSize="15"
                     FontWeight="Bold"
+                    TextTrimming="CharacterEllipsis"
                     Text="ELCL" />
 
                 <Grid

@@ -11,6 +11,7 @@ using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -52,6 +53,7 @@ public partial class MainWindow
     {
         InitializeComponent();
         ApplyContentOpacity(App.Settings.WindowOpacity);
+        ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText);
 
         _routes = ShellRouteCatalog.Create();
         LaunchNavigation.IsChecked = true;
@@ -66,6 +68,17 @@ public partial class MainWindow
         Opacity = 1;
         WindowRoot.Opacity = opacity;
         UpdateWindowClip();
+    }
+
+    /// <summary>按照个性化配置更新标题栏左侧文字.</summary>
+    internal void ApplyTitleBar(TitleBarMode mode, string text)
+    {
+        TitleBarLabel.Text = mode switch
+        {
+            TitleBarMode.None => string.Empty,
+            TitleBarMode.Text => text,
+            _ => "ELCL"
+        };
     }
 
     /// <summary>在左下角显示一条不阻塞操作的通知.</summary>

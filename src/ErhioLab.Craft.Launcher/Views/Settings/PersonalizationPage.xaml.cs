@@ -7,10 +7,14 @@ using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>提供窗口不透明度/明暗模式和主题色设置.</summary>
+/// <summary>提供窗口不透明度/明暗模式/主题色和标题栏设置.</summary>
 public partial class PersonalizationPage
 {
     private readonly DispatcherTimer _opacitySaveTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(350)
+    };
+    private readonly DispatcherTimer _titleTextSaveTimer = new()
     {
         Interval = TimeSpan.FromMilliseconds(350)
     };
@@ -23,6 +27,7 @@ public partial class PersonalizationPage
     {
         InitializeComponent();
         _opacitySaveTimer.Tick += (_, _) => CommitOpacity();
+        _titleTextSaveTimer.Tick += (_, _) => CommitTitleText();
         OpacitySlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(OpacitySlider_DragStarted));
         OpacitySlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(OpacitySlider_DragCompleted));
         AccentPicker.ColorSelected += AccentPicker_ColorSelected;
@@ -33,12 +38,15 @@ public partial class PersonalizationPage
     internal void ResetToDefaults()
     {
         _opacitySaveTimer.Stop();
+        _titleTextSaveTimer.Stop();
         _draggingOpacity = false;
         if (App.UpdateSettings(App.Settings with
             {
                 Theme = LauncherTheme.Day,
                 AccentColor = "#80CEFF",
-                WindowOpacity = 1.0
+                WindowOpacity = 1.0,
+                TitleBarMode = TitleBarMode.Default,
+                TitleBarText = "ELCL"
             })
            )
         {
@@ -51,14 +59,21 @@ public partial class PersonalizationPage
     private void RefreshControls()
     {
         _opacitySaveTimer.Stop();
+        _titleTextSaveTimer.Stop();
         _initializing = true;
         OpacitySlider.Value = App.Settings.WindowOpacity * 100;
         OpacityValueText.Text = $"{OpacitySlider.Value:0}%";
         DayThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Day;
         NightThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Night;
         AccentPicker.SetColor(App.Settings.AccentColor);
+        NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
+        DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
+        CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
+        TitleTextBox.Text = App.Settings.TitleBarText;
+        TitleTextRow.Visibility = App.Settings.TitleBarMode == TitleBarMode.Text ? Visibility.Visible : Visibility.Collapsed;
         _initializing = false;
         App.PreviewWindowOpacity(App.Settings.WindowOpacity);
+        App.PreviewTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText);
     }
 
     private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -93,6 +108,7 @@ public partial class PersonalizationPage
     {
         _draggingOpacity = false;
         CommitOpacity();
+        CommitTitleText();
     }
 
     private void CommitOpacity()
@@ -134,5 +150,55 @@ public partial class PersonalizationPage
         }
 
         AccentPicker.SetColor(App.Settings.AccentColor);
+    }
+
+    private void TitleBarModeButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || sender is not RadioButton button)
+        {
+            return;
+        }
+
+        if (!CommitTitleText())
+        {
+            return;
+        }
+        TitleBarMode mode = button == NoTitleButton ? TitleBarMode.None : button == CustomTitleButton ? TitleBarMode.Text : TitleBarMode.Default;
+        if (!App.UpdateSettings(App.Settings with { TitleBarMode = mode }))
+        {
+            RefreshControls();
+            return;
+        }
+
+        TitleTextRow.Visibility = mode == TitleBarMode.Text ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_initializing || CustomTitleButton.IsChecked != true)
+        {
+            return;
+        }
+
+        App.PreviewTitleBar(TitleBarMode.Text, TitleTextBox.Text);
+        _titleTextSaveTimer.Stop();
+        _titleTextSaveTimer.Start();
+    }
+
+    private bool CommitTitleText()
+    {
+        _titleTextSaveTimer.Stop();
+        if (TitleTextBox.Text == App.Settings.TitleBarText)
+        {
+            return true;
+        }
+
+        if (!App.UpdateSettings(App.Settings with { TitleBarText = TitleTextBox.Text }))
+        {
+            RefreshControls();
+            return false;
+        }
+
+        return true;
     }
 }

@@ -139,6 +139,62 @@
                     </Grid>
                 </StackPanel>
             </Border>
+            <Border
+                Margin="0,14,0,0"
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="标题栏" />
+                    <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid Height="32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <RadioButton
+                            x:Name="NoTitleButton"
+                            VerticalAlignment="Center"
+                            Checked="TitleBarModeButton_Checked"
+                            Content="无"
+                            GroupName="TitleBarMode" />
+                        <RadioButton
+                            x:Name="DefaultTitleButton"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Checked="TitleBarModeButton_Checked"
+                            Content="默认"
+                            GroupName="TitleBarMode" />
+                        <RadioButton
+                            x:Name="CustomTitleButton"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Checked="TitleBarModeButton_Checked"
+                            Content="文本"
+                            GroupName="TitleBarMode" />
+                    </Grid>
+                    <Grid x:Name="TitleTextRow" Margin="0,10,0,0" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="标题栏文本" />
+                        <TextBox
+                            x:Name="TitleTextBox"
+                            Grid.Column="1"
+                            Height="34"
+                            VerticalContentAlignment="Center"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
+                            Foreground="{DynamicResource TextBrush}"
+                            MaxLength="40"
+                            TextChanged="TitleTextBox_TextChanged" />
+                    </Grid>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

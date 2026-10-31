@@ -4,8 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     Background="{DynamicResource InkBrush}"
-    Loaded="Page_Loaded"
-    Unloaded="Page_Unloaded">
+    Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 搜索输入框只显示文字和光标, 外观由外层 Border 绘制. -->
         <Style x:Key="VersionSearchTextBoxStyle" TargetType="TextBox">
@@ -103,7 +102,7 @@
             <Border
                 x:Name="VersionRow"
                 Height="49"
-                Padding="10,0"
+                Padding="16,0"
                 Background="Transparent"
                 CornerRadius="6"
                 Cursor="Hand">
@@ -117,6 +116,7 @@
                     <Border
                         x:Name="VersionRowHover"
                         Grid.ColumnSpan="3"
+                        Margin="-8,0"
                         Background="{DynamicResource AccentMutedBrush}"
                         CornerRadius="6"
                         IsHitTestVisible="False"

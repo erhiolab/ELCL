@@ -23,10 +23,11 @@ public partial class VanillaVersionsPage
     private readonly MinecraftVersionCatalogClient _catalogClient = new(HttpClient);
     private readonly MinecraftWikiClient _wikiClient = new(HttpClient);
     private readonly Dictionary<FrameworkElement, int> _groupAnimationVersions = [];
-    private CancellationTokenSource? _pageCancellation;
+    private readonly CancellationTokenSource _pageCancellation = new();
     private MinecraftVersionCatalog? _catalog;
     private bool _hasLoaded;
     private bool _loading;
+    private bool _closeHooked;
     private VersionListSource? _loadedPreference;
 
     /// <summary>创建版本列表页面, 网络请求在页面首次显示时开始.</summary>
@@ -37,7 +38,12 @@ public partial class VanillaVersionsPage
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        _pageCancellation = new CancellationTokenSource();
+        if (!_closeHooked && Window.GetWindow(this) is { } window)
+        {
+            window.Closed += PageWindow_Closed;
+            _closeHooked = true;
+        }
+
         if (!_hasLoaded || _loadedPreference != App.Settings.VersionListSource)
         {
             _hasLoaded = true;
@@ -45,11 +51,10 @@ public partial class VanillaVersionsPage
         }
     }
 
-    private void Page_Unloaded(object sender, RoutedEventArgs e)
+    private void PageWindow_Closed(object? sender, EventArgs e)
     {
-        _pageCancellation?.Cancel();
-        _pageCancellation?.Dispose();
-        _pageCancellation = null;
+        _pageCancellation.Cancel();
+        _pageCancellation.Dispose();
     }
 
     /// <summary>由下载侧栏的悬浮按钮触发重新获取.</summary>
@@ -57,7 +62,7 @@ public partial class VanillaVersionsPage
 
     private async Task LoadVersionsAsync()
     {
-        if (_pageCancellation is null || _loading)
+        if (_loading)
         {
             return;
         }

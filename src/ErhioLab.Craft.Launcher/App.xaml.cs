@@ -18,7 +18,7 @@ public partial class App
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<VersionListSource>() }
+        Converters = { new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(), new JsonStringEnumConverter<VersionListSource>() }
     };
 
     private static SessionFileLogger? _logger;
@@ -67,7 +67,7 @@ public partial class App
                 _settingsStore.Save(Settings);
             }
 
-            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 版本列表源: {Settings.VersionListSource}.");
+            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -99,6 +99,7 @@ public partial class App
         }
 
         bool paletteChanged = Settings.Theme != normalized.Theme || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
+        bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
         Settings = normalized;
         if (paletteChanged)
         {
@@ -108,9 +109,13 @@ public partial class App
         if (Current.MainWindow is MainWindow window)
         {
             window.ApplyContentOpacity(Settings.WindowOpacity);
+            if (titleChanged)
+            {
+                window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText);
+            }
         }
 
-        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 版本列表源: {Settings.VersionListSource}.");
+        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}.");
         return true;
     }
 
@@ -121,6 +126,15 @@ public partial class App
         if (Current.MainWindow is MainWindow window)
         {
             window.ApplyContentOpacity(opacity);
+        }
+    }
+
+    /// <summary>预览自定义标题文字, 输入过程中不写入配置.</summary>
+    internal static void PreviewTitleBar(TitleBarMode mode, string text)
+    {
+        if (Current.MainWindow is MainWindow window)
+        {
+            window.ApplyTitleBar(mode, text);
         }
     }
 
