@@ -30,6 +30,9 @@ public partial class VanillaVersionsPage
     private bool _closeHooked;
     private VersionListSource? _loadedPreference;
 
+    /// <summary>用户选择一个游戏版本时, 请求打开下载详情页.</summary>
+    internal event Action<MinecraftVersion>? VersionSelected;
+
     /// <summary>创建版本列表页面, 网络请求在页面首次显示时开始.</summary>
     public VanillaVersionsPage()
     {
@@ -204,7 +207,8 @@ public partial class VanillaVersionsPage
         }
 
         App.Logger.Information("Download", $"选择游戏版本: {row.Version.Id}.");
-        LauncherToasts.Information($"已选择 {row.Version.Id}, 版本下载功能将在后续提供.");
+        ((ListBox)sender).SelectedItem = null;
+        VersionSelected?.Invoke(row.Version);
     }
 
     private static IReadOnlyList<VersionGroup> CreateGroups(MinecraftVersionCatalog catalog)
@@ -295,13 +299,7 @@ public partial class VanillaVersionsPage
 
         public MinecraftVersion Version { get; }
 
-        public Geometry Icon => Version.Kind switch
-        {
-            MinecraftVersionKind.Release => LauncherIcons.VersionRelease,
-            MinecraftVersionKind.Preview => LauncherIcons.VersionPreview,
-            MinecraftVersionKind.Ancient => LauncherIcons.VersionAncient,
-            _ => LauncherIcons.VersionAprilFools
-        };
+        public Geometry Icon => LauncherIcons.ForVersion(Version.Kind);
 
         public string Description { get; }
 

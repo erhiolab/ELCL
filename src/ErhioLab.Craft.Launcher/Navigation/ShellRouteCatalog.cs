@@ -21,8 +21,15 @@ internal static class ShellRouteCatalog
         // 下载页当前只提供原版游戏版本列表.
         SectionSidebarItem vanillaItem = new("原版游戏", LauncherIcons.GameVersions, CanRefresh: true);
         SectionSidebarView downloadSidebar = new(vanillaItem);
-        VanillaVersionsPage downloadContent = new();
-        downloadSidebar.ActionRequested += _ => downloadContent.RefreshVersions();
+        VanillaVersionsPage versionList = new();
+        AnimatedPageHost downloadContent = new(versionList);
+        versionList.VersionSelected += version =>
+        {
+            VanillaVersionDetailsPage details = new(version);
+            details.BackRequested += () => downloadContent.Navigate(versionList, back: true);
+            downloadContent.Navigate(details);
+        };
+        downloadSidebar.ActionRequested += _ => versionList.RefreshVersions();
 
         // 设置
         PersonalizationPage personalizationPage = new();

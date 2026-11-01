@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using ErhioLab.Craft.Launcher.Core.Minecraft;
 
 namespace ErhioLab.Craft.Launcher.Icons;
 
@@ -16,6 +17,9 @@ public static class LauncherIcons
 
     /// <summary>版本搜索框图标.</summary>
     public const string Search = "\uE721";
+
+    /// <summary>返回上一级页面的箭头图标.</summary>
+    public const string Back = "\uE72B";
 
     /// <summary>顶部导航的设置图标.</summary>
     public const string Settings = "\uE713";
@@ -61,6 +65,15 @@ public static class LauncherIcons
 
     /// <summary>愚人节版的星芒图标.</summary>
     public static readonly Geometry VersionAprilFools = Parse("M 9,1 L 11,7 L 17,9 L 11,11 L 9,17 L 7,11 L 1,9 L 7,7 Z");
+
+    /// <summary>获取对应游戏版本类别的图标.</summary>
+    public static Geometry ForVersion(MinecraftVersionKind kind) => kind switch
+    {
+        MinecraftVersionKind.Release => VersionRelease,
+        MinecraftVersionKind.Preview => VersionPreview,
+        MinecraftVersionKind.Ancient => VersionAncient,
+        _ => VersionAprilFools
+    };
 
     /// <summary>下载设置侧栏的箭头图标.</summary>
     public static readonly Geometry DownloadSettings = Parse("M 9,2 L 9,12 M 5,8 L 9,12 L 13,8 M 3,14 L 3,16 L 15,16 L 15,14");
