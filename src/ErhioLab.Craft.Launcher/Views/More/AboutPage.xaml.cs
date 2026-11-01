@@ -23,12 +23,14 @@ public partial class AboutPage
 
         AboutEntries.ItemsSource = new[]
         {
+            new CreditEntry("EL", "洱海", "ErhioLab Craft Launcher和ErhioLab Craft Launcher Core的开发者.", "GitHub仓库", "https://github.com/ErhioLab"),
             new CreditEntry("EL", "ErhioLab Craft Launcher", $"启动器版本: {launcherVersion}"),
             new CreditEntry("CO", "ErhioLab Craft Launcher Core", $"核心版本: {CoreInfo.Version}")
         };
         ThanksEntries.ItemsSource = new[]
         {
-            new CreditEntry("P", "PCL2", "界面布局与交互设计的参考.", "项目主页", "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.ico")),
+            new CreditEntry("P", "PCL2", "参考了界面布局与部分代码实现", "项目主页", "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.ico")),
+            new CreditEntry("PL", "Prism Launcher", "参考了部分代码实现.", "项目主页", "https://github.com/PrismLauncher/PrismLauncher", LoadAvatar("PrismLauncher.png")),
             new CreditEntry("BM", "BMCLAPI", "提供 Minecraft 版本清单的备用镜像源.", "赞助镜像源", "https://afdian.com/a/bangbang93", LoadAvatar("Bmclapi.jpg")),
             new CreditEntry("MC", "Minecraft Wiki", "提供游戏版本的更新摘要和更新日志页面.", "打开 Wiki", "https://zh.minecraft.wiki/"),
             new CreditEntry("UI", "WPF UI", "提供界面控件与主题资源.")
