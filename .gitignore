@@ -6,4 +6,7 @@ ELCL/
 .vs/
 *.user
 *.suo
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 
