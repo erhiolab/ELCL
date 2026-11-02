@@ -1,14 +1,17 @@
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 
 using ErhioLab.Craft.Launcher.Core;
+using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
+using ErhioLab.Craft.Launcher.Tasks;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -23,12 +26,21 @@ public partial class App
 
     private static SessionFileLogger? _logger;
     private static JsonFileStore<LauncherSettings>? _settingsStore;
+    private static readonly HttpClient DownloadHttpClient = new();
+    private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
+    private static readonly LauncherTaskManager TaskEngine = new();
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
 
     /// <summary>供启动器界面记录操作的本次日志会话.</summary>
     internal static SessionFileLogger Logger => _logger ?? throw new InvalidOperationException("日志系统尚未初始化.");
+
+    /// <summary>所有启动器页面共享的下载任务队列.</summary>
+    internal static DownloadManager Downloads => DownloadEngine;
+
+    /// <summary>所有页面共享的启动器任务管理器.</summary>
+    internal static LauncherTaskManager Tasks => TaskEngine;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -67,7 +79,7 @@ public partial class App
                 _settingsStore.Save(Settings);
             }
 
-            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}.");
+            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -115,7 +127,7 @@ public partial class App
             }
         }
 
-        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}.");
+        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         return true;
     }
 
@@ -142,6 +154,8 @@ public partial class App
     {
         try
         {
+            DownloadEngine.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            DownloadHttpClient.Dispose();
             _logger?.Information("App", $"启动器退出, 代码: {e.ApplicationExitCode}");
         }
         finally

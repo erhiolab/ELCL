@@ -4,6 +4,7 @@
 
 - [启动器配置](settings.md): `ELCL/config.json`、外观与下载来源设置.
 - [下载页面](download.md): 版本列表、附加加载器选择及通知.
+- [百宝箱](toolbox.md): 使用通用下载队列下载自定义文件.
 
 启动器目标框架为 `net10.0-windows`, 使用 WPF. 启动时它在可执行文件旁创建 `ELCL` 数据目录, 把其中的 `logs` 路径传给 `SessionFileLogger`, 并通过 `JsonFileStore<LauncherSettings>` 保存自己的设置. Core 不会自行选择这些路径或读取 WPF 页面.
 

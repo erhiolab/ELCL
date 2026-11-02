@@ -83,15 +83,26 @@ internal static class ShellRouteCatalog
             }
         };
 
+        // 更多
+        SectionSidebarItem aboutItem = new("关于与鸣谢", LauncherIcons.About);
+        SectionSidebarItem toolboxItem = new("百宝箱", LauncherIcons.Toolbox);
+        SectionSidebarView moreSidebar = new(aboutItem, toolboxItem);
+        AboutPage aboutPage = new();
+        ContentControl moreContent = new()
+        {
+            Content = aboutPage,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch
+        };
+        ToolboxPage toolboxPage = new();
+        moreSidebar.SelectionChanged += item => moreContent.Content = ReferenceEquals(item, toolboxItem) ? toolboxPage : aboutPage;
+
         return new Dictionary<ShellSection, ShellRoute>
         {
             [ShellSection.Launch] = new(310, new LaunchSidebarView(), new LaunchPage()),
             [ShellSection.Download] = new(0, downloadSidebar, downloadContent),
             [ShellSection.Settings] = new(0, settingsSidebar, settingsContent),
-            [ShellSection.More] = new(
-                0,
-                new SectionSidebarView(new SectionSidebarItem("关于与鸣谢", LauncherIcons.About)),
-                new AboutPage())
+            [ShellSection.More] = new(0, moreSidebar, moreContent)
         };
     }
 }

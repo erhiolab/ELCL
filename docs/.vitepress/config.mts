@@ -41,6 +41,7 @@ export default defineConfig({
                 },
                 {
                     text: "基础能力", items: [
+                        { text: "通用下载器", link: "/core/downloader" },
                         { text: "会话日志", link: "/core/logging" },
                         { text: "JSON 文件存储", link: "/core/storage" },
                         { text: "核心版本", link: "/core/version" }
@@ -52,7 +53,8 @@ export default defineConfig({
                     text: "ELCL 启动器", items: [
                         { text: "集成说明", link: "/launcher/README" },
                         { text: "配置系统", link: "/launcher/settings" },
-                        { text: "下载页面", link: "/launcher/download" }
+                        { text: "下载页面", link: "/launcher/download" },
+                        { text: "百宝箱", link: "/launcher/toolbox" }
                     ]
                 }
             ],

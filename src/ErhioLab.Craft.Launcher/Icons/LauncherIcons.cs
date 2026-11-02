@@ -93,6 +93,12 @@ public static class LauncherIcons
     /// <summary>关于图标.</summary>
     public static readonly Geometry About = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 9,8 L 9,13 M 9,5 L 9,5.2");
 
+    /// <summary>百宝箱侧栏的箱子图标.</summary>
+    public static readonly Geometry Toolbox = Parse("M 2,6 L 9,3 L 16,6 L 16,15 L 9,18 L 2,15 Z M 2,6 L 9,9 L 16,6 M 9,9 L 9,18 M 6,4.5 L 13,7.5");
+
+    /// <summary>右下角任务管理入口的清单图标.</summary>
+    public static readonly Geometry TaskList = Parse("M 2,4 L 4,6 L 7,2 M 10,4 L 18,4 M 2,11 L 4,13 L 7,9 M 10,11 L 18,11 M 2,18 L 4,20 L 7,16 M 10,18 L 18,18");
+
     private static Geometry Parse(string path)
     {
         Geometry geometry = Geometry.Parse(path);

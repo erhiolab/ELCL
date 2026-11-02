@@ -1,0 +1,91 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.More.ToolboxPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{DynamicResource InkBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,36">
+            <Border
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="下载自定义文件" />
+                    <TextBlock
+                        Margin="0,9,0,0"
+                        FontSize="11"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="使用 ELCLC 的多线程下载引擎下载任意文件. 部分网站 (例如百度网盘) 可能禁止直接下载并返回 403."
+                        TextWrapping="Wrap" />
+                    <Border Height="1" Margin="0,16,0,14" Background="{DynamicResource LineSoftBrush}" />
+
+                    <TextBlock Margin="0,0,0,7" FontSize="12" Text="下载地址" />
+                    <TextBox
+                        x:Name="DownloadUrlBox"
+                        Height="36"
+                        Padding="10,6"
+                        Background="{DynamicResource InkRaisedBrush}"
+                        BorderBrush="{DynamicResource LineBrush}"
+                        Foreground="{DynamicResource TextBrush}"
+                        TextChanged="DownloadUrlBox_TextChanged" />
+
+                    <TextBlock Margin="0,16,0,7" FontSize="12" Text="保存到" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="110" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Name="SaveFolderBox"
+                            Height="36"
+                            Padding="10,6"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
+                            Foreground="{DynamicResource TextBrush}" />
+                        <Button
+                            Grid.Column="2"
+                            Click="ChooseFolder_Click"
+                            Content="选择文件夹"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,16,0,7" FontSize="12" Text="文件名" />
+                    <TextBox
+                        x:Name="FileNameBox"
+                        Height="36"
+                        Padding="10,6"
+                        Background="{DynamicResource InkRaisedBrush}"
+                        BorderBrush="{DynamicResource LineBrush}"
+                        Foreground="{DynamicResource TextBrush}" />
+                    <TextBlock
+                        Margin="0,6,0,0"
+                        FontSize="10"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="输入地址后会从 URL 路径填入文件名, 仍可手动修改." />
+
+                    <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                        <Button
+                            x:Name="StartButton"
+                            Width="132"
+                            Height="42"
+                            Click="StartDownload_Click"
+                            Content="开始下载"
+                            IsEnabled="False"
+                            Style="{StaticResource PrimaryActionStyle}" />
+                        <Button
+                            x:Name="OpenFolderButton"
+                            Width="132"
+                            Height="42"
+                            Margin="10,0,0,0"
+                            Click="OpenFolder_Click"
+                            Content="打开文件夹"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

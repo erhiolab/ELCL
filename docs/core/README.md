@@ -1,8 +1,8 @@
 # ErhioLab Craft Launcher Core (ELCLC)
 
-ELCLC 是面向 .NET 10 的 Minecraft Java 版启动器通用类库. 它可以独立于 ELCL 的 WPF 界面使用, 当前提供版本清单、附加加载器版本查询、Wiki 文本查询、会话日志和 JSON 文件存储. 目标框架为 `net10.0`.
+ELCLC 是面向 .NET 10 的 Minecraft Java 版启动器通用类库. 它可以独立于 ELCL 的 WPF 界面使用, 当前提供版本清单、附加加载器版本查询、Wiki 文本查询、通用下载队列、会话日志和 JSON 文件存储. 目标框架为 `net10.0`.
 
-> 当前版本为 `0.0.1`. 核心尚未实现游戏文件下载、安装、账户登录或启动游戏. 取得版本列表不等于完成安装.
+> 当前版本为 `0.0.1`. 核心已有通用文件下载器, 尚未实现 Minecraft 游戏文件清单收集与安装、账户登录或启动游戏. 取得版本列表不等于完成安装.
 
 ## 开始使用
 
@@ -15,6 +15,7 @@ ELCLC 是面向 .NET 10 的 Minecraft Java 版启动器通用类库. 它可以�
 | Minecraft 版本清单 | [版本清单](versions.md) | `MinecraftVersionCatalogClient` |
 | 附加加载器版本 | [加载器](loaders.md) | `MinecraftLoaderVersionClient`、`MinecraftLoaderCompatibility` |
 | 中文 Minecraft Wiki | [Wiki](wiki.md) | `MinecraftWikiClient` |
+| 通用 HTTP 下载队列 | [下载器](downloader.md) | `DownloadManager` |
 | 会话日志 | [日志](logging.md) | `SessionFileLogger` |
 | JSON 文件存储 | [存储](storage.md) | `JsonFileStore<T>` |
 | 核心版本 | [版本信息](version.md) | `CoreInfo` |

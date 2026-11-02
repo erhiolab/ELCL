@@ -41,6 +41,83 @@
                     </Grid>
                 </StackPanel>
             </Border>
+            <Border
+                Margin="0,14,0,0"
+                Padding="20"
+                Background="{DynamicResource PanelBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="多线程下载" />
+                    <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid Height="38">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontSize="12" Text="最大线程数" />
+                            <TextBlock
+                                Margin="0,3,0,0"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="1 - 256, 默认 8" />
+                        </StackPanel>
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="52" />
+                            </Grid.ColumnDefinitions>
+                            <Slider
+                                x:Name="ThreadCountSlider"
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                Minimum="1"
+                                Maximum="256"
+                                TickFrequency="1"
+                                IsSnapToTickEnabled="True"
+                                ValueChanged="ThreadCountSlider_ValueChanged"
+                                PreviewMouseLeftButtonUp="ThreadCountSlider_Commit"
+                                LostMouseCapture="ThreadCountSlider_Commit"
+                                KeyUp="ThreadCountSlider_KeyUp" />
+                            <TextBlock
+                                x:Name="ThreadCountText"
+                                Grid.Column="1"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource AccentBrush}"
+                                Text="8" />
+                        </Grid>
+                    </Grid>
+                    <Border Height="1" Margin="0,10" Background="{DynamicResource LineSoftBrush}" />
+                    <Grid Height="38">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontSize="12" Text="速度限制" />
+                            <TextBlock
+                                Margin="0,3,0,0"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="MiB/s, 0 表示不限速" />
+                        </StackPanel>
+                        <TextBox
+                            x:Name="SpeedLimitBox"
+                            Grid.Column="1"
+                            Height="34"
+                            VerticalContentAlignment="Center"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource LineBrush}"
+                            Foreground="{DynamicResource TextBrush}"
+                            LostFocus="DownloadValueBox_LostFocus"
+                            KeyDown="DownloadValueBox_KeyDown" />
+                    </Grid>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -5,6 +5,7 @@
     xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:notifications="clr-namespace:ErhioLab.Craft.Launcher.Notifications"
+    xmlns:tasks="clr-namespace:ErhioLab.Craft.Launcher.Views.Tasks"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="ErhioLab Craft Launcher"
     Width="1120"
@@ -65,6 +66,28 @@
                     FontWeight="Bold"
                     TextTrimming="CharacterEllipsis"
                     Text="ELCL" />
+
+                <StackPanel
+                    x:Name="TaskTitle"
+                    Grid.Column="0" Margin="18,0,0,0"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" Visibility="Collapsed">
+                    <Button
+                        Width="30"
+                        Height="30"
+                        Click="CloseTaskManager_Click"
+                        Style="{StaticResource SecondaryActionStyle}" ToolTip="返回">
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            Text="{x:Static icons:LauncherIcons.Back}" />
+                    </Button>
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="任务管理" />
+                </StackPanel>
 
                 <Grid
                     x:Name="TopNavigationHost"
@@ -207,7 +230,28 @@
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch" />
             </Grid>
+
+            <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
+            <tasks:TaskManagerView x:Name="TaskManagerPage" Grid.Row="1" Visibility="Collapsed" />
         </Grid>
+        <Button
+            x:Name="TaskManagerButton"
+            Width="48"
+            Height="48"
+            Margin="0,0,18,18"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="OpenTaskManager_Click"
+            Style="{StaticResource FloatingTaskButtonStyle}"
+            ToolTip="任务管理"
+            Visibility="Collapsed">
+            <Path
+                Width="22"
+                Height="22"
+                Data="{x:Static icons:LauncherIcons.TaskList}"
+                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+        </Button>
         <!-- 左下角的非阻塞通知始终跟随主窗口. -->
         <notifications:ToastHostView x:Name="ToastHost" />
         <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->

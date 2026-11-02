@@ -1,0 +1,154 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Tasks.TaskManagerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{DynamicResource InkBrush}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border
+            Grid.Column="0"
+            Background="{DynamicResource InkRaisedBrush}"
+            BorderBrush="{DynamicResource LineSoftBrush}" BorderThickness="0,0,1,0">
+            <StackPanel Margin="24,98,24,0">
+                <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" Text="总进度" />
+                <ProgressBar
+                    x:Name="OverallProgressBar"
+                    Height="3"
+                    Margin="0,8,0,7"
+                    Maximum="100"
+                    Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock
+                    x:Name="OverallProgressText"
+                    HorizontalAlignment="Center"
+                    FontSize="20"
+                    Text="0%" />
+
+                <TextBlock
+                    Margin="0,82,0,0"
+                    HorizontalAlignment="Center"
+                    Foreground="{DynamicResource AccentBrush}"
+                    Text="下载速度" />
+                <Border Height="1" Margin="0,8,0,7" Background="{DynamicResource AccentBrush}" />
+                <TextBlock x:Name="SpeedText" HorizontalAlignment="Center" FontSize="19" Text="0 KiB/s" />
+
+                <TextBlock
+                    Margin="0,82,0,0"
+                    HorizontalAlignment="Center"
+                    Foreground="{DynamicResource AccentBrush}"
+                    Text="剩余文件" />
+                <Border Height="1" Margin="0,8,0,7" Background="{DynamicResource AccentBrush}" />
+                <TextBlock x:Name="RemainingFilesText" HorizontalAlignment="Center" FontSize="20" Text="0" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <Grid Margin="24">
+                <TextBlock
+                    x:Name="EmptyText"
+                    Margin="0,28,0,0"
+                    HorizontalAlignment="Center"
+                    FontSize="15"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    Text="暂无任务" />
+                <ItemsControl x:Name="TaskList" ItemsSource="{Binding Tasks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Margin="0,0,0,12"
+                                Padding="16"
+                                Background="{DynamicResource PanelBrush}"
+                                BorderBrush="{DynamicResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="9">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Title}" />
+                                            <TextBlock
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding StatusText}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter
+                                                            Property="Foreground"
+                                                            Value="{DynamicResource TextMutedBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding StatusText}" Value="进行中">
+                                                                <Setter
+                                                                    Property="Foreground"
+                                                                    Value="{DynamicResource AccentBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding StatusText}" Value="已完成">
+                                                                <Setter Property="Foreground" Value="#46BF83" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding StatusText}" Value="失败">
+                                                                <Setter Property="Foreground" Value="#E66B6B" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="1" Margin="8,0,12,0"
+                                            VerticalAlignment="Center"
+                                            Foreground="{DynamicResource AccentBrush}"
+                                            Text="{Binding ProgressText}" />
+                                        <Button
+                                            Grid.Column="2"
+                                            Width="54"
+                                            Height="28"
+                                            Click="TaskAction_Click"
+                                            Content="{Binding ActionText}"
+                                            Style="{StaticResource SecondaryActionStyle}" />
+                                    </Grid>
+                                    <ProgressBar
+                                        Height="3"
+                                        Margin="0,12,0,9"
+                                        Maximum="100"
+                                        Value="{Binding Progress, Mode=OneWay}"
+                                        Foreground="{DynamicResource AccentBrush}" />
+                                    <ItemsControl ItemsSource="{Binding Stages}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="8,5,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="42" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock
+                                                        Grid.Column="0"
+                                                        Foreground="{DynamicResource AccentBrush}"
+                                                        Text="{Binding StatusText}" />
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Foreground="{DynamicResource TextMutedBrush}"
+                                                        Text="{Binding Name}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock
+                                        Margin="8,8,0,0"
+                                        Foreground="#E66B6B"
+                                        Text="{Binding Error}"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

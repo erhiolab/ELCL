@@ -23,6 +23,12 @@ public sealed record LauncherSettings
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;
 
+    /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
+    public int DownloadMaxConnections { get; init; } = 8;
+
+    /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
+    public double DownloadSpeedLimitMiBPerSecond { get; init; }
+
     /// <summary>将外部配置值限制在启动器支持的范围内.</summary>
     /// <returns>规范化后的设置.</returns>
     public LauncherSettings Normalize()
@@ -37,6 +43,8 @@ public sealed record LauncherSettings
             TitleBarMode = Enum.IsDefined(TitleBarMode) ? TitleBarMode : TitleBarMode.Default,
             TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
             VersionListSource = Enum.IsDefined(VersionListSource) ? VersionListSource : VersionListSource.OfficialFirst,
+            DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
+            DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0
         };

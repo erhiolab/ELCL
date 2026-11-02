@@ -39,6 +39,7 @@ public partial class MainWindow
     private bool _hasNavigated;
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
+    private bool _taskManagerClosing;
     private RadioButton? _selectedNavigationButton;
     private Point? _maximizedDragStart;
 
@@ -56,6 +57,7 @@ public partial class MainWindow
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText);
 
         _routes = ShellRouteCatalog.Create();
+        App.Tasks.Tasks.CollectionChanged += (_, _) => OnTasksChanged();
         LaunchNavigation.IsChecked = true;
     }
 
@@ -86,6 +88,68 @@ public partial class MainWindow
 
     /// <summary>从启动页的无版本入口打开原版游戏下载页面.</summary>
     internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
+
+    private void UpdateTaskManagerButton()
+    {
+        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnTasksChanged()
+    {
+        UpdateTaskManagerButton();
+        if (App.Tasks.Tasks.Count == 0 && TaskManagerPage.Visibility == Visibility.Visible)
+        {
+            CloseTaskManager();
+        }
+    }
+
+    private void OpenTaskManager_Click(object sender, RoutedEventArgs e)
+    {
+        _taskManagerClosing = false;
+        TaskManagerButton.Visibility = Visibility.Collapsed;
+        TitleBarLabel.Visibility = Visibility.Collapsed;
+        TopNavigationHost.Visibility = Visibility.Collapsed;
+        TaskTitle.Visibility = Visibility.Visible;
+        TaskManagerPage.Visibility = Visibility.Visible;
+        TaskManagerPage.Opacity = 0;
+        TaskManagerPage.RenderTransform = new TranslateTransform(0, 14);
+        TaskManagerPage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
+        TaskManagerPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        App.Logger.Information("Navigation", "打开任务管理.");
+    }
+
+    private void CloseTaskManager_Click(object sender, RoutedEventArgs e) => CloseTaskManager();
+
+    private void CloseTaskManager()
+    {
+        if (_taskManagerClosing || TaskManagerPage.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        _taskManagerClosing = true;
+        TaskTitle.Visibility = Visibility.Collapsed;
+        TitleBarLabel.Visibility = Visibility.Visible;
+        TopNavigationHost.Visibility = Visibility.Visible;
+        DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(170));
+        fade.Completed += (_, _) =>
+        {
+            TaskManagerPage.BeginAnimation(OpacityProperty, null);
+            TaskManagerPage.Visibility = Visibility.Collapsed;
+            TaskManagerPage.Opacity = 1;
+            _taskManagerClosing = false;
+            UpdateTaskManagerButton();
+        };
+        TaskManagerPage.BeginAnimation(OpacityProperty, fade);
+        App.Logger.Information("Navigation", "关闭任务管理.");
+    }
 
     /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
     internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,
