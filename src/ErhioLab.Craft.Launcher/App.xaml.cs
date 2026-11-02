@@ -123,7 +123,7 @@ public partial class App
             window.ApplyContentOpacity(Settings.WindowOpacity);
             if (titleChanged)
             {
-                window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText);
+                window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText ?? string.Empty);
             }
         }
 

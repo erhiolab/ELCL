@@ -231,7 +231,7 @@ public partial class VanillaVersionsPage
 
     private async void ChangelogButton_MouseEnter(object sender, MouseEventArgs e)
     {
-        if (sender is not Button { Tag: VersionRow row } || !row.MarkSummaryRequested() || _pageCancellation is null)
+        if (sender is not Button { Tag: VersionRow row } || !row.MarkSummaryRequested() || _pageCancellation.IsCancellationRequested)
         {
             return;
         }
@@ -282,9 +282,9 @@ public partial class VanillaVersionsPage
         return client;
     }
 
-    private sealed record VersionGroup(string Title, bool IsInitiallyExpanded, IReadOnlyList<VersionRow> Versions);
+    internal sealed record VersionGroup(string Title, bool IsInitiallyExpanded, IReadOnlyList<VersionRow> Versions);
 
-    private sealed class VersionRow : INotifyPropertyChanged
+    internal sealed class VersionRow : INotifyPropertyChanged
     {
         private string _tooltipText = "正在从 Minecraft Wiki 获取更新摘要...";
         private bool _summaryRequested;

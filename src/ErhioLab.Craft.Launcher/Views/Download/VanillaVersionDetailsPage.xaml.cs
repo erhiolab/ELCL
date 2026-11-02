@@ -307,7 +307,7 @@ public partial class VanillaVersionDetailsPage
                     _ => true
                 });
                 if (_sectionControls.TryGetValue(section, out var controls)
-                    && controls.Content is System.Windows.Controls.Border { Child: ListBox list })
+                    && controls.Content is Border { Child: ListBox list })
                 {
                     list.SelectedItem = section.Choices.FirstOrDefault(choice => !choice.IsNone
                                                                                  && choice.Version?.Version == section.SelectedVersion?.Version);
@@ -549,7 +549,7 @@ public partial class VanillaVersionDetailsPage
 
             foreach (LoaderChoice choice in Choices)
             {
-                if (dates.TryGetValue(choice.Label, out DateTimeOffset released))
+                if (dates.ContainsKey(choice.Label))
                 {
                     MinecraftLoaderVersion? version = _allVersions.FirstOrDefault(item => item.Version == choice.Label);
                     if (version is not null)

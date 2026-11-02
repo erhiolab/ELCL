@@ -78,7 +78,6 @@
                         <Button
                             x:Name="OpenFolderButton"
                             Width="132"
-                            Height="42"
                             Margin="10,0,0,0"
                             Click="OpenFolder_Click"
                             Content="打开文件夹"

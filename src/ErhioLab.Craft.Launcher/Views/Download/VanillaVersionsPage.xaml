@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:download="clr-namespace:ErhioLab.Craft.Launcher.Views.Download"
     Background="{DynamicResource InkBrush}"
     Loaded="Page_Loaded">
     <UserControl.Resources>
@@ -98,7 +99,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <DataTemplate x:Key="VersionTemplate">
+        <DataTemplate x:Key="VersionTemplate" DataType="{x:Type download:VanillaVersionsPage+VersionRow}">
             <Border
                 x:Name="VersionRow"
                 Height="49"
@@ -122,6 +123,7 @@
                         IsHitTestVisible="False"
                         Opacity="0" />
                     <Path
+                        Grid.Column="0"
                         Width="20"
                         Height="20"
                         VerticalAlignment="Center"
@@ -156,7 +158,7 @@
                             <Button.ToolTip>
                                 <ToolTip
                                     MaxWidth="440"
-                                    Content="{Binding PlacementTarget.Tag.TooltipText, RelativeSource={RelativeSource Self}}" />
+                                    Content="{Binding TooltipText}" />
                             </Button.ToolTip>
                             <TextBlock FontFamily="{x:Static icons:LauncherIcons.GlyphFont}" FontSize="15" Text="&#xE946;" />
                         </Button>
@@ -267,7 +269,7 @@
                 Visibility="Collapsed" />
             <ItemsControl x:Name="VersionGroups">
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate DataType="{x:Type download:VanillaVersionsPage+VersionGroup}">
                         <Border
                             Margin="0,0,0,12"
                             Background="{DynamicResource PanelBrush}"

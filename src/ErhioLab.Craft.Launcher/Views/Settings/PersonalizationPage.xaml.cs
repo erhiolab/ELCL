@@ -69,11 +69,11 @@ public partial class PersonalizationPage
         NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
         DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
-        TitleTextBox.Text = App.Settings.TitleBarText;
+        TitleTextBox.Text = App.Settings.TitleBarText ?? string.Empty;
         TitleTextRow.Visibility = App.Settings.TitleBarMode == TitleBarMode.Text ? Visibility.Visible : Visibility.Collapsed;
         _initializing = false;
         App.PreviewWindowOpacity(App.Settings.WindowOpacity);
-        App.PreviewTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText);
+        App.PreviewTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
     }
 
     private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

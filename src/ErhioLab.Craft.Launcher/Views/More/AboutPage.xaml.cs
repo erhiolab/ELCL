@@ -58,7 +58,7 @@ public partial class AboutPage
         }
     }
 
-    private sealed record CreditEntry(
+    internal sealed record CreditEntry(
         string AvatarText,
         string Name,
         string Description,

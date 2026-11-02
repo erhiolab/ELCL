@@ -36,7 +36,11 @@ public sealed class DownloadManager : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(options);
-        Validate(request, options);
+        Validate(request);
+        if (options.MaxConnections is < 1 or > 256 || options.SpeedLimitBytesPerSecond < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "线程数须为 1-256, 速度限制不能为负数.");
+        }
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         // 入队时复制调用方的列表, 避免排队期间修改来源或目标文件.
@@ -93,16 +97,7 @@ public sealed class DownloadManager : IAsyncDisposable
                     state.Report(DownloadTaskStatus.Running, force: true);
                     using SemaphoreSlim connections = new(queued.Options.MaxConnections);
                     SpeedLimiter limiter = new(queued.Options.SpeedLimitBytesPerSecond);
-                    await Parallel.ForEachAsync(queued.Request.Files,
-                        new ParallelOptions
-                        {
-                            MaxDegreeOfParallelism = Math.Min(queued.Options.MaxConnections, 8),
-                            CancellationToken = linked.Token
-                        }, async (file, token) =>
-                        {
-                            await DownloadFileAsync(file, queued.Options, state, connections, limiter, token).ConfigureAwait(false);
-                            state.CompleteFile(file.DestinationPath);
-                        }).ConfigureAwait(false);
+                    await DownloadAllFilesAsync(queued, state, connections, limiter, linked.Token).ConfigureAwait(false);
 
                     state.Report(DownloadTaskStatus.Completed, force: true);
                     queued.Completion.TrySetResult(new DownloadResult(queued.Id,
@@ -136,6 +131,21 @@ public sealed class DownloadManager : IAsyncDisposable
         }
     }
 
+    private async Task DownloadAllFilesAsync(
+        QueuedTask queued, DownloadState state, SemaphoreSlim connections, SpeedLimiter limiter, CancellationToken cancellationToken)
+    {
+        await Parallel.ForEachAsync(queued.Request.Files,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Min(queued.Options.MaxConnections, 8),
+                CancellationToken = cancellationToken
+            }, async (file, token) =>
+            {
+                await DownloadFileAsync(file, queued.Options, state, connections, limiter, token).ConfigureAwait(false);
+                state.CompleteFile(file.DestinationPath);
+            }).ConfigureAwait(false);
+    }
+
     private async Task DownloadFileAsync(
         DownloadFileRequest file, DownloadOptions options, DownloadState state,
         SemaphoreSlim connections, SpeedLimiter limiter, CancellationToken cancellationToken)
@@ -150,7 +160,7 @@ public sealed class DownloadManager : IAsyncDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             string temporary = Path.Combine(directory, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.part");
-            long attemptBytes = 0;
+            AttemptCounter attemptBytes = new();
             try
             {
                 FileProbe probe = await ProbeAsync(source, cancellationToken).ConfigureAwait(false);
@@ -169,15 +179,15 @@ public sealed class DownloadManager : IAsyncDisposable
                 {
                     await TransferAsync(source, temporary, probe, options.MaxConnections,
                         connections, limiter, state, file.DestinationPath,
-                        count => Interlocked.Add(ref attemptBytes, count), cancellationToken).ConfigureAwait(false);
+                        attemptBytes.Add, cancellationToken).ConfigureAwait(false);
                 }
                 catch (RangeUnsupportedException)
                 {
-                    state.RevertBytes(Interlocked.Exchange(ref attemptBytes, 0));
+                    state.RevertBytes(attemptBytes.Take());
                     File.Delete(temporary);
                     await TransferAsync(source, temporary, new FileProbe(null, false), 1,
                         connections, limiter, state, file.DestinationPath,
-                        count => Interlocked.Add(ref attemptBytes, count), cancellationToken).ConfigureAwait(false);
+                        attemptBytes.Add, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (file.ExpectedSize is { } requiredSize && new FileInfo(temporary).Length != requiredSize)
@@ -205,7 +215,7 @@ public sealed class DownloadManager : IAsyncDisposable
             catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or OperationCanceledException)
             {
                 failures.Add(new IOException($"来源 {source} 下载失败.", error));
-                state.RevertBytes(attemptBytes);
+                state.RevertBytes(attemptBytes.Take());
             }
             finally
             {
@@ -375,13 +385,13 @@ public sealed class DownloadManager : IAsyncDisposable
         }
     }
 
-    private static void Validate(DownloadTaskRequest request, DownloadOptions options)
+    private static void Validate(DownloadTaskRequest request)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentNullException.ThrowIfNull(request.Files);
-        if (request.Files.Count == 0 || options.MaxConnections is < 1 or > 256 || options.SpeedLimitBytesPerSecond < 0)
+        if (request.Files.Count == 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(options), "文件列表不能为空, 线程数须为 1-256, 速度限制不能为负数.");
+            throw new ArgumentException("文件列表不能为空.", nameof(request));
         }
 
         HashSet<string> destinations = new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -391,7 +401,7 @@ public sealed class DownloadManager : IAsyncDisposable
             ArgumentNullException.ThrowIfNull(file.Sources);
             if (!destinations.Add(Path.GetFullPath(file.DestinationPath)) ||
                 file.Sources.Count == 0 ||
-                file.Sources.Any(uri => uri is null || uri.Scheme is not ("https" or "http")) ||
+                file.Sources.Any(uri => uri is not { Scheme: "https" or "http" }) ||
                 file.ExpectedSize is < 0 ||
                 file.ExpectedSha1 is { } hash && (hash.Length != 40 || !hash.All(Uri.IsHexDigit))
                )
@@ -422,6 +432,15 @@ public sealed class DownloadManager : IAsyncDisposable
         TaskCompletionSource<DownloadResult> Completion);
 
     private sealed record FileProbe(long? Length, bool RangeSupported);
+
+    private sealed class AttemptCounter
+    {
+        private long _bytes;
+
+        internal void Add(int count) => Interlocked.Add(ref _bytes, count);
+
+        internal long Take() => Interlocked.Exchange(ref _bytes, 0);
+    }
 
     private sealed class RangeUnsupportedException : IOException;
 

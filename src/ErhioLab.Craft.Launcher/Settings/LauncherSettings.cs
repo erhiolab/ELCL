@@ -18,7 +18,7 @@ public sealed record LauncherSettings
     public TitleBarMode TitleBarMode { get; init; } = TitleBarMode.Default;
 
     /// <summary>标题栏选择文本模式时显示的内容.</summary>
-    public string TitleBarText { get; init; } = "ELCL";
+    public string? TitleBarText { get; init; } = "ELCL";
 
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;

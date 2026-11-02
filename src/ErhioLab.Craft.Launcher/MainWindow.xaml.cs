@@ -54,7 +54,7 @@ public partial class MainWindow
     {
         InitializeComponent();
         ApplyContentOpacity(App.Settings.WindowOpacity);
-        ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText);
+        ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
         _routes = ShellRouteCatalog.Create();
         App.Tasks.Tasks.CollectionChanged += (_, _) => OnTasksChanged();

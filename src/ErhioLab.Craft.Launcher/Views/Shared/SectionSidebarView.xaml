@@ -23,7 +23,7 @@
         </Border>
         <ItemsControl x:Name="NavigationItems">
             <ItemsControl.ItemTemplate>
-                <DataTemplate d:DataContext="{d:DesignInstance Type=navigation:SectionSidebarEntry}">
+                <DataTemplate DataType="{x:Type navigation:SectionSidebarEntry}">
                     <Grid x:Name="NavigationRow">
                         <RadioButton
                             Checked="NavigationItem_Checked"
