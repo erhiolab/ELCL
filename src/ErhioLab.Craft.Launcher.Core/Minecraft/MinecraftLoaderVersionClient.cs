@@ -1,4 +1,5 @@
 using System.Net;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -32,11 +33,15 @@ public sealed class MinecraftLoaderVersionClient
     private const string OptiFineMirror = "https://bmclapi2.bangbang93.com/optifine/versionList";
     private const string QuiltOfficial = "https://meta.quiltmc.org/v3/versions/loader/";
     private const string QuiltMirror = "https://bmclapi2.bangbang93.com/quilt-meta/v3/versions/loader/";
+    private const string QuiltMaven = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-loader/";
     private const string LiteLoaderOfficial = "https://dl.liteloader.com/versions/versions.json";
     private const string LiteLoaderMirror = "https://bmclapi2.bangbang93.com/liteloader/list?mcversion=";
+    private const string ForgeDownloads = "https://files.minecraftforge.net/net/minecraftforge/forge/index_";
+    private const string FabricMaven = "https://maven.fabricmc.net/net/fabricmc/fabric-loader/";
 
     private readonly HttpClient _httpClient;
     private readonly TimeSpan _sourceTimeout;
+    private static readonly ConcurrentDictionary<string, DateOnly> QuiltDateCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>由调用方提供 HTTP 客户端, 便于共享连接和替换网络响应.</summary>
     public MinecraftLoaderVersionClient(HttpClient httpClient, TimeSpan? sourceTimeout = null)
@@ -111,6 +116,121 @@ public sealed class MinecraftLoaderVersionClient
         return mirror.Versions
             .Where(version => version.LastModifiedDate.HasValue)
             .ToDictionary(version => version.Version, version => version.LastModifiedDate!.Value, StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>从 Forge 官方下载页解析版本发布时间.</summary>
+    public async Task<IReadOnlyDictionary<string, DateTimeOffset>> GetForgeReleaseTimesAsync(
+        string gameVersion,
+        IReadOnlyCollection<string> versions,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gameVersion);
+        ArgumentNullException.ThrowIfNull(versions);
+        if (versions.Count == 0)
+        {
+            return new Dictionary<string, DateTimeOffset>();
+        }
+
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_sourceTimeout);
+        using HttpResponseMessage response = await _httpClient.GetAsync(
+            ForgeDownloads + Uri.EscapeDataString(gameVersion.Replace('-', '_')) + ".html",
+            HttpCompletionOption.ResponseHeadersRead,
+            timeout.Token).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        string html = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+        HashSet<string> requested = versions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, DateTimeOffset> dates = new(StringComparer.OrdinalIgnoreCase);
+        foreach (Match row in Regex.Matches(html, @"<tr\b[^>]*>.*?</tr>", RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(2)))
+        {
+            Match versionMatch = Regex.Match(row.Value, @"<td\b[^>]*class=[""']download-version[""'][^>]*>\s*(?<version>[^<\s]+)", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            Match timeMatch = Regex.Match(row.Value, @"<td\b[^>]*class=[""']download-time[""'][^>]*title=[""'](?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})[""']", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            if (!versionMatch.Success || !timeMatch.Success || !requested.Contains(versionMatch.Groups["version"].Value)
+                || !DateTime.TryParseExact(timeMatch.Groups["time"].Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsed))
+            {
+                continue;
+            }
+
+            // Forge 页面中的 title 时间按 UTC 解释, 与 PCL2 的页面解析方式一致.
+            dates.TryAdd(versionMatch.Groups["version"].Value, new DateTimeOffset(parsed, TimeSpan.Zero));
+        }
+
+        return dates;
+    }
+
+    /// <summary>从 Fabric 官方 Maven 目录读取构件目录的更新日期.</summary>
+    public async Task<IReadOnlyDictionary<string, DateOnly>> GetFabricVersionDatesAsync(
+        IReadOnlyCollection<string> versions,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(versions);
+        if (versions.Count == 0)
+        {
+            return new Dictionary<string, DateOnly>();
+        }
+
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_sourceTimeout);
+        using HttpResponseMessage response = await _httpClient.GetAsync(FabricMaven, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        string html = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+        HashSet<string> requested = versions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, DateOnly> dates = new(StringComparer.OrdinalIgnoreCase);
+        foreach (Match row in Regex.Matches(html, @"<a\s+href=[""'](?<version>[^/""']+)/[""'][^>]*>[^<]*</a>\s*(?<date>\d{2}-[A-Za-z]{3}-\d{4})", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2)))
+        {
+            string version = row.Groups["version"].Value;
+            if (requested.Contains(version)
+                && DateOnly.TryParseExact(row.Groups["date"].Value, "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly date))
+            {
+                dates.TryAdd(version, date);
+            }
+        }
+
+        return dates;
+    }
+
+    /// <summary>读取 Quilt 官方 Maven 构件目录的原始更新时间, 单个版本失败不影响其他版本.</summary>
+    public async Task<IReadOnlyDictionary<string, DateOnly>> GetQuiltVersionDatesAsync(
+        IReadOnlyCollection<string> versions,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(versions);
+        ConcurrentDictionary<string, DateOnly> dates = new(StringComparer.OrdinalIgnoreCase);
+        await Parallel.ForEachAsync(versions.Distinct(StringComparer.OrdinalIgnoreCase),
+            new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = cancellationToken }, async (version, token) =>
+            {
+                if (QuiltDateCache.TryGetValue(version, out DateOnly cached))
+                {
+                    dates.TryAdd(version, cached);
+                    return;
+                }
+
+                try
+                {
+                    using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    timeout.CancelAfter(_sourceTimeout);
+                    string url = QuiltMaven + Uri.EscapeDataString(version) + "/";
+                    using HttpRequestMessage request = new(HttpMethod.Head, url);
+                    using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode
+                        || !response.Headers.TryGetValues("quilt-last-modified-timestamp", out IEnumerable<string>? values)
+                        || !long.TryParse(values.FirstOrDefault(), CultureInfo.InvariantCulture, out long milliseconds))
+                    {
+                        return;
+                    }
+
+                    DateOnly date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime);
+                    QuiltDateCache.TryAdd(version, date);
+                    dates.TryAdd(version, date);
+                }
+                catch (Exception error) when (error is HttpRequestException or OperationCanceledException or ArgumentOutOfRangeException)
+                {
+                    // 日期只是附加信息; 超时或单个目录缺失时保留原版本列表.
+                    token.ThrowIfCancellationRequested();
+                }
+            }).ConfigureAwait(false);
+
+        return dates;
     }
 
     private async Task<MinecraftLoaderVersionCatalog> FetchAsync(

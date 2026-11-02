@@ -46,7 +46,7 @@ Fabric 对不支持的游戏版本可能由官方接口返回 400、镜像返回
 
 `MinecraftLoaderCompatibility.CanCombine` 是不依赖界面的组合判断. 当前只允许 OptiFine 单独选择, 或与符合其 `RequiredForgeVersion` 标注的 Forge 版本搭配; OptiFine 标注 `N/A` 时不能与 Forge 搭配. 对 `1.13` 到 `1.14.3` 的 Forge + OptiFine 组合做额外限制. Forge、NeoForge、Fabric、Quilt、LiteLoader 之间目前互斥; 选择另一种加载器会清除不兼容的旧选择. Forge 与 OptiFine 彼此只展示兼容版本. PCL2 和 Prism Launcher 的某些旧版本还支持 Forge + LiteLoader, 但 ELCL 尚未实现该组合的安装流程, 因此先保守限制.
 
-加载器列表项显示版本号和日期. OptiFine 官方页面提供发布日期和 Forge 版本要求; 镜像列表也提供 Forge 版本要求. Forge 镜像提供 `modified` 更新时间, 因此界面分别标为“发布于”和“更新于”. 官方 Forge 列表先显示版本, 随后通过 `GetForgeVersionDatesAsync` 异步补充镜像日期; 补充失败不会隐藏版本. LiteLoader 提供构建时间. 其他来源未提供逐版本日期时, 界面显示“发布时间未提供”, 不根据版本号推测日期.
+加载器列表项显示版本号和有出处的日期. Forge 从 [官方下载页](https://files.minecraftforge.net/)解析每个版本的发布时间; 失败时可使用 BMCLAPI 镜像的 `modified` 更新时间. Fabric 从[官方 Maven 目录](https://maven.fabricmc.net/net/fabricmc/fabric-loader/)解析目录更新日期. Quilt 对[官方 Maven 构件目录](https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-loader/)发送 HEAD 请求, 读取 `quilt-last-modified-timestamp` 原始更新时间; 限制并发且分批更新界面. Fabric 和 Quilt 的目录日期均标为“更新于”, 不误称为发布时间. LiteLoader 原始元数据提供构建时间. OptiFine 官方页面提供发布日期和 Forge 版本要求; 镜像列表也提供 Forge 版本要求. NeoForge 的当前官方版本列表没有逐版本日期, 因此显示“发布时间未提供”. 日期查询失败不影响版本列表, 也不依赖其他启动器维护的元数据索引.
 
 来源回退、NeoForge 版本映射及 OptiFine 的 Forge 兼容规则参考了 [PCL2 的下载页面](https://github.com/Meloong-Git/PCL/blob/main/Plain%20Craft%20Launcher%202/Pages/PageDownload/PageDownloadInstall.xaml.vb) 和 [版本解析](https://github.com/Meloong-Git/PCL/blob/main/Plain%20Craft%20Launcher%202/Modules/Minecraft/ModDownload.vb). [Prism Launcher 的元数据更新脚本](https://github.com/PrismLauncher/meta/blob/main/update.sh)用于核对 Quilt 与 LiteLoader 来源. 解析和网络访问由本项目的 Core 独立实现.
 

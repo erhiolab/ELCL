@@ -91,11 +91,17 @@ public partial class VanillaVersionDetailsPage
             section.SetVersions(catalog.Versions);
             RefreshCompatibility();
             App.Logger.Information("Download", $"{section.Kind} 版本列表已获取, 来源: {catalog.Source}, 数量: {catalog.Versions.Count}.");
-            if (section.Kind == MinecraftLoaderKind.Forge
-                && catalog.Source == MinecraftManifestSource.Official
-                && catalog.Versions.Count > 0)
+            if (catalog.Versions.Count > 0 && section.Kind == MinecraftLoaderKind.Forge)
             {
-                _ = FillForgeDatesAsync(section);
+                _ = FillForgeReleaseTimesAsync(section, catalog);
+            }
+            else if (catalog.Versions.Count > 0 && section.Kind == MinecraftLoaderKind.Fabric)
+            {
+                _ = FillFabricDatesAsync(section, catalog);
+            }
+            else if (catalog.Versions.Count > 0 && section.Kind == MinecraftLoaderKind.Quilt)
+            {
+                _ = FillQuiltDatesAsync(section, catalog);
             }
         }
         catch (OperationCanceledException) when (_pageCancellation.IsCancellationRequested)
@@ -106,6 +112,88 @@ public partial class VanillaVersionDetailsPage
         {
             section.SetError();
             App.Logger.Error("Download", $"获取 {_version.Id} 的 {section.Kind} 版本列表失败.", error);
+        }
+    }
+
+    private async Task FillForgeReleaseTimesAsync(LoaderSection section, MinecraftLoaderVersionCatalog catalog)
+    {
+        try
+        {
+            IReadOnlyDictionary<string, DateTimeOffset> dates = await _loaderClient.GetForgeReleaseTimesAsync(
+                _version.Id,
+                catalog.Versions.Select(version => version.Version).ToArray(),
+                _pageCancellation.Token);
+            if (_pageCancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            section.ApplyReleaseTimes(dates);
+            if (catalog.Source == MinecraftManifestSource.Official && dates.Count == 0)
+            {
+                _ = FillForgeDatesAsync(section);
+            }
+        }
+        catch (OperationCanceledException) when (_pageCancellation.IsCancellationRequested)
+        {
+            // 页面已关闭, 不再补充日期.
+        }
+        catch (Exception error)
+        {
+            App.Logger.Warning("Download", $"无法补充 {_version.Id} 的 {section.Kind} 发布时间: {error.Message}");
+            if (catalog.Source == MinecraftManifestSource.Official
+                && !_pageCancellation.IsCancellationRequested)
+            {
+                _ = FillForgeDatesAsync(section);
+            }
+        }
+    }
+
+    private async Task FillFabricDatesAsync(LoaderSection section, MinecraftLoaderVersionCatalog catalog)
+    {
+        try
+        {
+            IReadOnlyDictionary<string, DateOnly> dates = await _loaderClient.GetFabricVersionDatesAsync(
+                catalog.Versions.Select(version => version.Version).ToArray(), _pageCancellation.Token);
+            if (!_pageCancellation.IsCancellationRequested)
+            {
+                section.ApplyModifiedDates(dates);
+            }
+        }
+        catch (OperationCanceledException) when (_pageCancellation.IsCancellationRequested)
+        {
+            // 页面已关闭, 不再补充日期.
+        }
+        catch (Exception error)
+        {
+            App.Logger.Warning("Download", $"无法补充 {_version.Id} 的 Fabric 更新日期: {error.Message}");
+        }
+    }
+
+    private async Task FillQuiltDatesAsync(LoaderSection section, MinecraftLoaderVersionCatalog catalog)
+    {
+        try
+        {
+            // 分批补充日期, 让已取得的结果先显示, 避免等待全部版本请求完成.
+            foreach (MinecraftLoaderVersion[] batch in catalog.Versions.Chunk(24))
+            {
+                IReadOnlyDictionary<string, DateOnly> dates = await _loaderClient.GetQuiltVersionDatesAsync(
+                    batch.Select(version => version.Version).ToArray(), _pageCancellation.Token);
+                if (_pageCancellation.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                section.ApplyModifiedDates(dates);
+            }
+        }
+        catch (OperationCanceledException) when (_pageCancellation.IsCancellationRequested)
+        {
+            // 页面已关闭, 不再补充日期.
+        }
+        catch (Exception error)
+        {
+            App.Logger.Warning("Download", $"无法补充 {_version.Id} 的 Quilt 更新日期: {error.Message}");
         }
     }
 
@@ -449,10 +537,37 @@ public partial class VanillaVersionDetailsPage
             }
         }
 
+        internal void ApplyReleaseTimes(IReadOnlyDictionary<string, DateTimeOffset> dates)
+        {
+            _allVersions = _allVersions.Select(version => dates.TryGetValue(version.Version, out DateTimeOffset released)
+                ? version with { ReleaseTime = released }
+                : version).ToArray();
+            if (SelectedVersion is not null)
+            {
+                SelectedVersion = _allVersions.FirstOrDefault(version => version.Version == SelectedVersion.Version);
+            }
+
+            foreach (LoaderChoice choice in Choices)
+            {
+                if (dates.TryGetValue(choice.Label, out DateTimeOffset released))
+                {
+                    MinecraftLoaderVersion? version = _allVersions.FirstOrDefault(item => item.Version == choice.Label);
+                    if (version is not null)
+                    {
+                        choice.SetDetail(DescribeVersion(version));
+                    }
+                }
+            }
+        }
+
         private string DescribeVersion(MinecraftLoaderVersion version)
         {
             string date;
-            if (version.ReleaseDate is { } releaseDate)
+            if (version.ReleaseTime is { } releaseTime)
+            {
+                date = $"发布于 {releaseTime.ToLocalTime():yyyy/MM/dd HH:mm}";
+            }
+            else if (version.ReleaseDate is { } releaseDate)
             {
                 date = $"发布于 {releaseDate:yyyy/MM/dd}";
             }

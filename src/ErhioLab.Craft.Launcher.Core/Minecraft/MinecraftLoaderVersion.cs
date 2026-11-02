@@ -29,13 +29,15 @@ public enum MinecraftLoaderKind
 /// <param name="LastModifiedDate">来源给出的最后更新时间, 可为空, 不能当作发布日期.</param>
 /// <param name="RequiredForgeVersion">OptiFine 标注的 Forge 版本; null 表示不支持与 Forge 搭配.</param>
 /// <param name="BuildDate">来源给出的构建日期, 可为空.</param>
+/// <param name="ReleaseTime">官方来源给出的精确发布时间, 可为空.</param>
 public sealed record MinecraftLoaderVersion(
     string Version,
     bool IsPreview,
     DateOnly? ReleaseDate = null,
     DateOnly? LastModifiedDate = null,
     string? RequiredForgeVersion = null,
-    DateOnly? BuildDate = null
+    DateOnly? BuildDate = null,
+    DateTimeOffset? ReleaseTime = null
 );
 
 /// <summary>指定游戏版本可用的加载器版本列表.</summary>
