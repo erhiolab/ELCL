@@ -8,6 +8,7 @@
     xmlns:tasks="clr-namespace:ErhioLab.Craft.Launcher.Views.Tasks"
     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     Title="ErhioLab Craft Launcher"
+    Icon="Assets/Brand/ELCL.ico"
     Width="1120"
     Height="720"
     MinWidth="900"

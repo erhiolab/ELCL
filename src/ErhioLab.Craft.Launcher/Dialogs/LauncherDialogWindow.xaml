@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dialogs="clr-namespace:ErhioLab.Craft.Launcher.Dialogs"
+    Icon="Assets/Brand/ELCL.ico"
     Width="500"
     Height="270"
     AllowsTransparency="True"

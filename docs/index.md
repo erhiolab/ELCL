@@ -6,8 +6,8 @@ hero:
   text: 从核心开始
   tagline: Minecraft Java 版启动器核心库与 ELCL 开发文档
   image:
-    src: /hero-schematic.svg
-    alt: ELCLC 核心模块示意
+    src: /logo.svg
+    alt: ELCL 图标
   actions:
     - theme: brand
       text: 开始使用核心库

@@ -90,10 +90,11 @@ body {
 }
 
 .VPHomeHero .image-src {
-    width: min(100%, 24rem);
+    width: min(100%, 20rem);
     height: auto;
-    max-width: 24rem;
+    max-width: 20rem;
     max-height: none;
+    filter: drop-shadow(0 18px 38px rgba(17, 107, 159, 0.16));
 }
 
 .VPHomeFeatures {

@@ -1,7 +1,5 @@
-bin/
-obj/
 artifacts/
-ELCL/
+logo/
 .idea/
 .vs/
 *.user

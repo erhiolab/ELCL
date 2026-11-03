@@ -20,12 +20,13 @@ public partial class AboutPage
         InitializeComponent();
 
         string launcherVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown";
+        ImageSource brandIcon = LoadBrandIcon();
 
         AboutEntries.ItemsSource = new[]
         {
             new CreditEntry("EL", "洱海", "ErhioLab Craft Launcher和ErhioLab Craft Launcher Core的开发者.", "GitHub仓库", "https://github.com/ErhioLab"),
-            new CreditEntry("EL", "ErhioLab Craft Launcher", $"启动器版本: {launcherVersion}"),
-            new CreditEntry("CO", "ErhioLab Craft Launcher Core", $"核心版本: {CoreInfo.Version}")
+            new CreditEntry("EL", "ErhioLab Craft Launcher", $"启动器版本: {launcherVersion}", AvatarImage: brandIcon),
+            new CreditEntry("CO", "ErhioLab Craft Launcher Core", $"核心版本: {CoreInfo.Version}", AvatarImage: brandIcon)
         };
         ThanksEntries.ItemsSource = new[]
         {
@@ -37,7 +38,11 @@ public partial class AboutPage
         };
     }
 
-    private static ImageSource LoadAvatar(string fileName) => new BitmapImage(new Uri($"pack://application:,,,/ErhioLab.Craft.Launcher;component/Assets/Credits/{fileName}", UriKind.Absolute));
+    private static ImageSource LoadAvatar(string fileName) => LoadImage($"Assets/Credits/{fileName}");
+
+    private static ImageSource LoadBrandIcon() => LoadImage("Assets/Brand/ELCL.png");
+
+    private static ImageSource LoadImage(string path) => new BitmapImage(new Uri($"pack://application:,,,/ErhioLab.Craft.Launcher;component/{path}", UriKind.Absolute));
 
     private void LinkButton_Click(object sender, RoutedEventArgs e)
     {

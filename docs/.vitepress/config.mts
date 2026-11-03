@@ -11,12 +11,15 @@ export default defineConfig({
     lastUpdated: true,
     outDir: "../artifacts/docs-site",
     head: [
+        ["link", { rel: "icon", type: "image/x-icon", href: `${base}favicon.ico` }],
+        ["link", { rel: "apple-touch-icon", href: `${base}logo.png` }],
+        ["meta", { property: "og:image", content: `${base}logo.png` }],
         ["meta", { name: "theme-color", content: "#0b1521" }],
         ["meta", { name: "keywords", content: "ELCL, ELCLC, Minecraft, 启动器, 核心库" }]
     ],
     themeConfig: {
         siteTitle: "ELCL / DOCS",
-        logo: false,
+        logo: "/logo.svg",
         nav: [
             { text: "核心库", link: "/core/README", activeMatch: "/core/" },
             { text: "启动器", link: "/launcher/README", activeMatch: "/launcher/" },
