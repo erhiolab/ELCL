@@ -50,8 +50,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid
-                    Width="34"
-                    Height="34"
+                    Width="32"
+                    Height="32"
                     VerticalAlignment="Center">
                     <Ellipse Fill="{DynamicResource AccentMutedBrush}" />
                     <Ellipse x:Name="AvatarPhoto">

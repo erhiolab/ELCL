@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Dialogs;
@@ -39,6 +40,7 @@ public partial class MainWindow
     private bool _hasNavigated;
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
+    private int _themeTransitionVersion;
     private bool _taskManagerClosing;
     private RadioButton? _selectedNavigationButton;
     private Point? _maximizedDragStart;
@@ -70,6 +72,76 @@ public partial class MainWindow
         Opacity = 1;
         WindowRoot.Opacity = opacity;
         UpdateWindowClip();
+    }
+
+    /// <summary>在替换主题资源前保留一帧旧画面, 供切换后淡出.</summary>
+    internal void CaptureThemeTransition()
+    {
+        _themeTransitionVersion++;
+        if (!IsLoaded || WindowState == WindowState.Minimized || WindowRoot.ActualWidth <= 0 || WindowRoot.ActualHeight <= 0)
+        {
+            ClearThemeTransition();
+            return;
+        }
+
+        Matrix scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
+        int width = (int)Math.Ceiling(WindowRoot.ActualWidth * scale.M11);
+        int height = (int)Math.Ceiling(WindowRoot.ActualHeight * scale.M22);
+        if (width <= 0 || height <= 0)
+        {
+            ClearThemeTransition();
+            return;
+        }
+
+        double opacity = WindowRoot.Opacity;
+        try
+        {
+            // 截图与实时内容一起位于 WindowRoot 内, 由父层统一应用窗口透明度.
+            WindowRoot.Opacity = 1;
+            RenderTargetBitmap snapshot = new(width, height, 96 * scale.M11, 96 * scale.M22, PixelFormats.Pbgra32);
+            snapshot.Render(WindowRoot);
+            snapshot.Freeze();
+            ThemeTransitionImage.BeginAnimation(OpacityProperty, null);
+            ThemeTransitionImage.Source = snapshot;
+            ThemeTransitionImage.Opacity = 1;
+            ThemeTransitionImage.Visibility = Visibility.Visible;
+        }
+        finally
+        {
+            WindowRoot.Opacity = opacity;
+        }
+    }
+
+    /// <summary>让旧画面逐渐露出已应用的新主题.</summary>
+    internal void FadeThemeTransition()
+    {
+        if (ThemeTransitionImage.Source is null)
+        {
+            return;
+        }
+
+        int version = _themeTransitionVersion;
+        DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(350))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        fade.Completed += (_, _) =>
+        {
+            if (version != _themeTransitionVersion)
+            {
+                return;
+            }
+
+            ClearThemeTransition();
+        };
+        ThemeTransitionImage.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private void ClearThemeTransition()
+    {
+        ThemeTransitionImage.Visibility = Visibility.Collapsed;
+        ThemeTransitionImage.BeginAnimation(OpacityProperty, null);
+        ThemeTransitionImage.Source = null;
     }
 
     /// <summary>按照个性化配置更新标题栏左侧文字.</summary>

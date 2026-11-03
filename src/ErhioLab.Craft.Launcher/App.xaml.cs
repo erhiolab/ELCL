@@ -110,20 +110,32 @@ public partial class App
             return false;
         }
 
-        bool paletteChanged = Settings.Theme != normalized.Theme || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
+        bool themeChanged = Settings.Theme != normalized.Theme;
+        bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
+        MainWindow? window = Current.MainWindow as MainWindow;
+        if (themeChanged)
+        {
+            window?.CaptureThemeTransition();
+        }
+
         Settings = normalized;
         if (paletteChanged)
         {
             LauncherThemeManager.Apply(Settings);
         }
 
-        if (Current.MainWindow is MainWindow window)
+        if (window is not null)
         {
             window.ApplyContentOpacity(Settings.WindowOpacity);
             if (titleChanged)
             {
                 window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText ?? string.Empty);
+            }
+
+            if (themeChanged)
+            {
+                window.FadeThemeTransition();
             }
         }
 

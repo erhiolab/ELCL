@@ -14,9 +14,11 @@
     <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
-    <Resource Include="Assets/Credits/Pcl.ico" />
+    <Resource Include="Assets/Credits/Pcl.png" />
     <Resource Include="Assets/Credits/PrismLauncher.png" />
     <Resource Include="Assets/Credits/Bmclapi.jpg" />
+    <Resource Include="Assets/Credits/MinecraftWiki.png" />
+    <Resource Include="Assets/Credits/WpfUi.png" />
   </ItemGroup>
 </Project>
 

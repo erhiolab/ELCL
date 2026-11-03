@@ -10,6 +10,8 @@
 
 `LauncherThemeManager` 负责把启动器定义的外观配置映射为 WPF 色彩. 明暗模式变化时只替换 WPF UI 的主题资源字典, 不调用会更新窗口背景的 `ApplicationThemeManager.Apply`; 主题色变化只替换 `LauncherTheme.xaml` 中的共享画刷. 不透明度变化只更新内容层. 页面使用 `DynamicResource` 引用这些画刷, 切换主题时现有视图会立即更新. 新页面应复用这些画刷, 避免在控件上写死明暗相关颜色.
 
+用户切换白昼/深夜模式时, `MainWindow` 会在更新主题资源前截取旧内容, 再以 350 毫秒淡出截图. 截图位于 `WindowRoot` 内, 因此跟随同一窗口透明度和圆角裁剪; 启动时加载配置不执行过渡动画.
+
 ## 共享画刷
 
 | 资源 | 用途 |

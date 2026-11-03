@@ -234,6 +234,14 @@
 
             <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
             <tasks:TaskManagerView x:Name="TaskManagerPage" Grid.Row="1" Visibility="Collapsed" />
+            <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->
+            <Image
+                x:Name="ThemeTransitionImage"
+                Grid.RowSpan="2"
+                IsHitTestVisible="False"
+                Opacity="1"
+                Stretch="Fill"
+                Visibility="Collapsed" />
         </Grid>
         <Button
             x:Name="TaskManagerButton"

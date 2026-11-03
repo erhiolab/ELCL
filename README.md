@@ -4,6 +4,10 @@ ErhioLab Craft Launcher (ELCL) 是一个重新设计的 Minecraft 启动器.
 
 > 为什么是重新设计: 24年我还写过一个 ECL.
 
+## 图标资源
+
+启动器窗口与可执行文件、文档站导航及首页使用仓库 [`logo/`](logo/) 中的 ELCL 标识. 启动器鸣谢页的第三方图标来源和本地资源说明见[鸣谢页头像来源](src/ErhioLab.Craft.Launcher/Assets/Credits/README.md).
+
 ## 贡献
 
 ### 项目结构
