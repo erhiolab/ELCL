@@ -14,6 +14,9 @@ internal static class LauncherDialogs
     /// <summary>显示警告提示.</summary>
     internal static void Warning(string title, string message) => _ = ShowAsync(title, message, LauncherDialogLevel.Warning, false, "知道了");
 
+    /// <summary>等待用户关闭警告弹窗后再继续执行.</summary>
+    internal static Task WarningAsync(string title, string message) => ShowAsync(title, message, LauncherDialogLevel.Warning, false, "知道了");
+
     /// <summary>先显示二次确认, 确认后才执行调用方的操作.</summary>
     /// <returns>用户确认时为 true.</returns>
     internal static Task<bool> ConfirmAsync(string title, string message,

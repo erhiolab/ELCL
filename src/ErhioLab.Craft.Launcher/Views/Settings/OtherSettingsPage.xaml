@@ -12,12 +12,28 @@
                 BorderThickness="1"
                 CornerRadius="10">
                 <StackPanel>
-                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="其他" />
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="配置文件" />
                     <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
                     <TextBlock
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="这里将提供其他设置." />
+                        Text="将当前设置保存为 JSON 文件, 或从已有文件恢复设置. 导入后会自动重启启动器. "
+                        TextWrapping="Wrap" />
+                    <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                        <Button
+                            Width="112"
+                            Height="36"
+                            Click="ExportSettings_Click"
+                            Content="导出配置"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            Width="112"
+                            Height="36"
+                            Margin="10,0,0,0"
+                            Click="ImportSettings_Click"
+                            Content="导入配置"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>

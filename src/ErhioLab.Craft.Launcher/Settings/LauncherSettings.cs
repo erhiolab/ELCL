@@ -1,4 +1,5 @@
 using System.Globalization;
+
 using ErhioLab.Craft.Launcher.Core.Java;
 
 namespace ErhioLab.Craft.Launcher.Settings;
@@ -40,7 +41,7 @@ public sealed record LauncherSettings
     /// <returns>规范化后的设置.</returns>
     public LauncherSettings Normalize()
     {
-        string accent = AccentColor.Trim();
+        string accent = NormalizeAccent(AccentColor);
         string titleText = TitleBarText ?? string.Empty;
         bool validAccent = accent.Length == 7 && accent[0] == '#' && uint.TryParse(accent.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _);
 
@@ -60,6 +61,8 @@ public sealed record LauncherSettings
     }
 
     private static IEnumerable<T> OrEmpty<T>(IEnumerable<T>? values) => values ?? [];
+
+    private static string NormalizeAccent(string? color) => color?.Trim() ?? string.Empty;
 
     private static IEnumerable<JavaInstallation> ValidJavaInstallations(IEnumerable<JavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
 }

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -146,6 +147,37 @@ public partial class App
 
         Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         return true;
+    }
+
+    /// <summary>将当前生效的启动器配置导出到用户选择的 JSON 文件.</summary>
+    internal static void ExportSettings(string path)
+    {
+        new JsonFileStore<LauncherSettings>(path, SettingsJsonOptions).Save(Settings);
+        Logger.Information("Settings", $"配置已导出: {path}");
+    }
+
+    /// <summary>验证外部 JSON, 规范化后原子写入当前配置文件, 供重启后读取.</summary>
+    internal static void ImportSettings(string path)
+    {
+        string json = File.ReadAllText(path);
+        LauncherSettings imported = JsonSerializer.Deserialize<LauncherSettings>(json, SettingsJsonOptions)
+            ?? throw new JsonException("配置文件内容不能为 null.");
+        LauncherSettings normalized = imported.Normalize();
+        _settingsStore!.Save(normalized);
+        _ = _settingsStore.Load(new LauncherSettings()).Normalize();
+        Logger.Information("Settings", $"配置已导入并验证: {path}");
+    }
+
+    /// <summary>先启动新进程, 成功后退出当前进程.</summary>
+    internal static void Restart()
+    {
+        string executable = Environment.ProcessPath ?? throw new InvalidOperationException("无法确定启动器程序路径.");
+        using Process process = Process.Start(new ProcessStartInfo(executable)
+        {
+            UseShellExecute = true,
+            WorkingDirectory = AppContext.BaseDirectory
+        }) ?? throw new InvalidOperationException("无法启动新的启动器进程.");
+        Current.Shutdown();
     }
 
     /// <summary>只预览窗口透明度, 不在拖动滑块时反复写入配置.</summary>
