@@ -87,6 +87,12 @@ public static class LauncherIcons
     /// <summary>个性化图标.</summary>
     public static readonly Geometry Personalization = Parse("M 5,2 L 8,1 L 10,4 L 12,1 L 15,2 L 18,6 L 15,8 L 14,6 L 14,17 L 6,17 L 6,6 L 5,8 L 2,6 Z");
 
+    /// <summary>启动设置侧栏的播放图标.</summary>
+    public static readonly Geometry LaunchSettings = Parse("M 4,2 L 16,9 L 4,16 Z");
+
+    /// <summary>打开本地文件夹按钮图标.</summary>
+    public static readonly Geometry Folder = Parse("M 2,4 L 7,4 L 9,6 L 16,6 L 16,15 L 2,15 Z");
+
     /// <summary>调试侧栏的终端图标.</summary>
     public static readonly Geometry Debug = Parse("M 2,3 L 16,3 L 16,15 L 2,15 Z M 5,7 L 8,9 L 5,11 M 10,12 L 13,12");
 

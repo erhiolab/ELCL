@@ -32,6 +32,8 @@ internal static class ShellRouteCatalog
         downloadSidebar.ActionRequested += _ => versionList.RefreshVersions();
 
         // 设置
+        LaunchSettingsPage launchSettingsPage = new();
+        SectionSidebarItem launchSettingsItem = new("启动", LauncherIcons.LaunchSettings, CanReset: true);
         PersonalizationPage personalizationPage = new();
         SectionSidebarItem personalizationItem = new("个性化", LauncherIcons.Personalization, CanReset: true);
         DownloadSettingsPage downloadSettingsPage = new();
@@ -41,6 +43,7 @@ internal static class ShellRouteCatalog
         DebugSettingsPage debugSettingsPage = new();
         SectionSidebarItem debugItem = new("调试", LauncherIcons.Debug);
         SectionSidebarView settingsSidebar = new(
+            launchSettingsItem,
             personalizationItem,
             downloadSettingsItem,
             otherItem,
@@ -48,13 +51,17 @@ internal static class ShellRouteCatalog
         );
         ContentControl settingsContent = new()
         {
-            Content = personalizationPage,
+            Content = launchSettingsPage,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch
         };
         settingsSidebar.SelectionChanged += item =>
         {
-            if (ReferenceEquals(item, downloadSettingsItem))
+            if (ReferenceEquals(item, launchSettingsItem))
+            {
+                settingsContent.Content = launchSettingsPage;
+            }
+            else if (ReferenceEquals(item, downloadSettingsItem))
             {
                 settingsContent.Content = downloadSettingsPage;
             }
@@ -73,7 +80,11 @@ internal static class ShellRouteCatalog
         };
         settingsSidebar.ActionRequested += async item =>
         {
-            if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync("重置个性化设置", "是否要重置 个性化 的所有设置? 此操作不可逆.", confirmText: "重置"))
+            if (ReferenceEquals(item, launchSettingsItem) && await LauncherDialogs.ConfirmAsync("重置启动设置", "是否要重置 启动 的所有设置? 此操作不可逆.", confirmText: "重置"))
+            {
+                await App.JavaCatalog.ResetAsync();
+            }
+            else if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync("重置个性化设置", "是否要重置 个性化 的所有设置? 此操作不可逆.", confirmText: "重置"))
             {
                 personalizationPage.ResetToDefaults();
             }

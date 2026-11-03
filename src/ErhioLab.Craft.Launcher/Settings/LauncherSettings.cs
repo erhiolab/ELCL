@@ -1,8 +1,9 @@
 using System.Globalization;
+using ErhioLab.Craft.Launcher.Core.Java;
 
 namespace ErhioLab.Craft.Launcher.Settings;
 
-/// <summary>启动器的外观和下载配置, 由客户端定义和校验.</summary>
+/// <summary>启动器的启动/外观和下载配置, 由客户端定义和校验.</summary>
 public sealed record LauncherSettings
 {
     /// <summary>当前明暗主题.</summary>
@@ -29,6 +30,12 @@ public sealed record LauncherSettings
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
 
+    /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
+    public IReadOnlyList<JavaInstallation> JavaInstallations { get; init; } = [];
+
+    /// <summary>用户主动移除的路径, 自动刷新时不会重新加入.</summary>
+    public IReadOnlyList<string> IgnoredJavaPaths { get; init; } = [];
+
     /// <summary>将外部配置值限制在启动器支持的范围内.</summary>
     /// <returns>规范化后的设置.</returns>
     public LauncherSettings Normalize()
@@ -46,7 +53,13 @@ public sealed record LauncherSettings
             DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
             DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
-            WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0
+            WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
+            JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
+            IgnoredJavaPaths = OrEmpty(IgnoredJavaPaths).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
         };
     }
+
+    private static IEnumerable<T> OrEmpty<T>(IEnumerable<T>? values) => values ?? [];
+
+    private static IEnumerable<JavaInstallation> ValidJavaInstallations(IEnumerable<JavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
 }

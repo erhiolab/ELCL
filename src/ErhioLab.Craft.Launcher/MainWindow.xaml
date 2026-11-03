@@ -237,6 +237,7 @@
             <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->
             <Image
                 x:Name="ThemeTransitionImage"
+                Grid.Row="0"
                 Grid.RowSpan="2"
                 IsHitTestVisible="False"
                 Opacity="1"

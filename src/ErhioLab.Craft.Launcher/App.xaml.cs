@@ -29,6 +29,7 @@ public partial class App
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
     private static readonly LauncherTaskManager TaskEngine = new();
+    private static readonly JavaCatalogManager JavaEngine = new();
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
@@ -41,6 +42,9 @@ public partial class App
 
     /// <summary>所有页面共享的启动器任务管理器.</summary>
     internal static LauncherTaskManager Tasks => TaskEngine;
+
+    /// <summary>本机 Java 的发现、排序与持久化管理.</summary>
+    internal static JavaCatalogManager JavaCatalog => JavaEngine;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -91,6 +95,7 @@ public partial class App
         LauncherThemeManager.Apply(Settings);
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
+        _ = JavaCatalog.InitializeIfEmptyAsync();
     }
 
     /// <summary>保存并立即应用新设置.</summary>

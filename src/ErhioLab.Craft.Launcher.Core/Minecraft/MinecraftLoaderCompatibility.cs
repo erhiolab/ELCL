@@ -35,7 +35,6 @@ public static class MinecraftLoaderCompatibility
 
     private static bool IsOptiFineCompatibleWithForge(string gameVersion, string forgeVersion, string? requiredForge)
     {
-        // PCL2 对 Minecraft 1.13 到 1.14.3 的 Forge + OptiFine 组合直接禁用.
         if (Version.TryParse(gameVersion, out Version? game)
             && game >= new Version(1, 13)
             && game <= new Version(1, 14, 3))

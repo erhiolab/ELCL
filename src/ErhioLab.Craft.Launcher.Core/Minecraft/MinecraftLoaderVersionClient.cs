@@ -151,7 +151,6 @@ public sealed class MinecraftLoaderVersionClient
                 continue;
             }
 
-            // Forge 页面中的 title 时间按 UTC 解释, 与 PCL2 的页面解析方式一致.
             dates.TryAdd(versionMatch.Groups["version"].Value, new DateTimeOffset(parsed, TimeSpan.Zero));
         }
 

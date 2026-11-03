@@ -44,6 +44,7 @@ export default defineConfig({
                 },
                 {
                     text: "基础能力", items: [
+                        { text: "Java 运行时发现", link: "/core/java" },
                         { text: "通用下载器", link: "/core/downloader" },
                         { text: "会话日志", link: "/core/logging" },
                         { text: "JSON 文件存储", link: "/core/storage" },

@@ -2,7 +2,7 @@
 
 ## 文件位置与职责
 
-客户端选择数据目录, 当前为程序目录下的 `ELCL`. 配置保存在 `ELCL/config.json`. Core 的 `JsonFileStore<T>` 只接收文件路径/序列化选项和调用方定义的数据类型, 不知道启动器配置的字段、默认值或校验规则, 也不依赖 WPF.
+客户端选择数据目录, 当前为程序目录下的 `ELCL`. 配置保存在 `ELCL/config.json`. Core 的 `JsonFileStore<T>` 只接收文件路径/序列化选项和调用方定义的数据类型, 不知道启动器配置的字段/默认值或校验规则, 也不依赖 WPF.
 
 首次启动时客户端写入默认配置. 随后启动先读取并规范化配置, 再创建主窗口. 配置无法解析或读取时, 原文件保持不变, 本次运行使用默认值并写入日志. 用户再次修改设置时会保存新配置.
 
@@ -11,6 +11,8 @@
   "Theme": "Day",
   "AccentColor": "#80CEFF",
   "WindowOpacity": 1,
+  "JavaInstallations": [],
+  "IgnoredJavaPaths": [],
   "VersionListSource": "OfficialFirst",
   "DownloadMaxConnections": 8,
   "DownloadSpeedLimitMiBPerSecond": 0
@@ -21,7 +23,13 @@
 
 `DownloadMaxConnections` 通过滑块设置, 范围是 `1` 到 `256`, 默认 `8`. `DownloadSpeedLimitMiBPerSecond` 的单位为 MiB/s, `0` 表示不限速. 下载设置在任务创建时读取, 已创建的任务继续使用原来的参数.
 
-设置侧栏的下载重置按钮将版本列表源、最大连接数和速度限制恢复默认值, 不会改变外观设置.
+## 启动设置与 Java 列表
+
+设置侧栏顶部的"启动"页保存按优先级排列的 `JavaInstallations`. 每项包含 `java.exe` 路径/版本号/主版本号和架构; 列表为空时启动器会在后台自动查找. 页面默认只显示优先级最高的 3 项, 可展开查看全部; 其余条目以 240 毫秒的高度缓动显示或收起, 无须在设置页内增加第二个滚动区域. 每项的排序/打开文件夹和移除按钮在鼠标悬浮时显示. 用户可以手动获取/选择 `java.exe` 添加/上下移动/移除或打开所在文件夹. 手动添加的 Java 会置顶. 当前还未实现游戏下载和游戏启动; 将来按列表顺序选择首个兼容目标 Minecraft 版本的 Java, 版本独立设置可以覆盖自动选择.
+
+客户端从 Windows 注册表收集额外安装目录, 然后调用 Core 的 [Java 发现 API](../core/java.md). Core 读取 `PATH`/`JAVA_HOME`/`JDK_HOME`, 检查常见安装目录和已知 Java 附近的目录. 目录搜索有深度与数量上限, 不遍历磁盘根目录. 候选 `java.exe` 会在限时内运行 `-XshowSettings:properties -version` 验证并读取版本. 刷新保留用户已排好的顺序, 新发现的 Java 加在末尾. `IgnoredJavaPaths` 记录手动移除的路径, 刷新不会重新加入; 重置启动设置会清空列表和排除项, 随即重新查找.
+
+设置侧栏的下载重置按钮将版本列表源/最大连接数和速度限制恢复默认值, 不会改变外观设置.
 
 ## 保存流程
 
