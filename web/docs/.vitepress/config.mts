@@ -3,8 +3,8 @@ import { defineConfig } from "vitepress"
 const base = process.env.DOCS_BASE || "/"
 
 export default defineConfig({
-    title: "ELCL Docs",
-    description: "ErhioLab Craft Launcher 与 ELCLC 核心库文档",
+    title: "ELCL · Minecraft Java 启动器",
+    description: "ELCL 启动器官网与 ELCLC 核心库文档",
     lang: "zh-CN",
     base,
     cleanUrls: true,
@@ -18,12 +18,11 @@ export default defineConfig({
         ["meta", { name: "keywords", content: "ELCL, ELCLC, Minecraft, 启动器, 核心库" }]
     ],
     themeConfig: {
-        siteTitle: "ELCL / DOCS",
+        siteTitle: "ELCL",
         logo: "/logo.svg",
         nav: [
-            { text: "核心库", link: "/core/README", activeMatch: "/core/" },
-            { text: "启动器", link: "/launcher/README", activeMatch: "/launcher/" },
-            { text: "开发", link: "/development/code-style", activeMatch: "/development/|/ui/|/publishing" },
+            { text: "首页", link: "/" },
+            { text: "核心库文档", link: "/core/README", activeMatch: "/core/" },
             { text: "GitHub", link: "https://github.com/erhiolab/ELCL" }
         ],
         sidebar: {
@@ -32,59 +31,30 @@ export default defineConfig({
                     text: "入门", items: [
                         { text: "核心库概览", link: "/core/README" },
                         { text: "快速开始", link: "/core/quick-start" },
-                        { text: "设计边界", link: "/core/architecture" }
+                        { text: "Core 负责什么", link: "/core/architecture" }
                     ]
                 },
                 {
                     text: "Minecraft", items: [
-                        { text: "原版版本清单", link: "/core/versions" },
-                        { text: "附加加载器", link: "/core/loaders" },
-                        { text: "Wiki 页面", link: "/core/wiki" }
+                        { text: "游戏版本列表", link: "/core/versions" },
+                        { text: "模组加载器版本", link: "/core/loaders" },
+                        { text: "Minecraft Wiki", link: "/core/wiki" }
                     ]
                 },
                 {
                     text: "基础能力", items: [
                         { text: "Java 运行时发现", link: "/core/java" },
-                        { text: "通用下载器", link: "/core/downloader" },
-                        { text: "会话日志", link: "/core/logging" },
-                        { text: "JSON 文件存储", link: "/core/storage" },
-                        { text: "核心版本", link: "/core/version" }
-                    ]
-                }
-            ],
-            "/launcher/": [
-                {
-                    text: "ELCL 启动器", items: [
-                        { text: "集成说明", link: "/launcher/README" },
-                        { text: "配置系统", link: "/launcher/settings" },
-                        { text: "下载页面", link: "/launcher/download" },
-                        { text: "百宝箱", link: "/launcher/toolbox" }
-                    ]
-                }
-            ],
-            "/ui/": [
-                {
-                    text: "界面设计", items: [
-                        { text: "视觉方向", link: "/ui/visual-direction" },
-                        { text: "主题", link: "/ui/themes" },
-                        { text: "通知", link: "/ui/notifications" },
-                        { text: "对话框", link: "/ui/dialogs" }
-                    ]
-                }
-            ],
-            "/development/": [
-                {
-                    text: "开发", items: [
-                        { text: "代码规范", link: "/development/code-style" },
-                        { text: "文档站开发", link: "/development/docs-site" },
-                        { text: "构建发布", link: "/publishing" }
+                        { text: "文件下载", link: "/core/downloader" },
+                        { text: "写日志", link: "/core/logging" },
+                        { text: "保存 JSON", link: "/core/storage" },
+                        { text: "版本号", link: "/core/version" }
                     ]
                 }
             ]
         },
         socialLinks: [{ icon: "github", link: "https://github.com/erhiolab/ELCL" }],
         editLink: {
-            pattern: "https://github.com/erhiolab/ELCL/edit/main/docs/:path",
+            pattern: "https://github.com/erhiolab/ELCL/edit/main/web/docs/:path",
             text: "在 GitHub 上编辑此页"
         },
         search: {
