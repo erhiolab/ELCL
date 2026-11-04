@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -68,6 +69,121 @@ public static partial class JavaDiscovery
             .OrderByDescending(java => java.MajorVersion)
             .ThenBy(java => java.Path, PathComparer)
             .ToArray();
+    }
+
+    /// <summary>
+    /// 深度遍历所有可访问的本地目录并验证找到的 Java. 可能耗时很久并产生大量磁盘 I/O;
+    /// 只应由用户主动触发, 不要在应用启动或普通刷新时调用.
+    /// </summary>
+    /// <param name="roots">要搜索的根目录; 为空时搜索所有就绪的本地磁盘.</param>
+    /// <param name="progress">每扫描约 256 个目录报告一次进度, 完成扫描时再报告一次.</param>
+    /// <param name="cancellationToken">取消扫描和候选验证.</param>
+    public static async Task<IReadOnlyList<JavaInstallation>> FindExhaustiveAsync(
+        IEnumerable<string>? roots = null,
+        IProgress<JavaDiscoveryProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        string[] searchRoots = (roots ?? DefaultExhaustiveRoots())
+            .Select(Path.GetFullPath)
+            .Distinct(PathComparer)
+            .ToArray();
+        HashSet<string> candidates = await Task.Run(() => ScanExhaustively(searchRoots, progress, cancellationToken), cancellationToken);
+
+        ConcurrentBag<JavaInstallation> valid = [];
+        await Parallel.ForEachAsync(candidates, new ParallelOptions
+        {
+            CancellationToken = cancellationToken,
+            MaxDegreeOfParallelism = 4
+        }, async (path, token) =>
+        {
+            if (await ProbeAsync(path, token) is { } installation)
+            {
+                valid.Add(installation);
+            }
+        });
+
+        JavaInstallation[] installations = valid.ToArray();
+        HashSet<string> validPaths = new(installations.Select(java => java.Path), PathComparer);
+        return installations.Where(java => !IsNestedJreDuplicate(java.Path, validPaths))
+            .OrderByDescending(java => java.MajorVersion)
+            .ThenBy(java => java.Path, PathComparer)
+            .ToArray();
+    }
+
+    private static IEnumerable<string> DefaultExhaustiveRoots()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return [Path.GetPathRoot(Environment.CurrentDirectory) ?? "/"];
+        }
+
+        return DriveInfo.GetDrives()
+            .Where(drive => drive.DriveType is DriveType.Fixed or DriveType.Removable && drive.IsReady)
+            .Select(drive => drive.RootDirectory.FullName);
+    }
+
+    private static HashSet<string> ScanExhaustively(
+        IEnumerable<string> roots, IProgress<JavaDiscoveryProgress>? progress, CancellationToken cancellationToken)
+    {
+        HashSet<string> candidates = new(PathComparer);
+        Stack<string> pending = new();
+        foreach (string root in roots)
+        {
+            if (Directory.Exists(root))
+            {
+                pending.Push(root);
+            }
+        }
+
+        long scanned = 0;
+        while (pending.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string directory = pending.Pop();
+            scanned++;
+            try
+            {
+                foreach (string file in Directory.EnumerateFiles(directory, ExecutableName))
+                {
+                    candidates.Add(file);
+                }
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                // 当前目录的文件不可读时, 仍继续搜索其子目录.
+            }
+
+            try
+            {
+                foreach (string child in Directory.EnumerateDirectories(directory))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    try
+                    {
+                        if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) == 0)
+                        {
+                            pending.Push(child);
+                        }
+                    }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    {
+                        // 单个子目录消失或不可读时跳过它, 保留其余兄弟目录.
+                    }
+                }
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                // 无权限列出子目录时继续搜索其他目录.
+            }
+
+            if ((scanned & 255) == 0)
+            {
+                progress?.Report(new JavaDiscoveryProgress(scanned, candidates.Count, directory));
+            }
+        }
+
+        progress?.Report(new JavaDiscoveryProgress(scanned, candidates.Count, string.Empty));
+        return candidates;
     }
 
     /// <summary>运行 Java 以确认可用性并读取版本/主版本号与架构.</summary>
