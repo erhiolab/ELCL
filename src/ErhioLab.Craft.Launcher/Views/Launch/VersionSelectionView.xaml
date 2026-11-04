@@ -60,14 +60,28 @@
                             FontWeight="SemiBold"
                             Text="{Binding Name}"
                             TextTrimming="CharacterEllipsis" />
-                        <TextBox
-                            x:Name="FolderNameEditor"
-                            Height="25"
-                            MaxLength="64"
-                            Text="{Binding Name, Mode=OneWay}"
-                            KeyDown="FolderNameEditor_KeyDown"
-                            LostFocus="FolderNameEditor_LostFocus"
-                            Visibility="Collapsed" />
+                        <Border
+                            x:Name="FolderNameEditHost"
+                            Height="26"
+                            Padding="7,0"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            BorderBrush="{DynamicResource AccentBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Visibility="Collapsed">
+                            <TextBox
+                                x:Name="FolderNameEditor"
+                                VerticalContentAlignment="Center"
+                                CaretBrush="{DynamicResource AccentBrush}"
+                                Foreground="{DynamicResource TextBrush}"
+                                MaxLength="64"
+                                SelectionBrush="{DynamicResource AccentBrush}"
+                                SelectionTextBrush="{DynamicResource AccentForegroundBrush}"
+                                Style="{StaticResource BareTextBoxStyle}"
+                                Text="{Binding Name, Mode=OneWay}"
+                                KeyDown="FolderNameEditor_KeyDown"
+                                LostFocus="FolderNameEditor_LostFocus" />
+                        </Border>
                         <TextBlock
                             Margin="0,2,0,0"
                             FontSize="10"
@@ -145,7 +159,7 @@
                 </Trigger>
                 <DataTrigger Binding="{Binding IsRenaming}" Value="True">
                     <Setter TargetName="FolderName" Property="Visibility" Value="Collapsed" />
-                    <Setter TargetName="FolderNameEditor" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="FolderNameEditHost" Property="Visibility" Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>

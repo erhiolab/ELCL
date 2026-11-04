@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Http;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -9,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
@@ -21,6 +24,7 @@ public partial class VanillaVersionsPage
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
     private readonly MinecraftVersionCatalogClient _catalogClient = new(HttpClient);
+    private readonly JsonFileStore<MinecraftVersionCatalog> _catalogCache = new(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version_catalog.json"));
     private readonly MinecraftWikiClient _wikiClient = new(HttpClient);
     private readonly Dictionary<FrameworkElement, int> _groupAnimationVersions = [];
     private readonly CancellationTokenSource _pageCancellation = new();
@@ -33,7 +37,7 @@ public partial class VanillaVersionsPage
     /// <summary>用户选择一个游戏版本时, 请求打开下载详情页.</summary>
     internal event Action<MinecraftVersion>? VersionSelected;
 
-    /// <summary>创建版本列表页面, 网络请求在页面首次显示时开始.</summary>
+    /// <summary>创建版本列表页面, 首次显示时先读取缓存, 再检查网络更新.</summary>
     public VanillaVersionsPage()
     {
         InitializeComponent();
@@ -47,10 +51,15 @@ public partial class VanillaVersionsPage
             _closeHooked = true;
         }
 
-        if (!_hasLoaded || _loadedPreference != App.Settings.VersionListSource)
+        if (!_hasLoaded)
         {
             _hasLoaded = true;
-            await LoadVersionsAsync();
+            TryLoadCache();
+            await LoadVersionsAsync(false);
+        }
+        else if (_loadedPreference != App.Settings.VersionListSource)
+        {
+            await LoadVersionsAsync(false);
         }
     }
 
@@ -61,9 +70,35 @@ public partial class VanillaVersionsPage
     }
 
     /// <summary>由下载侧栏的悬浮按钮触发重新获取.</summary>
-    internal void RefreshVersions() => _ = LoadVersionsAsync();
+    internal void RefreshVersions() => _ = LoadVersionsAsync(true);
 
-    private async Task LoadVersionsAsync()
+    private void TryLoadCache()
+    {
+        try
+        {
+            if (!File.Exists(_catalogCache.FilePath))
+            {
+                return;
+            }
+
+            MinecraftVersionCatalog cached = _catalogCache.Load(new MinecraftVersionCatalog(
+                MinecraftManifestSource.Official, string.Empty, string.Empty, []));
+            if (!IsValidCatalog(cached))
+            {
+                throw new JsonException("缓存的版本清单不完整.");
+            }
+
+            _catalog = cached;
+            ApplySearch();
+            App.Logger.Information("Download", $"已从缓存加载 {cached.Versions.Count} 个游戏版本.");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        {
+            App.Logger.Error("Download", "读取游戏版本缓存失败, 将尝试联网获取.", error);
+        }
+    }
+
+    private async Task LoadVersionsAsync(bool manualRefresh)
     {
         if (_loading)
         {
@@ -73,7 +108,10 @@ public partial class VanillaVersionsPage
         _loading = true;
         CancellationToken cancellationToken = _pageCancellation.Token;
         _loadedPreference = App.Settings.VersionListSource;
-        LauncherToasts.Information("正在获取游戏版本列表...");
+        if (manualRefresh || _catalog is null)
+        {
+            LauncherToasts.Information("正在获取游戏版本列表...");
+        }
         try
         {
             MinecraftManifestSource preferred = App.Settings.VersionListSource == VersionListSource.MirrorFirst ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
@@ -84,10 +122,18 @@ public partial class VanillaVersionsPage
                 return;
             }
 
-            _catalog = catalog;
-            ApplySearch();
+            bool changed = _catalog is null || !CatalogsEqual(_catalog, catalog);
+            if (changed)
+            {
+                _catalog = catalog;
+                ApplySearch();
+                TrySaveCache(catalog);
+            }
             App.Logger.Information("Download", $"版本列表获取完成, 实际来源: {catalog.Source}, 数量: {catalog.Versions.Count}.");
-            LauncherToasts.Success(catalog.Source == preferred ? "游戏版本列表已获取." : $"已从{SourceName(catalog.Source)}获取游戏版本列表.");
+            if (changed || manualRefresh)
+            {
+                LauncherToasts.Success(changed ? "游戏版本列表已更新." : "游戏版本列表已是最新.");
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -96,16 +142,43 @@ public partial class VanillaVersionsPage
         catch (Exception error)
         {
             App.Logger.Error("Download", "版本列表获取失败.", error);
-            _catalog = null;
-            VersionGroups.ItemsSource = null;
-            EmptySearchText.Visibility = Visibility.Collapsed;
-            LauncherToasts.Error("获取游戏版本失败, 请检查网络并在左侧刷新重试.");
+            LauncherToasts.Error(_catalog is null
+                ? "获取游戏版本失败, 请检查网络并在左侧刷新重试."
+                : "更新游戏版本列表失败, 正在使用已缓存的版本.");
         }
         finally
         {
             _loading = false;
         }
     }
+
+    private void TrySaveCache(MinecraftVersionCatalog catalog)
+    {
+        try
+        {
+            _catalogCache.Save(catalog);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            App.Logger.Error("Download", "保存游戏版本缓存失败.", error);
+        }
+    }
+
+    private static bool IsValidCatalog(MinecraftVersionCatalog? catalog) =>
+        catalog is { Versions.Count: > 0 } &&
+        !string.IsNullOrWhiteSpace(catalog.LatestReleaseId) &&
+        !string.IsNullOrWhiteSpace(catalog.LatestPreviewId) &&
+        catalog.Versions.Any(version => version.Id == catalog.LatestReleaseId) &&
+        catalog.Versions.Any(version => version.Id == catalog.LatestPreviewId);
+
+    private static bool CatalogsEqual(MinecraftVersionCatalog oldCatalog, MinecraftVersionCatalog newCatalog) =>
+        oldCatalog.LatestReleaseId == newCatalog.LatestReleaseId &&
+        oldCatalog.LatestPreviewId == newCatalog.LatestPreviewId &&
+        oldCatalog.Versions.Count == newCatalog.Versions.Count &&
+        oldCatalog.Versions.Zip(newCatalog.Versions).All(pair =>
+            pair.First.Id == pair.Second.Id &&
+            pair.First.MetadataUrl == pair.Second.MetadataUrl &&
+            pair.First.Sha1 == pair.Second.Sha1);
 
     private void VersionSearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -272,8 +345,6 @@ public partial class VanillaVersionsPage
             LauncherToasts.Error("无法打开 Minecraft Wiki 页面.");
         }
     }
-
-    private static string SourceName(MinecraftManifestSource source) => source == MinecraftManifestSource.Official ? "官方源" : "镜像源";
 
     private static HttpClient CreateHttpClient()
     {
