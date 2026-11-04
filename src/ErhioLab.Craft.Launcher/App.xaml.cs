@@ -52,9 +52,11 @@ public partial class App
         // 客户端决定数据目录, Core 仅接收日志目录并管理其中的文件.
         string dataDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL");
         string settingsPath = Path.Combine(dataDirectory, "config.json");
+        string localGameDirectory = Path.Combine(AppContext.BaseDirectory, ".minecraft");
         try
         {
             Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(localGameDirectory);
             _logger = new SessionFileLogger(Path.Combine(dataDirectory, "logs"));
             _settingsStore = new JsonFileStore<LauncherSettings>(settingsPath, SettingsJsonOptions);
         }
@@ -79,6 +81,17 @@ public partial class App
         try
         {
             Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
+            if (Settings.GameFolders.Count == 0)
+            {
+                string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+                GameFolderSetting[] folders =
+                [
+                    new(localGameDirectory, "当前文件夹"),
+                    new(officialDirectory, "官方启动器文件夹")
+                ];
+                Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
+                _settingsStore.Save(Settings);
+            }
             if (!File.Exists(settingsPath))
             {
                 _settingsStore.Save(Settings);

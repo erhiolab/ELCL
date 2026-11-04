@@ -46,3 +46,7 @@ MinecraftVersionCatalog catalog = await client.GetCatalogAsync(
 - [BMCLAPI 镜像清单](https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json)
 
 附加加载器版本由另一个 API 负责, 见[加载器](loaders.md).
+
+## 扫描本地版本
+
+`LocalMinecraftVersionScanner.Scan(gameDirectory)` 读取调用方给定的游戏目录下 `versions/<版本文件夹>/<版本文件夹>.json`. 如果文件名不同, 会尝试该文件夹中的其他顶层 JSON. 返回的 `LocalMinecraftVersion` 包含 JSON 中的 `id`、`type`、可选的 `releaseTime`, 以及版本文件夹和 JSON 路径. 单个 JSON 损坏时会跳过它; 可用 `onFileError` 回调记录原因. 此 API 不决定游戏目录、不修改文件, 也不依赖启动器配置或 WPF.

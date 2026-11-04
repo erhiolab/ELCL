@@ -67,11 +67,13 @@
             <Button Click="DownloadVersion_Click" Style="{StaticResource PrimaryActionStyle}">
                 <StackPanel>
                     <TextBlock
+                        x:Name="MainActionTitle"
                         HorizontalAlignment="Center"
                         FontSize="13"
                         FontWeight="Bold"
                         Text="下载游戏版本" />
                     <TextBlock
+                        x:Name="MainActionDescription"
                         Margin="0,3,0,0"
                         HorizontalAlignment="Center"
                         FontSize="9"

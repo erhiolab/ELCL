@@ -37,6 +37,18 @@ public sealed record LauncherSettings
     /// <summary>用户主动移除的路径, 自动刷新时不会重新加入.</summary>
     public IReadOnlyList<string> IgnoredJavaPaths { get; init; } = [];
 
+    /// <summary>版本选择页显示的游戏文件夹, 顺序即列表顺序.</summary>
+    public IReadOnlyList<GameFolderSetting> GameFolders { get; init; } = [];
+
+    /// <summary>当前查看的游戏文件夹路径.</summary>
+    public string? SelectedGameFolderPath { get; init; }
+
+    /// <summary>当前选中的本地游戏版本目录.</summary>
+    public string? SelectedVersionPath { get; init; }
+
+    /// <summary>当前选中版本的 JSON 标识符, 用于启动页展示.</summary>
+    public string? SelectedVersionId { get; init; }
+
     /// <summary>将外部配置值限制在启动器支持的范围内.</summary>
     /// <returns>规范化后的设置.</returns>
     public LauncherSettings Normalize()
@@ -56,7 +68,11 @@ public sealed record LauncherSettings
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
             JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
-            IgnoredJavaPaths = OrEmpty(IgnoredJavaPaths).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
+            IgnoredJavaPaths = OrEmpty(IgnoredJavaPaths).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            GameFolders = ValidGameFolders(GameFolders).DistinctBy(folder => folder.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
+            SelectedGameFolderPath = NormalizePath(SelectedGameFolderPath),
+            SelectedVersionPath = NormalizePath(SelectedVersionPath),
+            SelectedVersionId = string.IsNullOrWhiteSpace(SelectedVersionId) ? null : SelectedVersionId.Trim()[..Math.Min(SelectedVersionId.Trim().Length, 128)]
         };
     }
 
@@ -65,4 +81,43 @@ public sealed record LauncherSettings
     private static string NormalizeAccent(string? color) => color?.Trim() ?? string.Empty;
 
     private static IEnumerable<JavaInstallation> ValidJavaInstallations(IEnumerable<JavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
+
+    private static IEnumerable<GameFolderSetting> ValidGameFolders(IEnumerable<GameFolderSetting?>? values)
+    {
+        foreach (GameFolderSetting? folder in values ?? [])
+        {
+            string? path = NormalizePath(folder?.Path);
+            if (path is null)
+            {
+                continue;
+            }
+
+            string name = string.IsNullOrWhiteSpace(folder!.Name)
+                ? System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar))
+                : folder.Name.Trim();
+            if (name.Length == 0)
+            {
+                name = "游戏文件夹";
+            }
+
+            yield return new GameFolderSetting(path, name[..Math.Min(name.Length, 64)]);
+        }
+    }
+
+    private static string? NormalizePath(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || !System.IO.Path.IsPathFullyQualified(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return System.IO.Path.GetFullPath(value);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or System.IO.PathTooLongException)
+        {
+            return null;
+        }
+    }
 }

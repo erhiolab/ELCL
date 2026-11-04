@@ -1,0 +1,337 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionSelectionView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
+    Background="{DynamicResource InkBrush}"
+    IsVisibleChanged="View_IsVisibleChanged">
+    <UserControl.Resources>
+        <Style x:Key="FolderRowStyle" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FolderGearStyle" TargetType="Button" BasedOn="{StaticResource SecondaryActionStyle}">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <DataTemplate DataType="{x:Type local:VersionSelectionView+FolderRow}">
+            <Border
+                x:Name="FolderItem"
+                Margin="0,2,0,2"
+                Padding="11,8"
+                MouseLeftButtonDown="Folder_MouseLeftButtonDown"
+                PreviewMouseRightButtonDown="Folder_PreviewMouseRightButtonDown"
+                Style="{StaticResource FolderRowStyle}">
+                <Border.ContextMenu>
+                    <ContextMenu Opened="FolderMenu_Opened">
+                        <MenuItem Header="重命名" Click="RenameFolder_Click" />
+                        <MenuItem Header="打开" Click="OpenFolder_Click" />
+                        <MenuItem Header="刷新" Click="RefreshFolder_Click" />
+                        <Separator />
+                        <MenuItem Header="从列表移除" Click="RemoveFolder_Click" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="30" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        x:Name="FolderHover"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        Margin="-11,-8"
+                        Background="{DynamicResource AccentHoverBrush}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False"
+                        Opacity="0" />
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="FolderName"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Text="{Binding Name}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBox
+                            x:Name="FolderNameEditor"
+                            Height="25"
+                            MaxLength="64"
+                            Text="{Binding Name, Mode=OneWay}"
+                            KeyDown="FolderNameEditor_KeyDown"
+                            LostFocus="FolderNameEditor_LostFocus"
+                            Visibility="Collapsed" />
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="10"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{Binding Path}"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip="{Binding Path}" />
+                    </StackPanel>
+                    <Button
+                        x:Name="FolderGear"
+                        Grid.Column="2"
+                        Width="26"
+                        Height="26"
+                        VerticalAlignment="Center"
+                        Click="FolderGear_Click"
+                        Style="{StaticResource FolderGearStyle}"
+                        ToolTip="文件夹操作">
+                        <Button.RenderTransform>
+                            <TranslateTransform X="5" />
+                        </Button.RenderTransform>
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            FontSize="14"
+                            Text="{x:Static icons:LauncherIcons.Settings}" />
+                    </Button>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="FolderItem" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="FolderGear" Property="IsHitTestVisible" Value="True" />
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderHover"
+                                    Storyboard.TargetProperty="Opacity" To="0.45"
+                                    Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderGear"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="1"
+                                    Duration="0:0:0.18" />
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderGear"
+                                    Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
+                                    To="0" Duration="0:0:0.18" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderHover"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0"
+                                    Duration="0:0:0.15" />
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderGear"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0"
+                                    Duration="0:0:0.15" />
+                                <DoubleAnimation
+                                    Storyboard.TargetName="FolderGear"
+                                    Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
+                                    To="5"
+                                    Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                    <Setter TargetName="FolderName" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="FolderNameEditor" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type local:VersionSelectionView+VersionRow}">
+            <Border
+                x:Name="VersionItem"
+                Style="{StaticResource VersionListRowStyle}"
+                MouseLeftButtonDown="Version_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        x:Name="VersionSelection"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3" Margin="-8,0"
+                        Background="{DynamicResource AccentMutedBrush}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False"
+                        Opacity="0" />
+                    <Border
+                        x:Name="VersionHover"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3" Margin="-8,0"
+                        Background="{DynamicResource AccentMutedBrush}"
+                        CornerRadius="6"
+                        Style="{StaticResource VersionListHoverStyle}" />
+                    <Path
+                        Grid.Column="0"
+                        Width="20"
+                        Height="20"
+                        VerticalAlignment="Center"
+                        Data="{Binding Icon}"
+                        Stroke="{DynamicResource AccentTextBrush}"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"
+                        StrokeStartLineCap="Round"
+                        Stretch="Uniform"
+                        StrokeThickness="1.6" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock FontSize="13" FontWeight="Medium" Text="{Binding Version.Id}" />
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="10"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{Binding Description}" />
+                    </StackPanel>
+                    <StackPanel
+                        x:Name="VersionActions"
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Style="{StaticResource VersionListActionsStyle}">
+                        <Button
+                            Click="DeleteVersion_Click"
+                            Style="{StaticResource VersionActionStyle}"
+                            Tag="{Binding}"
+                            ToolTip="删除版本">
+                            <TextBlock FontFamily="{x:Static icons:LauncherIcons.GlyphFont}" Text="&#xE74D;" />
+                        </Button>
+                        <Button IsEnabled="False" Style="{StaticResource VersionActionStyle}" ToolTip="版本设置（尚未实现）">
+                            <TextBlock
+                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                Text="{x:Static icons:LauncherIcons.Settings}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="VersionSelection"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="1"
+                                    Duration="0:0:0.22" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetName="VersionSelection"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0"
+                                    Duration="0:0:0.18" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border
+            Grid.Column="0"
+            Background="{DynamicResource InkRaisedBrush}"
+            BorderBrush="{DynamicResource LineSoftBrush}"
+            BorderThickness="0,1,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="18,18,18,24">
+                    <TextBlock
+                        Margin="0,0,0,8"
+                        FontSize="11"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="文件夹列表" />
+                    <Grid x:Name="FolderListContainer">
+                        <Border
+                            x:Name="SelectedFolderHighlight"
+                            Height="0"
+                            VerticalAlignment="Top"
+                            Background="{DynamicResource AccentMutedBrush}"
+                            CornerRadius="6"
+                            IsHitTestVisible="False"
+                            Opacity="0">
+                            <Border
+                                Width="3"
+                                Margin="11,7,0,7"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource AccentBrush}"
+                                CornerRadius="2" />
+                            <Border.RenderTransform>
+                                <TranslateTransform />
+                            </Border.RenderTransform>
+                        </Border>
+                        <ItemsControl x:Name="FolderList" />
+                    </Grid>
+                    <TextBlock
+                        Margin="0,18,0,8"
+                        FontSize="11"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="添加或导入" />
+                    <Button
+                        Height="34"
+                        HorizontalContentAlignment="Left"
+                        Click="AddFolder_Click"
+                        Content="＋  添加已有文件夹"
+                        Style="{StaticResource SecondaryActionStyle}" />
+                    <Button
+                        Height="34"
+                        Margin="0,5,0,0"
+                        HorizontalContentAlignment="Left"
+                        Content="导入整合包（尚未实现）"
+                        IsEnabled="False"
+                        Style="{StaticResource SecondaryActionStyle}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24,24,24,32">
+                <TextBlock x:Name="FolderTitle" FontSize="17" FontWeight="SemiBold" Text="版本列表" />
+                <TextBlock
+                    x:Name="FolderPathText"
+                    Margin="0,4,0,15" FontSize="11"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextTrimming="CharacterEllipsis" />
+                <Border
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource LineBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock
+                            x:Name="EmptyVersionsText"
+                            Margin="12,16"
+                            HorizontalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="此文件夹中没有找到游戏版本" />
+                        <ItemsControl x:Name="VersionList" Margin="12,12,12,12">
+                            <ItemsControl.RenderTransform>
+                                <TranslateTransform />
+                            </ItemsControl.RenderTransform>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

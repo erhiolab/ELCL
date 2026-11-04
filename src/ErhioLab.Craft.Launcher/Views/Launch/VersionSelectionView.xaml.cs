@@ -1,0 +1,582 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
+
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Icons;
+using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
+
+using Microsoft.Win32;
+
+namespace ErhioLab.Craft.Launcher.Views.Launch;
+
+/// <summary>管理游戏文件夹并显示所选目录中的本地版本.</summary>
+public partial class VersionSelectionView
+{
+    private readonly ObservableCollection<FolderRow> _folders = [];
+    private int _scanVersion;
+
+    /// <summary>用户选择版本后通知主窗口返回启动页.</summary>
+    internal event Action<LocalMinecraftVersion>? VersionChosen;
+
+    /// <summary>当前所选版本被删除或所在文件夹被移除.</summary>
+    internal event Action? VersionSelectionCleared;
+
+    public VersionSelectionView()
+    {
+        InitializeComponent();
+        FolderList.ItemsSource = _folders;
+    }
+
+    private async void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        ReloadFolders();
+        await Dispatcher.InvokeAsync(() => MoveSelectedFolderHighlight(false), DispatcherPriority.Loaded);
+        await RefreshVersionsAsync();
+    }
+
+    private void ReloadFolders()
+    {
+        _folders.Clear();
+        foreach (GameFolderSetting folder in App.Settings.GameFolders)
+        {
+            _folders.Add(new FolderRow(folder.Path, folder.Name)
+            {
+                IsSelected = SamePath(folder.Path, App.Settings.SelectedGameFolderPath)
+            });
+        }
+
+        if (_folders.Count > 0 && _folders.All(folder => !folder.IsSelected))
+        {
+            _folders[0].IsSelected = true;
+        }
+    }
+
+    private async Task ReloadFoldersAnimatedAsync()
+    {
+        FolderList.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(110)));
+        await Task.Delay(110);
+        FolderList.BeginAnimation(OpacityProperty, null);
+        FolderList.Opacity = 0;
+        SelectedFolderHighlight.BeginAnimation(OpacityProperty, null);
+        SelectedFolderHighlight.Opacity = 0;
+        ReloadFolders();
+        FolderListContainer.UpdateLayout();
+        MoveSelectedFolderHighlight(false);
+        FolderList.Opacity = 1;
+        FolderList.BeginAnimation(OpacityProperty, EaseOut(0, 1, 190));
+    }
+
+    private void MoveSelectedFolderHighlight(bool animate)
+    {
+        FolderRow? selected = _folders.FirstOrDefault(folder => folder.IsSelected);
+        if (selected is null)
+        {
+            SelectedFolderHighlight.BeginAnimation(OpacityProperty, EaseOut(SelectedFolderHighlight.Opacity, 0, 140));
+            return;
+        }
+
+        FolderListContainer.UpdateLayout();
+        if (FolderList.ItemContainerGenerator.ContainerFromItem(selected) is not { } item ||
+            FindChild<Border>(item, "FolderItem") is not { } rowBorder)
+        {
+            return;
+        }
+
+        double targetY = rowBorder.TransformToAncestor(FolderListContainer).Transform(new Point(0, 0)).Y;
+        TranslateTransform offset = (TranslateTransform)SelectedFolderHighlight.RenderTransform;
+        SelectedFolderHighlight.Height = rowBorder.ActualHeight;
+        if (!animate || SelectedFolderHighlight.Opacity < 0.5)
+        {
+            offset.BeginAnimation(TranslateTransform.YProperty, null);
+            offset.Y = targetY;
+            SelectedFolderHighlight.Opacity = 1;
+            SelectedFolderHighlight.BeginAnimation(OpacityProperty, EaseOut(0, 1, 190));
+            return;
+        }
+
+        offset.BeginAnimation(TranslateTransform.YProperty, EaseOut(offset.Y, targetY, 250));
+    }
+
+    private async Task SelectFolderAsync(FolderRow row, bool refreshSelected = false)
+    {
+        if (row.IsSelected && SamePath(App.Settings.SelectedGameFolderPath, row.Path))
+        {
+            if (refreshSelected)
+            {
+                await RefreshVersionsAsync();
+            }
+
+            return;
+        }
+
+        if (!App.UpdateSettings(App.Settings with { SelectedGameFolderPath = row.Path }))
+        {
+            return;
+        }
+
+        foreach (FolderRow folder in _folders)
+        {
+            folder.IsSelected = ReferenceEquals(folder, row);
+        }
+
+        MoveSelectedFolderHighlight(true);
+
+        await RefreshVersionsAsync();
+    }
+
+    private async Task RefreshVersionsAsync()
+    {
+        int version = ++_scanVersion;
+        FolderRow? selected = _folders.FirstOrDefault(folder => folder.IsSelected);
+        FolderTitle.Text = selected?.Name ?? "版本列表";
+        FolderPathText.Text = selected?.Path ?? string.Empty;
+        FolderTitle.BeginAnimation(OpacityProperty, EaseOut(0.45, 1, 180));
+        FolderPathText.BeginAnimation(OpacityProperty, EaseOut(0.45, 1, 180));
+        bool hasPreviousRows = VersionList.Items.Count > 0;
+        if (hasPreviousRows)
+        {
+            VersionList.BeginAnimation(OpacityProperty, EaseOut(VersionList.Opacity, 0, 130));
+            await Task.Delay(130);
+            if (version != _scanVersion)
+            {
+                return;
+            }
+        }
+
+        VersionList.BeginAnimation(OpacityProperty, null);
+        VersionList.Opacity = 0;
+        VersionList.ItemsSource = null;
+        EmptyVersionsText.Text = selected is null ? "请先添加游戏文件夹" : "正在读取本地版本…";
+        EmptyVersionsText.Visibility = Visibility.Visible;
+        if (selected is null)
+        {
+            AnimateEmptyText();
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<LocalMinecraftVersion> found = await Task.Run(() => LocalMinecraftVersionScanner.Scan(selected.Path, (path, error) => App.Logger.Warning("Versions", $"跳过无法读取的版本文件: {path}. {error.Message}")));
+            if (version != _scanVersion)
+            {
+                return;
+            }
+
+            VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath))).ToArray();
+            EmptyVersionsText.Text = "此文件夹中没有找到游戏版本";
+            EmptyVersionsText.Visibility = found.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (found.Count > 0)
+            {
+                VersionList.Opacity = 1;
+                VersionList.BeginAnimation(OpacityProperty, EaseOut(0, 1, 220));
+                VersionList.RenderTransform.BeginAnimation(TranslateTransform.YProperty, EaseOut(9, 0, 220));
+            }
+            else
+            {
+                AnimateEmptyText();
+            }
+
+            App.Logger.Information("Versions", $"扫描游戏目录 {selected.Path}, 找到 {found.Count} 个版本.");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            if (version != _scanVersion)
+            {
+                return;
+            }
+
+            EmptyVersionsText.Text = "无法读取此游戏文件夹";
+            AnimateEmptyText();
+            App.Logger.Error("Versions", $"扫描游戏目录失败: {selected.Path}", exception);
+            LauncherToasts.Error("读取本地版本失败，请检查文件夹权限.");
+        }
+    }
+
+    private void AnimateEmptyText()
+    {
+        EmptyVersionsText.Opacity = 1;
+        EmptyVersionsText.BeginAnimation(OpacityProperty, EaseOut(0, 1, 180));
+    }
+
+    private static DoubleAnimation EaseOut(double from, double to, int milliseconds) => new(from, to, TimeSpan.FromMilliseconds(milliseconds))
+    {
+        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+    };
+
+    private async void Folder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: FolderRow { IsRenaming: false } row })
+        {
+            await SelectFolderAsync(row);
+        }
+    }
+
+    private async void Folder_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: FolderRow row })
+        {
+            await SelectFolderAsync(row);
+        }
+    }
+
+    private void FolderGear_Click(object sender, RoutedEventArgs e)
+    {
+        DependencyObject? current = sender as DependencyObject;
+        while (current is not null)
+        {
+            if (current is Border { ContextMenu: not null } folderBorder)
+            {
+                folderBorder.ContextMenu.PlacementTarget = folderBorder;
+                folderBorder.ContextMenu.IsOpen = true;
+                return;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+    }
+
+    private void FolderMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is ContextMenu menu)
+        {
+            menu.DataContext = (menu.PlacementTarget as FrameworkElement)?.DataContext;
+            menu.BeginAnimation(OpacityProperty, EaseOut(0, 1, 140));
+        }
+    }
+
+    private void RenameFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: FolderRow row })
+        {
+            return;
+        }
+
+        row.IsRenaming = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (FolderList.ItemContainerGenerator.ContainerFromItem(row) is { } container &&
+                FindChild<TextBox>(container) is { } editor)
+            {
+                editor.Focus();
+                editor.SelectAll();
+            }
+        }, DispatcherPriority.Input);
+    }
+
+    private void FolderNameEditor_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox { DataContext: FolderRow row } editor)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            row.IsRenaming = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            CommitRename(row, editor.Text);
+            e.Handled = true;
+        }
+    }
+
+    private void FolderNameEditor_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox { DataContext: FolderRow { IsRenaming: true } row } editor)
+        {
+            CommitRename(row, editor.Text);
+        }
+    }
+
+    private void CommitRename(FolderRow row, string text)
+    {
+        string name = text.Trim();
+        if (name.Length == 0)
+        {
+            row.IsRenaming = false;
+            return;
+        }
+
+        if (name != row.Name)
+        {
+            GameFolderSetting[] folders = App.Settings.GameFolders
+                .Select(folder => SamePath(folder.Path, row.Path) ? folder with { Name = name } : folder)
+                .ToArray();
+            if (App.UpdateSettings(App.Settings with { GameFolders = folders }))
+            {
+                row.Name = name;
+                if (row.IsSelected)
+                {
+                    FolderTitle.Text = name;
+                }
+            }
+        }
+
+        row.IsRenaming = false;
+    }
+
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: FolderRow row })
+        {
+            return;
+        }
+
+        if (!Directory.Exists(row.Path))
+        {
+            LauncherToasts.Error("游戏文件夹不存在.");
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(row.Path) { UseShellExecute = true });
+            App.Logger.Information("Versions", $"打开游戏文件夹: {row.Path}");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            App.Logger.Error("Versions", $"打开游戏文件夹失败: {row.Path}", exception);
+            LauncherToasts.Error("无法打开游戏文件夹.");
+        }
+    }
+
+    private async void RefreshFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: FolderRow row })
+        {
+            await SelectFolderAsync(row, refreshSelected: true);
+        }
+    }
+
+    private async void RemoveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: FolderRow row } ||
+            !await LauncherDialogs.ConfirmAsync("移除游戏文件夹", $"从列表移除“{row.Name}”？磁盘上的文件不会删除.", confirmText: "移除"))
+        {
+            return;
+        }
+
+        GameFolderSetting[] folders = App.Settings.GameFolders.Where(folder => !SamePath(folder.Path, row.Path)).ToArray();
+        string? selectedPath = row.IsSelected ? folders.FirstOrDefault()?.Path : App.Settings.SelectedGameFolderPath;
+        bool clearVersion = SamePath(Path.GetDirectoryName(Path.GetDirectoryName(App.Settings.SelectedVersionPath)), row.Path);
+        if (App.UpdateSettings(App.Settings with
+            {
+                GameFolders = folders,
+                SelectedGameFolderPath = selectedPath,
+                SelectedVersionPath = clearVersion ? null : App.Settings.SelectedVersionPath,
+                SelectedVersionId = clearVersion ? null : App.Settings.SelectedVersionId
+            }))
+        {
+            if (clearVersion)
+            {
+                VersionSelectionCleared?.Invoke();
+            }
+
+            await ReloadFoldersAnimatedAsync();
+            await RefreshVersionsAsync();
+        }
+    }
+
+    private async void AddFolder_Click(object sender, RoutedEventArgs e)
+    {
+        OpenFolderDialog dialog = new() { Title = "选择 Minecraft 游戏文件夹" };
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true)
+        {
+            return;
+        }
+
+        string path = Path.GetFullPath(dialog.FolderName);
+        if (App.Settings.GameFolders.All(folder => !SamePath(folder.Path, path)))
+        {
+            string name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
+            GameFolderSetting[] folders = [.. App.Settings.GameFolders, new(path, name)];
+            if (!App.UpdateSettings(App.Settings with { GameFolders = folders, SelectedGameFolderPath = path }))
+            {
+                return;
+            }
+        }
+        else if (!App.UpdateSettings(App.Settings with { SelectedGameFolderPath = path }))
+        {
+            return;
+        }
+
+        await ReloadFoldersAnimatedAsync();
+        await RefreshVersionsAsync();
+    }
+
+    private void Version_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: VersionRow row } ||
+            !App.UpdateSettings(App.Settings with { SelectedVersionPath = row.Version.FolderPath, SelectedVersionId = row.Version.Id }))
+        {
+            return;
+        }
+
+        App.Logger.Information("Versions", $"选择本地版本: {row.Version.Id}");
+        VersionChosen?.Invoke(row.Version);
+    }
+
+    private async void DeleteVersion_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: VersionRow row } || _folders.FirstOrDefault(item => item.IsSelected) is not { } folder)
+        {
+            return;
+        }
+
+        string versionsRoot = Path.GetFullPath(Path.Combine(folder.Path, "versions"));
+        string versionFolder = Path.GetFullPath(row.Version.FolderPath);
+        if (!SamePath(Directory.GetParent(versionFolder)?.FullName, versionsRoot) ||
+            !Directory.Exists(versionFolder) ||
+            File.GetAttributes(versionFolder).HasFlag(FileAttributes.ReparsePoint))
+        {
+            LauncherToasts.Error("版本目录已变化，无法删除.");
+            return;
+        }
+
+        if (!await LauncherDialogs.ConfirmAsync("删除游戏版本", $"确定永久删除“{row.Version.Id}”及其版本文件？此操作不可逆.", LauncherDialogLevel.Danger, "删除"))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(versionFolder, true);
+            if (SamePath(App.Settings.SelectedVersionPath, versionFolder))
+            {
+                App.UpdateSettings(App.Settings with { SelectedVersionPath = null, SelectedVersionId = null });
+                VersionSelectionCleared?.Invoke();
+            }
+
+            App.Logger.Information("Versions", $"删除本地版本: {versionFolder}");
+            LauncherToasts.Success("版本已删除.");
+            await RefreshVersionsAsync();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            App.Logger.Error("Versions", $"删除本地版本失败: {versionFolder}", exception);
+            LauncherDialogs.Error("删除失败", exception.Message);
+        }
+    }
+
+    private static bool SamePath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    private static T? FindChild<T>(DependencyObject parent, string? name = null) where T : FrameworkElement
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T found && (name is null || found.Name == name))
+            {
+                return found;
+            }
+
+            if (FindChild<T>(child, name) is { } descendant)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>文件夹列表的可通知行模型.</summary>
+    public sealed class FolderRow(string path, string name) : INotifyPropertyChanged
+    {
+        private string _name = name;
+        private bool _isSelected;
+        private bool _isRenaming;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public string Path { get; } = path;
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                PropertyChanged?.Invoke(this, new(nameof(Name)));
+            }
+        }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                PropertyChanged?.Invoke(this, new(nameof(IsSelected)));
+            }
+        }
+
+        public bool IsRenaming
+        {
+            get => _isRenaming;
+            set
+            {
+                _isRenaming = value;
+                PropertyChanged?.Invoke(this, new(nameof(IsRenaming)));
+            }
+        }
+    }
+
+    /// <summary>本地版本与显示描述.</summary>
+    public sealed record VersionRow(LocalMinecraftVersion Version, bool IsSelected)
+    {
+        public Geometry Icon => Version.Type switch
+        {
+            "release" => LauncherIcons.VersionRelease,
+            "snapshot" => LauncherIcons.VersionPreview,
+            "old_alpha" or "old_beta" => LauncherIcons.VersionAncient,
+            _ => LauncherIcons.GameVersions
+        };
+
+        public string Description
+        {
+            get
+            {
+                string type = Version.Type switch
+                {
+                    "release" => "正式版",
+                    "snapshot" => "快照版",
+                    "old_alpha" or "old_beta" => "远古版",
+                    _ => "自定义版本"
+                };
+                return Version.ReleaseTime is { } time ? $"{type}  ·  {time:yyyy-MM-dd HH:mm}" : type;
+            }
+        }
+    }
+}

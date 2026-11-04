@@ -29,6 +29,8 @@
 
 客户端从 Windows 注册表收集额外安装目录, 然后调用 Core 的 [Java 发现 API](../core/java.md). Core 读取 `PATH`/`JAVA_HOME`/`JDK_HOME`, 检查常见安装目录和已知 Java 附近的目录. 目录搜索有深度与数量上限, 不遍历磁盘根目录. 候选 `java.exe` 会在限时内运行 `-XshowSettings:properties -version` 验证并读取版本. 刷新保留用户已排好的顺序, 新发现的 Java 加在末尾. `IgnoredJavaPaths` 记录手动移除的路径, 刷新不会重新加入; 重置启动设置会清空列表和排除项, 随即重新查找.
 
+启动器首次运行会在程序目录创建 `.minecraft`, 并在版本选择中加入这个目录与 `%APPDATA%/.minecraft` 两项. `GameFolders` 保存目录路径和自定义显示名称, `SelectedGameFolderPath` 保存当前查看的目录, `SelectedVersionPath`/`SelectedVersionId` 保存选中的本地版本. 移除游戏文件夹只移除列表项, 不删除磁盘文件; 删除本地版本则会在二次确认后删除该版本目录. 本地版本识别由 Core 的 [本地版本扫描 API](../core/versions.md#扫描本地版本) 完成.
+
 设置侧栏的下载重置按钮将版本列表源/最大连接数和速度限制恢复默认值, 不会改变外观设置.
 
 ## 保存流程

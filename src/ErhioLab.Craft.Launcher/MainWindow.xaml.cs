@@ -13,6 +13,8 @@ using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Views.Launch;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -41,6 +43,7 @@ public partial class MainWindow
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
     private int _themeTransitionVersion;
+    private int _versionSelectionTransitionVersion;
     private bool _taskManagerClosing;
     private RadioButton? _selectedNavigationButton;
     private Point? _maximizedDragStart;
@@ -59,6 +62,14 @@ public partial class MainWindow
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
         _routes = ShellRouteCatalog.Create();
+        VersionSelectionPage.VersionChosen += OnVersionChosen;
+        VersionSelectionPage.VersionSelectionCleared += () =>
+        {
+            if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
+            {
+                sidebar.ClearSelectedVersion();
+            }
+        };
         App.Tasks.Tasks.CollectionChanged += (_, _) => OnTasksChanged();
         LaunchNavigation.IsChecked = true;
     }
@@ -161,9 +172,89 @@ public partial class MainWindow
     /// <summary>从启动页的无版本入口打开原版游戏下载页面.</summary>
     internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
 
+    /// <summary>从启动页打开本地游戏版本选择.</summary>
+    internal void OpenVersionSelection()
+    {
+        ++_versionSelectionTransitionVersion;
+        TaskManagerButton.Visibility = Visibility.Collapsed;
+        TitleBarLabel.Visibility = Visibility.Collapsed;
+        TopNavigationHost.Visibility = Visibility.Collapsed;
+        VersionSelectionTitle.Visibility = Visibility.Visible;
+        VersionSelectionTitle.BeginAnimation(OpacityProperty, null);
+        VersionSelectionTitle.Opacity = 1;
+        VersionSelectionTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(190))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
+        VersionSelectionPage.Visibility = Visibility.Visible;
+        VersionSelectionPage.BeginAnimation(OpacityProperty, null);
+        VersionSelectionPage.Opacity = 0;
+        VersionSelectionPage.RenderTransform = new TranslateTransform(0, 14);
+        VersionSelectionPage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
+        VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        App.Logger.Information("Navigation", "打开版本选择.");
+    }
+
+    private void CloseVersionSelection_Click(object sender, RoutedEventArgs e) => CloseVersionSelection();
+
+    private void CloseVersionSelection()
+    {
+        if (VersionSelectionPage.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        int version = ++_versionSelectionTransitionVersion;
+        VersionSelectionTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(170)));
+        DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(190))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        fade.Completed += (_, _) =>
+        {
+            if (version != _versionSelectionTransitionVersion)
+            {
+                return;
+            }
+
+            VersionSelectionPage.BeginAnimation(OpacityProperty, null);
+            VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            VersionSelectionPage.Visibility = Visibility.Collapsed;
+            VersionSelectionPage.Opacity = 1;
+            VersionSelectionTitle.BeginAnimation(OpacityProperty, null);
+            VersionSelectionTitle.Visibility = Visibility.Collapsed;
+            TitleBarLabel.Visibility = Visibility.Visible;
+            TopNavigationHost.Visibility = Visibility.Visible;
+            TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
+            TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
+            UpdateTaskManagerButton();
+        };
+        VersionSelectionPage.BeginAnimation(OpacityProperty, fade);
+        VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(0, -8, TimeSpan.FromMilliseconds(190)));
+        App.Logger.Information("Navigation", "关闭版本选择.");
+    }
+
+    private void OnVersionChosen(LocalMinecraftVersion version)
+    {
+        if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
+        {
+            sidebar.ShowSelectedVersion(version.Id);
+        }
+
+        CloseVersionSelection();
+    }
+
     private void UpdateTaskManagerButton()
     {
-        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || VersionSelectionPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void OnTasksChanged()

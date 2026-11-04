@@ -80,6 +80,84 @@
         </Style.Triggers>
     </Style>
 
+    <!-- 下载页与本地版本页共用行尺寸/悬浮背景和操作按钮的缓动. -->
+    <Style x:Key="VersionListRowStyle" TargetType="Border">
+        <Setter Property="Height" Value="49" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style x:Key="VersionListHoverStyle" TargetType="Border">
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Opacity" Value="0" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True">
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16">
+                            <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard></BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" />
+                    </Storyboard></BeginStoryboard>
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="VersionListActionsStyle" TargetType="StackPanel">
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Opacity" Value="0" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True">
+                <Setter Property="IsHitTestVisible" Value="True" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16">
+                            <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard></BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14" />
+                    </Storyboard></BeginStoryboard>
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="VersionActionStyle" TargetType="Button">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Margin" Value="3,0,0,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="5">
+                        <Grid>
+                            <Border Background="{DynamicResource AccentHoverBrush}" CornerRadius="5" Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="Root" Property="Opacity" Value="0.7" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Root" Property="Opacity" Value="0.4" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 标题栏最小化和最大化/还原按钮的通用外观. -->
     <Style x:Key="CaptionButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="46" />
