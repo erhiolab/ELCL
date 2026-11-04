@@ -35,10 +35,8 @@
                 Width="78"
                 Height="78"
                 HorizontalAlignment="Center"
-                Background="{DynamicResource PanelBrush}"
-                BorderBrush="{DynamicResource LineBrush}"
-                BorderThickness="1"
-                CornerRadius="12">
+                CornerRadius="12"
+                Style="{StaticResource PanelCardStyle}">
                 <TextBlock
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"

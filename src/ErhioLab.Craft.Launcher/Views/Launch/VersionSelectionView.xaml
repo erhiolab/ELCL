@@ -313,10 +313,8 @@
                     Foreground="{DynamicResource TextMutedBrush}"
                     TextTrimming="CharacterEllipsis" />
                 <Border
-                    Background="{DynamicResource PanelBrush}"
-                    BorderBrush="{DynamicResource LineBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8">
+                    CornerRadius="8"
+                    Style="{StaticResource PanelCardStyle}">
                     <StackPanel>
                         <TextBlock
                             x:Name="EmptyVersionsText"

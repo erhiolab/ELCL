@@ -61,10 +61,7 @@
                             <Border
                                 Margin="0,0,0,12"
                                 Padding="16"
-                                Background="{DynamicResource PanelBrush}"
-                                BorderBrush="{DynamicResource LineBrush}"
-                                BorderThickness="1"
-                                CornerRadius="9">
+                                Style="{StaticResource PanelCardStyle}">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>

@@ -8,24 +8,6 @@
     Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 搜索输入框只显示文字和光标, 外观由外层 Border 绘制. -->
-        <Style x:Key="VersionSearchTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <ScrollViewer
-                            x:Name="PART_ContentHost"
-                            Background="Transparent"
-                            Focusable="False"
-                            HorizontalScrollBarVisibility="Hidden"
-                            VerticalScrollBarVisibility="Hidden" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <!-- 折叠区只使用一层卡片, 内容高度由代码平滑改变. -->
         <Style x:Key="VersionGroupHeaderStyle" TargetType="ToggleButton">
             <Setter Property="Height" Value="42" />
@@ -137,10 +119,8 @@
             <Border
                 Height="42"
                 Margin="0,0,0,14"
-                Background="{DynamicResource PanelBrush}"
-                BorderBrush="{DynamicResource LineBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
+                CornerRadius="8"
+                Style="{StaticResource PanelCardStyle}">
                 <Grid Margin="13,0,10,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="24" />
@@ -161,7 +141,7 @@
                             FontSize="12"
                             Foreground="{DynamicResource TextBrush}"
                             KeyDown="VersionSearchBox_KeyDown"
-                            Style="{StaticResource VersionSearchTextBoxStyle}"
+                            Style="{StaticResource BareTextBoxStyle}"
                             TextChanged="VersionSearchBox_TextChanged" />
                         <TextBlock
                             x:Name="SearchHint"
@@ -195,10 +175,7 @@
                     <DataTemplate DataType="{x:Type download:VanillaVersionsPage+VersionGroup}">
                         <Border
                             Margin="0,0,0,12"
-                            Background="{DynamicResource PanelBrush}"
-                            BorderBrush="{DynamicResource LineBrush}"
-                            BorderThickness="1"
-                            CornerRadius="9">
+                            Style="{StaticResource PanelCardStyle}">
                             <StackPanel>
                                 <ToggleButton
                                     Click="GroupHeader_Click"
@@ -225,23 +202,8 @@
                                     ScrollViewer.CanContentScroll="True"
                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                                     VirtualizingPanel.IsVirtualizing="True"
-                                    VirtualizingPanel.VirtualizationMode="Recycling">
-                                    <ListBox.ItemContainerStyle>
-                                        <Style TargetType="ListBoxItem">
-                                            <Setter Property="Padding" Value="0" />
-                                            <Setter Property="BorderThickness" Value="0" />
-                                            <Setter Property="Background" Value="Transparent" />
-                                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="ListBoxItem">
-                                                        <ContentPresenter />
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </ListBox.ItemContainerStyle>
-                                </ListBox>
+                                    VirtualizingPanel.VirtualizationMode="Recycling"
+                                    ItemContainerStyle="{StaticResource PlainListBoxItemStyle}" />
                                 </Border>
                             </StackPanel>
                         </Border>

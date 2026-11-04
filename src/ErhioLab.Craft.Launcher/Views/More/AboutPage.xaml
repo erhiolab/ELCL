@@ -6,41 +6,6 @@
     Background="{DynamicResource InkBrush}">
     <UserControl.Resources>
         <!-- 链接按钮的填充和边框使用同一层透明度缓动. -->
-        <Style x:Key="CreditLinkButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border
-                            x:Name="Root"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{DynamicResource LineBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6">
-                            <Grid>
-                                <Border
-                                    Background="{DynamicResource AccentHoverBrush}"
-                                    BorderBrush="{DynamicResource AccentBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Style="{StaticResource HoverLayerStyle}" />
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Opacity" Value="0.7" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <!-- 两张卡片共用的头像/名称/说明行, 按钮只在有链接时显示. -->
         <DataTemplate x:Key="CreditRowTemplate" DataType="{x:Type more:AboutPage+CreditEntry}">
             <Grid MinHeight="58" Margin="0,2">
@@ -107,10 +72,7 @@
         <StackPanel Margin="24,24,24,36">
             <Border
                 Padding="18,14"
-                Background="{DynamicResource PanelBrush}"
-                BorderBrush="{DynamicResource LineBrush}"
-                BorderThickness="1"
-                CornerRadius="9">
+                Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
                     <TextBlock FontSize="14" FontWeight="SemiBold" Text="关于" />
                     <ItemsControl
@@ -122,10 +84,7 @@
             <Border
                 Margin="0,14,0,0"
                 Padding="18,14"
-                Background="{DynamicResource PanelBrush}"
-                BorderBrush="{DynamicResource LineBrush}"
-                BorderThickness="1"
-                CornerRadius="9">
+                Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
                     <TextBlock FontSize="14" FontWeight="SemiBold" Text="特别鸣谢" />
                     <ItemsControl

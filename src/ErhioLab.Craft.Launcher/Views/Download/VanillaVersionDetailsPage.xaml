@@ -7,52 +7,6 @@
     Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 输入框的背景和边框由外层容器绘制. -->
-        <Style x:Key="VersionNameInputStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <ScrollViewer
-                            x:Name="PART_ContentHost"
-                            Background="Transparent"
-                            Focusable="False"
-                            HorizontalScrollBarVisibility="Hidden"
-                            VerticalScrollBarVisibility="Hidden" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="DetailsBackButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="36" />
-            <Setter Property="Height" Value="36" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
-                            <Grid>
-                                <Border
-                                    Background="{DynamicResource AccentHoverBrush}"
-                                    CornerRadius="6"
-                                    Style="{StaticResource HoverLayerStyle}" />
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style x:Key="LoaderHeaderStyle" TargetType="ToggleButton">
             <Setter Property="Height" Value="48" />
             <Setter Property="Background" Value="Transparent" />
@@ -90,35 +44,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="LoaderChoiceStyle" TargetType="ListBoxItem">
-            <Setter Property="Height" Value="54" />
-            <Setter Property="Margin" Value="0,0,4,5" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Root" Background="{DynamicResource InkRaisedBrush}"
-                                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="6">
-                            <Grid>
-                                <Border
-                                    Background="{DynamicResource AccentHoverBrush}"
-                                    CornerRadius="6"
-                                    Style="{StaticResource HoverLayerStyle}" />
-                                <ContentPresenter Margin="14,0" VerticalAlignment="Center" />
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Root" Property="Background"
-                                        Value="{DynamicResource AccentMutedBrush}" />
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{DynamicResource AccentBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid Margin="24,24,24,20">
@@ -131,10 +56,7 @@
         <Border
             Height="70"
             Padding="12,0"
-            Background="{DynamicResource PanelBrush}"
-            BorderBrush="{DynamicResource LineBrush}"
-            BorderThickness="1"
-            CornerRadius="9">
+            Style="{StaticResource PanelCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="42" />
@@ -176,7 +98,7 @@
                         VerticalContentAlignment="Center"
                         FontSize="13"
                         Foreground="{DynamicResource TextBrush}"
-                        Style="{StaticResource VersionNameInputStyle}"
+                        Style="{StaticResource BareTextBoxStyle}"
                         ToolTip="可自定义下载后的版本名称" />
                 </Border>
             </Grid>
@@ -192,10 +114,8 @@
                     <DataTemplate>
                         <Border
                             Margin="0,0,0,10"
-                            Background="{DynamicResource PanelBrush}"
-                            BorderBrush="{DynamicResource LineBrush}"
-                            BorderThickness="1"
-                            CornerRadius="8">
+                            CornerRadius="8"
+                            Style="{StaticResource PanelCardStyle}">
                             <StackPanel>
                                 <ToggleButton
                                     Click="LoaderHeader_Click"
@@ -254,7 +174,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         Foreground="{DynamicResource TextBrush}"
-                                        ItemContainerStyle="{StaticResource LoaderChoiceStyle}"
+                                        ItemContainerStyle="{StaticResource SelectableListRowStyle}"
                                         ItemsSource="{Binding Choices}"
                                         ScrollViewer.CanContentScroll="True"
                                         ScrollViewer.VerticalScrollBarVisibility="Auto"

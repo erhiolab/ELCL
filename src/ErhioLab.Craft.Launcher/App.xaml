@@ -10,6 +10,11 @@
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
                 <ResourceDictionary Source="Styles/LauncherTheme.xaml" />
+                <ResourceDictionary Source="Styles/MotionStyles.xaml" />
+                <ResourceDictionary Source="Styles/ButtonStyles.xaml" />
+                <ResourceDictionary Source="Styles/NavigationStyles.xaml" />
+                <ResourceDictionary Source="Styles/ListStyles.xaml" />
+                <ResourceDictionary Source="Styles/FormStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
