@@ -1,4 +1,6 @@
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 using ErhioLab.Craft.Launcher.Core.Accounts;
@@ -8,9 +10,21 @@ namespace ErhioLab.Craft.Launcher.Accounts;
 
 internal sealed record OfflineAccount(string UserName, Guid Uuid);
 
-internal sealed record AccountFile(List<OfflineAccount> OfflineAccounts, Guid? SelectedUuid);
+internal sealed record MicrosoftAccount(
+    string UserName,
+    Guid Uuid,
+    string ProtectedRefreshToken,
+    string ProtectedMinecraftAccessToken,
+    DateTimeOffset AccessTokenExpiresAt);
 
-/// <summary>账户独立保存在 accounts.json，不参与启动器设置导入和重置.</summary>
+internal sealed record AccountEntry(string UserName, Guid Uuid, bool IsMicrosoft);
+
+internal sealed record AccountFile(
+    List<OfflineAccount> OfflineAccounts,
+    Guid? SelectedUuid,
+    List<MicrosoftAccount>? MicrosoftAccounts = null);
+
+/// <summary>账户独立保存在 accounts.json, 不参与启动器设置导入和重置.</summary>
 internal sealed class LauncherAccountStore
 {
     private readonly JsonFileStore<AccountFile> _store;
@@ -18,8 +32,16 @@ internal sealed class LauncherAccountStore
     private readonly bool _canWrite = true;
 
     internal IReadOnlyList<OfflineAccount> Accounts => _data.OfflineAccounts;
+    internal IReadOnlyList<MicrosoftAccount> MicrosoftAccounts => _data.MicrosoftAccounts ?? [];
+
+    internal IReadOnlyList<AccountEntry> AllAccounts =>
+    [
+        .. MicrosoftAccounts.Select(account => new AccountEntry(account.UserName, account.Uuid, true)),
+        .. Accounts.Select(account => new AccountEntry(account.UserName, account.Uuid, false))
+    ];
+
     internal Guid? SelectedUuid => _data.SelectedUuid;
-    internal OfflineAccount? SelectedAccount => _data.OfflineAccounts.FirstOrDefault(account => account.Uuid == SelectedUuid);
+    internal AccountEntry? SelectedAccount => AllAccounts.FirstOrDefault(account => account.Uuid == SelectedUuid);
     internal event EventHandler? Changed;
 
     internal LauncherAccountStore(string path)
@@ -33,7 +55,12 @@ internal sealed class LauncherAccountStore
                 .Where(account => IsValidName(account.UserName) && account.Uuid == OfflinePlayerId.FromName(account.UserName))
                 .DistinctBy(account => account.Uuid)
                 .ToList();
-            _data = new AccountFile(valid, valid.Any(account => account.Uuid == loaded.SelectedUuid) ? loaded.SelectedUuid : null);
+            List<MicrosoftAccount> microsoft = (loaded.MicrosoftAccounts ?? [])
+                .Where(account => account.Uuid != Guid.Empty && !string.IsNullOrWhiteSpace(account.UserName) && !string.IsNullOrWhiteSpace(account.ProtectedRefreshToken))
+                .DistinctBy(account => account.Uuid)
+                .ToList();
+            bool selectedExists = valid.Any(account => account.Uuid == loaded.SelectedUuid) || microsoft.Any(account => account.Uuid == loaded.SelectedUuid);
+            _data = new AccountFile(valid, selectedExists ? loaded.SelectedUuid : null, microsoft);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -60,7 +87,7 @@ internal sealed class LauncherAccountStore
         }
 
         List<OfflineAccount> accounts = [.. _data.OfflineAccounts, new OfflineAccount(name, OfflinePlayerId.FromName(name))];
-        Save(new AccountFile(accounts, _data.SelectedUuid));
+        Save(_data with { OfflineAccounts = accounts });
         error = string.Empty;
         return true;
     }
@@ -68,16 +95,38 @@ internal sealed class LauncherAccountStore
     internal void Select(Guid uuid)
     {
         if (_data.SelectedUuid == uuid) return;
-        if (!_data.OfflineAccounts.Any(account => account.Uuid == uuid)) throw new ArgumentException("账户不存在. ", nameof(uuid));
+        if (AllAccounts.All(account => account.Uuid != uuid)) throw new ArgumentException("账户不存在. ", nameof(uuid));
         Save(_data with { SelectedUuid = uuid });
     }
 
     internal void Remove(Guid uuid)
     {
         List<OfflineAccount> accounts = _data.OfflineAccounts.Where(account => account.Uuid != uuid).ToList();
-        if (accounts.Count == _data.OfflineAccounts.Count) return;
-        Save(new AccountFile(accounts, _data.SelectedUuid == uuid ? null : _data.SelectedUuid));
+        List<MicrosoftAccount> microsoft = MicrosoftAccounts.Where(account => account.Uuid != uuid).ToList();
+        if (accounts.Count == _data.OfflineAccounts.Count && microsoft.Count == MicrosoftAccounts.Count) return;
+        Save(new AccountFile(accounts, _data.SelectedUuid == uuid ? null : _data.SelectedUuid, microsoft));
     }
+
+    internal void AddOrUpdateMicrosoft(MicrosoftMinecraftSession session)
+    {
+        List<MicrosoftAccount> microsoft = MicrosoftAccounts.Where(account => account.Uuid != session.Uuid).ToList();
+        microsoft.Add(new MicrosoftAccount(session.UserName, session.Uuid, Protect(session.MicrosoftRefreshToken), Protect(session.MinecraftAccessToken), session.MinecraftAccessTokenExpiresAt));
+        Save(_data with { MicrosoftAccounts = microsoft, SelectedUuid = session.Uuid });
+    }
+
+    internal string GetMicrosoftRefreshToken(Guid uuid)
+    {
+        MicrosoftAccount account = MicrosoftAccounts.FirstOrDefault(item => item.Uuid == uuid) ?? throw new ArgumentException("Microsoft 账户不存在.", nameof(uuid));
+        return Unprotect(account.ProtectedRefreshToken);
+    }
+
+    private static string Protect(string value) => Convert.ToBase64String(
+        ProtectedData.Protect(Encoding.UTF8.GetBytes(value), null, DataProtectionScope.CurrentUser)
+    );
+
+    private static string Unprotect(string value) => Encoding.UTF8.GetString(
+        ProtectedData.Unprotect(Convert.FromBase64String(value), null, DataProtectionScope.CurrentUser)
+    );
 
     private void Save(AccountFile next)
     {

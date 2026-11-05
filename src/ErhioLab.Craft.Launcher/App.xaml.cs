@@ -29,6 +29,7 @@ public partial class App
     private static SessionFileLogger? _logger;
     private static JsonFileStore<LauncherSettings>? _settingsStore;
     private static LauncherAccountStore? _accountStore;
+    private static ServiceCredentials? _serviceCredentials;
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
     private static readonly LauncherTaskManager TaskEngine = new();
@@ -46,10 +47,11 @@ public partial class App
     /// <summary>所有页面共享的启动器任务管理器.</summary>
     internal static LauncherTaskManager Tasks => TaskEngine;
 
-    /// <summary>本机 Java 的发现、排序与持久化管理.</summary>
+    /// <summary>本机 Java 的发现/排序与持久化管理.</summary>
     internal static JavaCatalogManager JavaCatalog => JavaEngine;
 
-    internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化。");
+    internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化. ");
+    internal static ServiceCredentials Services => _serviceCredentials ?? throw new InvalidOperationException("服务配置尚未初始化.");
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -111,6 +113,7 @@ public partial class App
         }
 
         LauncherThemeManager.Apply(Settings);
+        _serviceCredentials = ServiceCredentials.Load(Path.Combine(dataDirectory, "services.json"));
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);

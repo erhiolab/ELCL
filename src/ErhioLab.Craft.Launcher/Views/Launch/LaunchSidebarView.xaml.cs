@@ -22,7 +22,7 @@ public partial class LaunchSidebarView
     {
         var account = App.Accounts.SelectedAccount;
         AccountNameText.Text = account?.UserName ?? "尚未登录";
-        AccountDescriptionText.Text = account is null ? "点击打开账户管理" : "离线账户";
+        AccountDescriptionText.Text = account is null ? "点击打开账户管理" : account.IsMicrosoft ? "Microsoft 账户" : "离线账户";
     }
 
     internal void ShowSelectedVersion(string id)
