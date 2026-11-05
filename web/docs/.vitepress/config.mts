@@ -38,7 +38,8 @@ export default defineConfig({
                     text: "Minecraft", items: [
                         { text: "游戏版本列表", link: "/core/versions" },
                         { text: "模组加载器版本", link: "/core/loaders" },
-                        { text: "Minecraft Wiki", link: "/core/wiki" }
+                        { text: "Minecraft Wiki", link: "/core/wiki" },
+                        { text: "离线玩家 UUID", link: "/core/offline-accounts" }
                     ]
                 },
                 {

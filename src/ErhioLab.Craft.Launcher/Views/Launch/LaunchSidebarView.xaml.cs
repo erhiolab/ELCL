@@ -1,20 +1,28 @@
 using System.Windows;
-using System.Windows.Controls;
 using ErhioLab.Craft.Launcher.Dialogs;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
 
-/// <summary>显示登录方式/玩家信息和游戏版本入口.</summary>
+/// <summary>显示账户管理入口和游戏版本入口.</summary>
 public partial class LaunchSidebarView
 {
     /// <summary>初始化启动页侧栏.</summary>
     public LaunchSidebarView()
     {
         InitializeComponent();
+        App.Accounts.Changed += (_, _) => RefreshAccount();
+        RefreshAccount();
         if (App.Settings.SelectedVersionId is { Length: > 0 } id)
         {
             ShowSelectedVersion(id);
         }
+    }
+
+    private void RefreshAccount()
+    {
+        var account = App.Accounts.SelectedAccount;
+        AccountNameText.Text = account?.UserName ?? "尚未登录";
+        AccountDescriptionText.Text = account is null ? "点击打开账户管理" : "离线账户";
     }
 
     internal void ShowSelectedVersion(string id)
@@ -29,11 +37,11 @@ public partial class LaunchSidebarView
         MainActionDescription.Text = "当前没有可启动的实例";
     }
 
-    private void LoginMode_Checked(object sender, RoutedEventArgs e)
+    private void AccountManagement_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is RadioButton button)
+        if (Application.Current.MainWindow is MainWindow window)
         {
-            App.Logger.Information("Login", $"选择登录方式: {button.Content}");
+            window.OpenAccountManagement();
         }
     }
 

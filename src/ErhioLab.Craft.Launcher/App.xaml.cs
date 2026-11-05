@@ -9,6 +9,7 @@ using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Core.Storage;
+using ErhioLab.Craft.Launcher.Accounts;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
@@ -27,6 +28,7 @@ public partial class App
 
     private static SessionFileLogger? _logger;
     private static JsonFileStore<LauncherSettings>? _settingsStore;
+    private static LauncherAccountStore? _accountStore;
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
     private static readonly LauncherTaskManager TaskEngine = new();
@@ -46,6 +48,8 @@ public partial class App
 
     /// <summary>本机 Java 的发现、排序与持久化管理.</summary>
     internal static JavaCatalogManager JavaCatalog => JavaEngine;
+
+    internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化。");
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -107,6 +111,7 @@ public partial class App
         }
 
         LauncherThemeManager.Apply(Settings);
+        _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
         _ = JavaCatalog.InitializeIfEmptyAsync();

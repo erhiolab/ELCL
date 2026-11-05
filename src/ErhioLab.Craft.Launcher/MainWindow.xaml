@@ -73,7 +73,8 @@
                     x:Name="TaskTitle"
                     Grid.Column="0" Margin="18,0,0,0"
                     Orientation="Horizontal"
-                    VerticalAlignment="Center" Visibility="Collapsed">
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
                     <Button
                         Width="30"
                         Height="30"
@@ -96,10 +97,44 @@
                     Grid.Column="0" Margin="18,0,0,0"
                     Orientation="Horizontal"
                     VerticalAlignment="Center" Visibility="Collapsed">
-                    <Button Width="30" Height="30" Click="CloseVersionSelection_Click" Style="{StaticResource SecondaryActionStyle}" ToolTip="返回启动页">
-                        <TextBlock FontFamily="{x:Static icons:LauncherIcons.GlyphFont}" Text="{x:Static icons:LauncherIcons.Back}" />
+                    <Button
+                        Width="30"
+                        Height="30"
+                        Click="CloseVersionSelection_Click"
+                        Style="{StaticResource SecondaryActionStyle}"
+                        ToolTip="返回启动页">
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            Text="{x:Static icons:LauncherIcons.Back}" />
                     </Button>
-                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Text="版本选择" />
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="版本选择" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="AccountManagementTitle"
+                    Grid.Column="0" Margin="18,0,0,0"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" Visibility="Collapsed">
+                    <Button
+                        Width="30"
+                        Height="30"
+                        Click="CloseAccountManagement_Click"
+                        Style="{StaticResource SecondaryActionStyle}" ToolTip="返回启动页">
+                        <TextBlock
+                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                            Text="{x:Static icons:LauncherIcons.Back}" />
+                    </Button>
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="账户管理" />
                 </StackPanel>
 
                 <Grid
@@ -247,6 +282,7 @@
             <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
             <tasks:TaskManagerView x:Name="TaskManagerPage" Grid.Row="1" Visibility="Collapsed" />
             <launch:VersionSelectionView x:Name="VersionSelectionPage" Grid.Row="1" Visibility="Collapsed" />
+            <launch:AccountManagementView x:Name="AccountManagementPage" Grid.Row="1" Visibility="Collapsed" />
             <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->
             <Image
                 x:Name="ThemeTransitionImage"

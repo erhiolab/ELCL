@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -6,7 +7,12 @@ namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 public sealed class MinecraftVersionCatalogException : Exception
 {
     /// <summary>保留两个来源的错误, 便于调用方记录原因.</summary>
-    public MinecraftVersionCatalogException(Exception preferred, Exception fallback) : base("官方源和镜像源均未能返回有效的 Minecraft 版本列表.", new AggregateException(preferred, fallback))
+    public MinecraftVersionCatalogException(Exception preferred, Exception fallback) : this([preferred, fallback])
+    {
+    }
+
+    /// <summary>保留自动重试期间各来源的错误, 便于调用方记录原因.</summary>
+    public MinecraftVersionCatalogException(IEnumerable<Exception> failures) : base("官方源和镜像源均未能返回有效的 Minecraft 版本列表.", new AggregateException(failures))
     {
     }
 }
@@ -44,25 +50,40 @@ public sealed class MinecraftVersionCatalogClient
         }
     }
 
-    /// <summary>优先尝试指定来源; 它超时、失败或返回无效数据时再尝试另一来源.</summary>
+    /// <summary>优先尝试指定来源; 两个来源都失败且至少一个是暂时性网络故障时短暂等待并重试.</summary>
     public async Task<MinecraftVersionCatalog> GetCatalogAsync(MinecraftManifestSource preferredSource, CancellationToken cancellationToken = default)
     {
         MinecraftManifestSource fallbackSource = preferredSource == MinecraftManifestSource.Official ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
-        try
+        List<Exception> failures = [];
+        for (int attempt = 0; attempt < 2; attempt++)
         {
-            return await FetchAsync(preferredSource, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception preferredError) when (IsSourceFailure(preferredError, cancellationToken))
-        {
+            if (attempt > 0)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(400), cancellationToken).ConfigureAwait(false);
+            }
+
+            try
+            {
+                return await FetchAsync(preferredSource, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception preferredError) when (IsSourceFailure(preferredError, cancellationToken))
+            {
+                failures.Add(preferredError);
+            }
+
             try
             {
                 return await FetchAsync(fallbackSource, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception fallbackError) when (IsSourceFailure(fallbackError, cancellationToken))
             {
-                throw new MinecraftVersionCatalogException(preferredError, fallbackError);
+                failures.Add(fallbackError);
             }
+
+            if (!IsTransientNetworkFailure(failures[^2]) && !IsTransientNetworkFailure(failures[^1])) break;
         }
+
+        throw new MinecraftVersionCatalogException(failures);
     }
 
     /// <summary>解析现有清单 JSON, 可独立于网络调用.</summary>
@@ -149,6 +170,14 @@ public sealed class MinecraftVersionCatalogClient
     }
 
     private static bool IsSourceFailure(Exception error, CancellationToken callerToken) => error is HttpRequestException or JsonException || error is OperationCanceledException && !callerToken.IsCancellationRequested;
+
+    private static bool IsTransientNetworkFailure(Exception error) => error switch
+    {
+        OperationCanceledException => true,
+        HttpRequestException { StatusCode: null } => true,
+        HttpRequestException { StatusCode: { } status } => status is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests || (int)status >= 500,
+        _ => false
+    };
 
     private static JsonElement RequiredProperty(JsonElement parent, string name) => parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out JsonElement property) ? property : throw new JsonException($"清单缺少 {name} 字段.");
 

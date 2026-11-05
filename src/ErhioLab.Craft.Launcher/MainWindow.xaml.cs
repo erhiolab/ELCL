@@ -43,7 +43,7 @@ public partial class MainWindow
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
     private int _themeTransitionVersion;
-    private int _versionSelectionTransitionVersion;
+    private int _secondaryPageTransitionVersion;
     private bool _taskManagerClosing;
     private RadioButton? _selectedNavigationButton;
     private Point? _maximizedDragStart;
@@ -173,73 +173,91 @@ public partial class MainWindow
     internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
 
     /// <summary>从启动页打开本地游戏版本选择.</summary>
-    internal void OpenVersionSelection()
+    internal void OpenVersionSelection() => OpenSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择");
+
+    /// <summary>从启动页打开账户管理.</summary>
+    internal void OpenAccountManagement()
     {
-        ++_versionSelectionTransitionVersion;
-        TaskManagerButton.Visibility = Visibility.Collapsed;
-        TitleBarLabel.Visibility = Visibility.Collapsed;
-        TopNavigationHost.Visibility = Visibility.Collapsed;
-        VersionSelectionTitle.Visibility = Visibility.Visible;
-        VersionSelectionTitle.BeginAnimation(OpacityProperty, null);
-        VersionSelectionTitle.Opacity = 1;
-        VersionSelectionTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(190))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        });
-        VersionSelectionPage.Visibility = Visibility.Visible;
-        VersionSelectionPage.BeginAnimation(OpacityProperty, null);
-        VersionSelectionPage.Opacity = 0;
-        VersionSelectionPage.RenderTransform = new TranslateTransform(0, 14);
-        VersionSelectionPage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        });
-        VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
-            new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            });
-        App.Logger.Information("Navigation", "打开版本选择.");
+        AccountManagementPage.FocusCurrentAccount();
+        OpenSecondaryPage(AccountManagementPage, AccountManagementTitle, "账户管理");
     }
 
-    private void CloseVersionSelection_Click(object sender, RoutedEventArgs e) => CloseVersionSelection();
-
-    private void CloseVersionSelection()
+    private void OpenSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
     {
-        if (VersionSelectionPage.Visibility != Visibility.Visible)
+        if (page.Visibility == Visibility.Visible)
         {
             return;
         }
 
-        int version = ++_versionSelectionTransitionVersion;
-        VersionSelectionTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(170)));
+        ++_secondaryPageTransitionVersion;
+        TaskManagerButton.Visibility = Visibility.Collapsed;
+        TitleBarLabel.Visibility = Visibility.Collapsed;
+        TopNavigationHost.Visibility = Visibility.Collapsed;
+        title.Visibility = Visibility.Visible;
+        title.BeginAnimation(OpacityProperty, null);
+        title.Opacity = 1;
+        title.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(190))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
+        page.Visibility = Visibility.Visible;
+        page.BeginAnimation(OpacityProperty, null);
+        page.Opacity = 0;
+        page.RenderTransform = new TranslateTransform(0, 14);
+        page.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
+        page.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        App.Logger.Information("Navigation", $"打开{name}.");
+    }
+
+    private void CloseVersionSelection_Click(object sender, RoutedEventArgs e) => CloseVersionSelection();
+
+    private void CloseAccountManagement_Click(object sender, RoutedEventArgs e) => CloseSecondaryPage(AccountManagementPage, AccountManagementTitle, "账户管理");
+
+    private void CloseVersionSelection() => CloseSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择");
+
+    private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
+    {
+        if (page.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        int version = ++_secondaryPageTransitionVersion;
+        title.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(170)));
         DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(190))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
         };
         fade.Completed += (_, _) =>
         {
-            if (version != _versionSelectionTransitionVersion)
+            if (version != _secondaryPageTransitionVersion)
             {
                 return;
             }
 
-            VersionSelectionPage.BeginAnimation(OpacityProperty, null);
-            VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
-            VersionSelectionPage.Visibility = Visibility.Collapsed;
-            VersionSelectionPage.Opacity = 1;
-            VersionSelectionTitle.BeginAnimation(OpacityProperty, null);
-            VersionSelectionTitle.Visibility = Visibility.Collapsed;
+            page.BeginAnimation(OpacityProperty, null);
+            page.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            page.Visibility = Visibility.Collapsed;
+            page.Opacity = 1;
+            title.BeginAnimation(OpacityProperty, null);
+            title.Visibility = Visibility.Collapsed;
             TitleBarLabel.Visibility = Visibility.Visible;
             TopNavigationHost.Visibility = Visibility.Visible;
             TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             UpdateTaskManagerButton();
         };
-        VersionSelectionPage.BeginAnimation(OpacityProperty, fade);
-        VersionSelectionPage.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
+        page.BeginAnimation(OpacityProperty, fade);
+        page.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
             new DoubleAnimation(0, -8, TimeSpan.FromMilliseconds(190)));
-        App.Logger.Information("Navigation", "关闭版本选择.");
+        App.Logger.Information("Navigation", $"关闭{name}.");
     }
 
     private void OnVersionChosen(LocalMinecraftVersion version)
@@ -254,7 +272,7 @@ public partial class MainWindow
 
     private void UpdateTaskManagerButton()
     {
-        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || VersionSelectionPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || VersionSelectionPage.Visibility == Visibility.Visible || AccountManagementPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void OnTasksChanged()

@@ -1,0 +1,219 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.AccountManagementView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    Background="{DynamicResource InkBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="360" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="260" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <Border Padding="16" Style="{StaticResource PanelCardStyle}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,13">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource TextBrush}"
+                                Text="账户列表" />
+                            <TextBlock
+                                x:Name="AccountCountText"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource TextMutedBrush}" />
+                        </Grid>
+                        <TextBlock
+                            x:Name="EmptyHint"
+                            Padding="12,24"
+                            HorizontalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="还没有账户." />
+                        <ListBox
+                            x:Name="AccountsList"
+                            BorderThickness="0"
+                            Background="Transparent"
+                            Foreground="{DynamicResource TextBrush}"
+                            ItemContainerStyle="{StaticResource AccountListItemStyle}"
+                            SelectionChanged="AccountsList_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="36" /><ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border
+                                            Width="30"
+                                            Height="30"
+                                            CornerRadius="7"
+                                            Background="{DynamicResource AccentMutedBrush}">
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                                FontSize="16"
+                                                Foreground="{DynamicResource AccentTextBrush}"
+                                                Text="{x:Static icons:LauncherIcons.User}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                            <TextBlock
+                                                FontWeight="SemiBold"
+                                                Foreground="{DynamicResource TextBrush}"
+                                                Text="{Binding UserName}" />
+                                            <TextBlock
+                                                Margin="0,3,0,0"
+                                                FontSize="10"
+                                                Foreground="{DynamicResource TextMutedBrush}"
+                                                Text="{Binding Uuid}" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Margin="8,0,0,0"
+                                            Foreground="{DynamicResource TextMutedBrush}"
+                                            Text="离线" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Margin="0,16,0,0" Padding="16" Style="{StaticResource PanelCardStyle}">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextBrush}"
+                            Text="皮肤与披风" />
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="Microsoft 账户的皮肤预览和管理功能将在这里提供. 离线账户没有皮肤管理."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <Border Padding="16" Style="{StaticResource PanelCardStyle}">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextBrush}"
+                            Text="添加账户" />
+                        <Button
+                            Margin="0,14,0,0"
+                            Content="添加 Microsoft 账户" IsEnabled="False"
+                            Style="{StaticResource AccountSmallActionStyle}"
+                            ToolTip="即将支持" />
+                        <Button
+                            Margin="0,8,0,0"
+                            Content="添加离线账户"
+                            Click="ShowAdd_Click"
+                            Style="{StaticResource AccountPrimaryActionStyle}" />
+                        <Border x:Name="AddFormHost" Height="0" ClipToBounds="True">
+                            <StackPanel x:Name="AddForm" Margin="0,14,0,0" Opacity="0">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" Text="Minecraft 用户名" />
+                                <TextBox
+                                    x:Name="UserNameBox"
+                                    Margin="0,6,0,0"
+                                    MaxLength="16"
+                                    Style="{StaticResource FormTextBoxStyle}"
+                                    KeyDown="UserNameBox_KeyDown" />
+                                <TextBlock
+                                    x:Name="ValidationText"
+                                    Margin="0,6,0,0"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    TextWrapping="Wrap"
+                                    Visibility="Collapsed" />
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button
+                                        Content="取消"
+                                        Click="CancelAdd_Click"
+                                        Style="{StaticResource AccountSmallActionStyle}" />
+                                    <Button
+                                        Grid.Column="2"
+                                        Content="创建"
+                                        Click="CreateOffline_Click"
+                                        Style="{StaticResource AccountSmallActionStyle}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Margin="0,16,0,0" Padding="16" Style="{StaticResource PanelCardStyle}">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextBrush}"
+                            Text="所选账户" />
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Name="SelectedNameText"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource TextBrush}"
+                                Text="尚未选择"
+                                TextTrimming="CharacterEllipsis" />
+                            <Border
+                                x:Name="SelectedInfoIcon"
+                                Grid.Column="1"
+                                Width="16"
+                                Height="16"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                Visibility="Collapsed">
+                                <Path
+                                    Width="13"
+                                    Height="13"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Data="{x:Static icons:LauncherIcons.About}"
+                                    Stroke="{DynamicResource AccentTextBrush}"
+                                    StrokeThickness="1.3"
+                                    Stretch="Uniform" />
+                            </Border>
+                        </Grid>
+                        <Button
+                            x:Name="UseButton"
+                            Margin="0,16,0,0"
+                            Content="使用此账户"
+                            Click="UseSelected_Click"
+                            IsEnabled="False"
+                            Style="{StaticResource AccountPrimaryActionStyle}" />
+                        <Button
+                            x:Name="DeleteButton"
+                            Margin="0,8,0,0"
+                            Content="删除账户"
+                            Click="DeleteSelected_Click"
+                            IsEnabled="False"
+                            Style="{StaticResource AccountSmallActionStyle}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

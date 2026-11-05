@@ -1,6 +1,6 @@
 # 游戏版本列表
 
-`MinecraftVersionCatalogClient` 负责取得 Minecraft Java 版版本清单。它会按你指定的顺序尝试官方源和 BMCLAPI 镜像。
+`MinecraftVersionCatalogClient` 负责取得 Minecraft Java 版版本清单。它会先尝试你指定的来源；失败、超时或返回无效清单时，再尝试另一个来源。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -16,7 +16,9 @@ Console.WriteLine($"实际来源：{catalog.Source}");
 
 `catalog.Versions` 按原清单顺序保存每个版本。`Id` 是版本号，`Kind` 区分正式版、预览版、远古版与愚人节版；`ReleaseTime` 是发布时间，`MetadataUrl` 指向该版本的元数据 JSON，`Sha1` 可能为空。
 
-两个来源都失败时会抛出 `MinecraftVersionCatalogException`，内部保留两次错误。调用方主动取消时抛出取消异常。如果你已经拿到了清单 JSON，也可以用 `MinecraftVersionCatalogClient.Parse(json, source)` 离线解析。愚人节分类依据已知版本 ID 和发布时间，新版本可能需要更新识别规则。
+每个来源默认最多等待 5 秒，可通过构造函数的 `sourceTimeout` 调整。如果一轮中两个来源都失败，并且至少一个是暂时性的连接错误、超时、HTTP 408、429 或 5xx，Core 会等 400 毫秒，再按相同优先顺序重试一轮。这样首次连接时的 TLS 握手中断等短暂故障，不必让用户手动刷新。清单格式错误和其他 4xx 错误本身不构成重试理由；调用方主动取消也会立即停止。
+
+两轮仍失败时会抛出 `MinecraftVersionCatalogException`，内部保留各次请求的错误，便于查日志。Core 不保存版本列表缓存；如果想在离线时仍显示上次获取的版本，需要由调用方自行保存清单或解析后的结果。如果你已经拿到了清单 JSON，也可以用 `MinecraftVersionCatalogClient.Parse(json, source)` 离线解析。愚人节分类依据已知版本 ID 和发布时间，新版本可能需要更新识别规则。
 
 ## 扫描已有游戏目录
 

@@ -13,6 +13,7 @@ Core 只处理数据和文件。你传入网络客户端、保存路径和需要
 | 查找并验证本机 Java | [Java 发现](java.md) |
 | 下载一个或一批文件，查看进度、取消任务 | [文件下载](downloader.md) |
 | 读取中文 Minecraft Wiki 的版本页面 | [Minecraft Wiki](wiki.md) |
+| 根据用户名计算离线玩家 UUID | [离线玩家 UUID](offline-accounts.md) |
 | 写会话日志、保存 JSON | [日志](logging.md) · [JSON 存储](storage.md) |
 
 第一次使用，直接看[快速开始](quick-start.md)。如果你在决定某项功能该放在 Core 还是自己的程序里，可以看 [Core 负责什么](architecture.md)。
