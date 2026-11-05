@@ -289,7 +289,7 @@ public partial class AccountManagementView
         if (AccountsList.SelectedItem is not AccountRow row) return;
         try
         {
-            if (!await LauncherDialogs.ConfirmAsync("删除离线账户", $"从列表中删除"{row.UserName}"? ", confirmText: "删除")) return;
+            if (!await LauncherDialogs.ConfirmAsync("删除离线账户", $"从列表中删除 {row.UserName}？", confirmText: "删除")) return;
             App.Accounts.Remove(row.Uuid);
             App.Logger.Information("Accounts", $"已删除离线账户: {row.UserName}.");
             RefreshAccounts(App.Accounts.SelectedUuid);
