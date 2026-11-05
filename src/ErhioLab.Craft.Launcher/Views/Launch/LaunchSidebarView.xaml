@@ -4,15 +4,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
     <UserControl.Resources>
-        <Style x:Key="AccountEntryStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="Template">
+        <Style
+            x:Key="AccountEntryStyle"
+            TargetType="Button">
+            <Setter
+                Property="Background"
+                Value="Transparent" />
+            <Setter
+                Property="BorderThickness"
+                Value="0" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+            <Setter
+                Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="10">
+                    <ControlTemplate
+                        TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="10">
                             <Grid>
                                 <Border
                                     Background="{DynamicResource PanelHoverBrush}"
@@ -29,10 +43,13 @@
             </Setter>
         </Style>
     </UserControl.Resources>
-    <Grid Margin="26,24">
+    <Grid
+        Margin="26,24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
         </Grid.RowDefinitions>
 
         <Button
@@ -41,7 +58,7 @@
             VerticalAlignment="Center"
             Click="AccountManagement_Click"
             Style="{StaticResource AccountEntryStyle}"
-            ToolTip="打开账户管理">
+            ToolTip="{DynamicResource I18n.launchSidebar.openAccountManager}">
             <StackPanel>
                 <Border
                     Width="78"
@@ -65,51 +82,58 @@
                     FontSize="17"
                     FontWeight="SemiBold"
                     Foreground="{DynamicResource TextBrush}"
-                    Text="尚未登录" />
+                    Text="{DynamicResource I18n.launchSidebar.notSignedIn}" />
                 <TextBlock
                     x:Name="AccountDescriptionText"
                     Margin="0,6,0,0"
                     HorizontalAlignment="Center"
                     FontSize="11"
                     Foreground="{DynamicResource TextMutedBrush}"
-                    Text="点击打开账户管理" />
+                    Text="{DynamicResource I18n.launchSidebar.manageAccountsHint}" />
             </StackPanel>
         </Button>
 
         <!-- 当前无可启动版本, 主操作暂以下载入口占位. -->
-        <StackPanel Grid.Row="1">
-            <Button Click="DownloadVersion_Click" Style="{StaticResource PrimaryActionStyle}">
+        <StackPanel
+            Grid.Row="1">
+            <Button
+                Click="DownloadVersion_Click"
+                Style="{StaticResource PrimaryActionStyle}">
                 <StackPanel>
                     <TextBlock
                         x:Name="MainActionTitle"
                         HorizontalAlignment="Center"
                         FontSize="13"
                         FontWeight="Bold"
-                        Text="下载游戏版本" />
+                        Text="{DynamicResource I18n.launchSidebar.downloadGameVersion}" />
                     <TextBlock
                         x:Name="MainActionDescription"
                         Margin="0,3,0,0"
                         HorizontalAlignment="Center"
                         FontSize="9"
                         Opacity="0.65"
-                        Text="当前没有可启动的实例" />
+                        Text="{DynamicResource I18n.launchSidebar.noLaunchableInstance}" />
                 </StackPanel>
             </Button>
 
-            <Grid Margin="0,10,0,0">
+            <Grid
+                Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="10" />
+                    <ColumnDefinition
+                        Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button
                     Grid.Column="0"
                     Click="VersionSelection_Click"
-                    Content="版本选择"
+                    Content="{DynamicResource I18n.common.selectVersion}"
                     Style="{StaticResource SecondaryActionStyle}" />
                 <Button
                     Grid.Column="2"
-                    Content="版本设置"
+                    Content="{DynamicResource I18n.launchSidebar.versionSettings}"
                     IsEnabled="False"
                     Style="{StaticResource SecondaryActionStyle}" />
             </Grid>

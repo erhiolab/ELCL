@@ -3,37 +3,44 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="{DynamicResource InkBrush}">
-    <Grid Margin="34,28,34,30">
+    <Grid
+        Margin="34,28,34,30">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="18" />
-            <RowDefinition Height="*" />
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="18" />
+            <RowDefinition
+                Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
+        <Grid
+            Grid.Row="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition
+                    Width="*" />
+                <ColumnDefinition
+                    Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock
                     FontFamily="{StaticResource DisplayFont}"
                     FontSize="24"
                     FontWeight="SemiBold"
-                    Text="公告" />
+                    Text="{DynamicResource I18n.launchPage.news}" />
                 <TextBlock
                     Margin="0,5,0,0"
                     FontFamily="{StaticResource MonoFont}"
                     FontSize="9"
                     Foreground="{DynamicResource TextMutedBrush}"
-                    Text="ANNOUNCEMENTS" />
+                    Text="{DynamicResource I18n.launchPage.announcementsLabel}" />
             </StackPanel>
             <TextBlock
                 Grid.Column="1"
                 VerticalAlignment="Bottom"
                 FontSize="11"
                 Foreground="{DynamicResource TextMutedBrush}"
-                Text="暂无更新" />
+                Text="{DynamicResource I18n.launchPage.noUpdates}" />
         </Grid>
 
         <Border
@@ -50,13 +57,13 @@
                     FontFamily="{StaticResource MonoFont}"
                     FontSize="11"
                     Foreground="{DynamicResource TextMutedBrush}"
-                    Text="NO ANNOUNCEMENTS" />
+                    Text="{DynamicResource I18n.launchPage.noAnnouncementsLabel}" />
                 <TextBlock
                     Margin="0,9,0,0"
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{DynamicResource TextMutedBrush}"
-                    Text="公告内容将在这里显示" />
+                    Text="{DynamicResource I18n.launchPage.newsPlaceholder}" />
             </StackPanel>
         </Border>
     </Grid>

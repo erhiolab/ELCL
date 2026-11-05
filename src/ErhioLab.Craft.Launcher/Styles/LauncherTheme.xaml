@@ -2,47 +2,81 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- 主窗口和页面背景色. -->
-    <SolidColorBrush x:Key="InkBrush" Color="#FF0B0D12" />
+    <SolidColorBrush
+        x:Key="InkBrush"
+        Color="#FF0B0D12" />
     <!-- 标题栏/侧栏及公告容器的抬高背景色. -->
-    <SolidColorBrush x:Key="InkRaisedBrush" Color="#FF10131A" />
+    <SolidColorBrush
+        x:Key="InkRaisedBrush"
+        Color="#FF10131A" />
     <!-- 用户头像占位和侧栏信息块的背景色. -->
-    <SolidColorBrush x:Key="PanelBrush" Color="#FF141820" />
+    <SolidColorBrush
+        x:Key="PanelBrush"
+        Color="#FF141820" />
     <!-- 按钮和导航项鼠标悬停时的背景色. -->
-    <SolidColorBrush x:Key="PanelHoverBrush" Color="#FF1B202A" />
+    <SolidColorBrush
+        x:Key="PanelHoverBrush"
+        Color="#FF1B202A" />
     <!-- 卡片/按钮的常规边框色. -->
-    <SolidColorBrush x:Key="LineBrush" Color="#FF292F39" />
+    <SolidColorBrush
+        x:Key="LineBrush"
+        Color="#FF292F39" />
     <!-- 主区域分隔线使用的弱边框色. -->
-    <SolidColorBrush x:Key="LineSoftBrush" Color="#FF1D222B" />
+    <SolidColorBrush
+        x:Key="LineSoftBrush"
+        Color="#FF1D222B" />
     <!-- 标题/正文及主要按钮文字的颜色. -->
-    <SolidColorBrush x:Key="TextBrush" Color="#FFF1F3F5" />
+    <SolidColorBrush
+        x:Key="TextBrush"
+        Color="#FFF1F3F5" />
     <!-- 辅助说明/占位状态及未选中导航项的文字色. -->
-    <SolidColorBrush x:Key="TextMutedBrush" Color="#FF7F8998" />
+    <SolidColorBrush
+        x:Key="TextMutedBrush"
+        Color="#FF7F8998" />
     <!-- 主题色, 用于主按钮/选中状态和强调文字. -->
-    <SolidColorBrush x:Key="AccentBrush" Color="#FF80CEFF" />
+    <SolidColorBrush
+        x:Key="AccentBrush"
+        Color="#FF80CEFF" />
     <!-- 浅色主题中的强调文字色, 保持文字与背景的对比度. -->
-    <SolidColorBrush x:Key="AccentTextBrush" Color="#FF80CEFF" />
+    <SolidColorBrush
+        x:Key="AccentTextBrush"
+        Color="#FF80CEFF" />
     <!-- 主题色按钮上的文字色, 随主题色明度自动选择. -->
-    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FF0B0E08" />
+    <SolidColorBrush
+        x:Key="AccentForegroundBrush"
+        Color="#FF0B0E08" />
     <!-- 选中导航项和登录方式的低对比度背景色. -->
-    <SolidColorBrush x:Key="AccentMutedBrush" Color="#FF0F1D26" />
+    <SolidColorBrush
+        x:Key="AccentMutedBrush"
+        Color="#FF0F1D26" />
     <!-- 悬停时选中按钮使用的浅蓝背景. -->
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF1A3445" />
+    <SolidColorBrush
+        x:Key="AccentHoverBrush"
+        Color="#FF1A3445" />
 
     <!-- 全局隐藏 Tab 导航产生的默认焦点装饰框, 保留键盘焦点和操作. -->
-    <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}" TargetType="Control">
-        <Setter Property="Template">
+    <Style
+        x:Key="{x:Static SystemParameters.FocusVisualStyleKey}"
+        TargetType="Control">
+        <Setter
+            Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="Control">
-                    <Grid IsHitTestVisible="False" />
+                <ControlTemplate
+                    TargetType="Control">
+                    <Grid
+                        IsHitTestVisible="False" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
     <!-- 页面标题和品牌文字使用的展示字体. -->
-    <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
+    <FontFamily
+        x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <!-- 正文/导航及按钮使用的常规字体. -->
-    <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily
+        x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <!-- 页面编号和英文状态标识使用的等宽字体. -->
-    <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
+    <FontFamily
+        x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
 </ResourceDictionary>

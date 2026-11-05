@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 
 using ErhioLab.Craft.Launcher.Tasks;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Tasks;
 
@@ -14,6 +15,10 @@ public partial class TaskManagerView
         InitializeComponent();
         TaskList.DataContext = App.Tasks;
         App.Tasks.Tasks.CollectionChanged += Tasks_CollectionChanged;
+        LocalizationManager.Changed += (_, _) =>
+        {
+            foreach (LauncherTask task in App.Tasks.Tasks) task.RefreshLocalization();
+        };
         foreach (LauncherTask task in App.Tasks.Tasks)
         {
             task.PropertyChanged += Task_PropertyChanged;

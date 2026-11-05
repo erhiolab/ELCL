@@ -6,10 +6,14 @@
     IsHitTestVisible="False">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="54" />
-            <RowDefinition Height="*" />
+            <RowDefinition
+                Height="54" />
+            <RowDefinition
+                Height="*" />
         </Grid.RowDefinitions>
-        <Grid Grid.Row="1" ClipToBounds="True">
+        <Grid
+            Grid.Row="1"
+            ClipToBounds="True">
             <StackPanel
                 x:Name="NotificationStack"
                 Margin="20,0,0,18"

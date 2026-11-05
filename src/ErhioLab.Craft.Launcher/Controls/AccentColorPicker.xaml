@@ -4,14 +4,26 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <!-- 色板按钮共享外观. -->
-        <Style x:Key="ColorSwatchStyle" TargetType="Button">
-            <Setter Property="Width" Value="30" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
+        <Style
+            x:Key="ColorSwatchStyle"
+            TargetType="Button">
+            <Setter
+                Property="Width"
+                Value="30" />
+            <Setter
+                Property="Height"
+                Value="30" />
+            <Setter
+                Property="Margin"
+                Value="0,0,8,0" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
+            <Setter
+                Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
+                    <ControlTemplate
+                        TargetType="Button">
                         <Border
                             x:Name="Swatch"
                             Background="{TemplateBinding Background}"
@@ -19,8 +31,13 @@
                             BorderThickness="2"
                             CornerRadius="7" />
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Swatch" Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+                            <Trigger
+                                Property="IsMouseOver"
+                                Value="True">
+                                <Setter
+                                    TargetName="Swatch"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource TextBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -40,14 +57,19 @@
             BorderThickness="1"
             Cursor="Hand"
             Foreground="{DynamicResource TextBrush}">
-            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+            <StackPanel
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
                 <Border
                     x:Name="CurrentSwatch"
                     Width="16"
                     Height="16"
                     Margin="0,0,8,0"
                     CornerRadius="3" />
-                <TextBlock VerticalAlignment="Center" FontSize="11" Text="选择主题色" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Text="{DynamicResource I18n.accentPicker.chooseColor}" />
             </StackPanel>
         </ToggleButton>
 
@@ -67,12 +89,15 @@
                 CornerRadius="9"
                 TextElement.Foreground="{DynamicResource TextBrush}">
                 <StackPanel>
-                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="选择主题色" />
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Text="{DynamicResource I18n.accentPicker.chooseColor}" />
                     <TextBlock
                         Margin="0,4,0,12"
                         FontSize="11"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="预设颜色" />
+                        Text="{DynamicResource I18n.accentPicker.presetColors}" />
                     <WrapPanel>
                         <Button
                             Tag="#80CEFF"
@@ -105,31 +130,75 @@
                             Click="PresetColor_Click"
                             Style="{StaticResource ColorSwatchStyle}" />
                     </WrapPanel>
-                    <Border Height="1" Margin="0,13,0,12" Background="{DynamicResource LineSoftBrush}" />
-                    <TextBlock FontSize="11" Text="自定义颜色" />
-                    <Border Height="9" Margin="0,11,0,0" CornerRadius="4">
+                    <Border
+                        Height="1"
+                        Margin="0,13,0,12"
+                        Background="{DynamicResource LineSoftBrush}" />
+                    <TextBlock
+                        FontSize="11"
+                        Text="{DynamicResource I18n.accentPicker.customColor}" />
+                    <Border
+                        Height="9"
+                        Margin="0,11,0,0"
+                        CornerRadius="4">
                         <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                <GradientStop Color="#FFFF0000" Offset="0" />
-                                <GradientStop Color="#FFFFFF00" Offset="0.167" />
-                                <GradientStop Color="#FF00FF00" Offset="0.333" />
-                                <GradientStop Color="#FF00FFFF" Offset="0.5" />
-                                <GradientStop Color="#FF0000FF" Offset="0.667" />
-                                <GradientStop Color="#FFFF00FF" Offset="0.833" />
-                                <GradientStop Color="#FFFF0000" Offset="1" />
+                            <LinearGradientBrush
+                                StartPoint="0,0.5"
+                                EndPoint="1,0.5">
+                                <GradientStop
+                                    Color="#FFFF0000"
+                                    Offset="0" />
+                                <GradientStop
+                                    Color="#FFFFFF00"
+                                    Offset="0.167" />
+                                <GradientStop
+                                    Color="#FF00FF00"
+                                    Offset="0.333" />
+                                <GradientStop
+                                    Color="#FF00FFFF"
+                                    Offset="0.5" />
+                                <GradientStop
+                                    Color="#FF0000FF"
+                                    Offset="0.667" />
+                                <GradientStop
+                                    Color="#FFFF00FF"
+                                    Offset="0.833" />
+                                <GradientStop
+                                    Color="#FFFF0000"
+                                    Offset="1" />
                             </LinearGradientBrush>
                         </Border.Background>
                     </Border>
-                    <Slider x:Name="HueSlider" Maximum="360" ValueChanged="PickerSlider_ValueChanged" />
-                    <TextBlock Margin="0,6,0,0" FontSize="11" Text="饱和度" />
-                    <Slider x:Name="SaturationSlider" Maximum="100" ValueChanged="PickerSlider_ValueChanged" />
-                    <TextBlock Margin="0,6,0,0" FontSize="11" Text="亮度" />
-                    <Slider x:Name="BrightnessSlider" Maximum="100" ValueChanged="PickerSlider_ValueChanged" />
-                    <Border Height="1" Margin="0,12,0,12" Background="{DynamicResource LineSoftBrush}" />
+                    <Slider
+                        x:Name="HueSlider"
+                        Maximum="360"
+                        ValueChanged="PickerSlider_ValueChanged" />
+                    <TextBlock
+                        Margin="0,6,0,0"
+                        FontSize="11"
+                        Text="{DynamicResource I18n.accentPicker.saturation}" />
+                    <Slider
+                        x:Name="SaturationSlider"
+                        Maximum="100"
+                        ValueChanged="PickerSlider_ValueChanged" />
+                    <TextBlock
+                        Margin="0,6,0,0"
+                        FontSize="11"
+                        Text="{DynamicResource I18n.accentPicker.brightness}" />
+                    <Slider
+                        x:Name="BrightnessSlider"
+                        Maximum="100"
+                        ValueChanged="PickerSlider_ValueChanged" />
+                    <Border
+                        Height="1"
+                        Margin="0,12,0,12"
+                        Background="{DynamicResource LineSoftBrush}" />
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                            <ColumnDefinition
+                                Width="*" />
                         </Grid.ColumnDefinitions>
                         <Border
                             x:Name="PreviewSwatch"
@@ -157,13 +226,13 @@
                         Margin="0,6,0,0"
                         FontSize="11"
                         Foreground="#FFE5484D"
-                        Text="请输入 #RRGGBB 格式."
+                        Text="{DynamicResource I18n.accentPicker.hexHint}"
                         Visibility="Collapsed" />
                     <Button
                         Height="32"
                         Margin="0,11,0,0"
                         Click="ApplyColor_Click"
-                        Content="应用颜色"
+                        Content="{DynamicResource I18n.accentPicker.applyColor}"
                         Style="{StaticResource SecondaryActionStyle}" />
                 </StackPanel>
             </Border>

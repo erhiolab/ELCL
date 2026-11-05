@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Net.Http;
 using System.Windows;
@@ -45,6 +46,7 @@ public partial class VanillaVersionDetailsPage
     {
         _version = version;
         InitializeComponent();
+        LocalizationManager.Changed += LocalizationChanged;
         VersionIcon.Data = LauncherIcons.ForVersion(version.Kind);
         VersionNameBox.Text = version.Id;
     }
@@ -367,6 +369,7 @@ public partial class VanillaVersionDetailsPage
 
     private void DetachWindow()
     {
+        LocalizationManager.Changed -= LocalizationChanged;
         if (_ownerWindow is not null)
         {
             _ownerWindow.Closed -= OwnerWindow_Closed;
@@ -374,10 +377,16 @@ public partial class VanillaVersionDetailsPage
         }
     }
 
+    private void LocalizationChanged(object? sender, EventArgs e)
+    {
+        foreach (LoaderSection section in LoaderSections) section.RefreshLocalization();
+        RefreshCompatibility();
+    }
+
     private void StartDownloadButton_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Download", $"点击开始下载: {_version.Id}, 自定义名称: {VersionNameBox.Text}. 下载功能尚未实现.");
-        LauncherToasts.Information("下载功能尚未实现.");
+        LauncherToasts.Information(LocalizationManager.Get("versionDetails.downloadUnavailable"));
     }
 
     private static HttpClient CreateHttpClient()
@@ -390,7 +399,7 @@ public partial class VanillaVersionDetailsPage
     /// <summary>一个加载器下拉分组的状态和可选版本.</summary>
     public sealed class LoaderSection : INotifyPropertyChanged
     {
-        private string _statusText = "等待获取";
+        private string _statusText = LocalizationManager.Get("versionDetails.waiting");
         private bool _hasError;
         private bool _hasVersions;
         private bool _isExpanded;
@@ -478,7 +487,7 @@ public partial class VanillaVersionDetailsPage
             IsLoading = true;
             HasLoaded = false;
             HasError = false;
-            StatusText = "正在获取...";
+            StatusText = LocalizationManager.Get("versionDetails.loading");
         }
 
         internal void SetVersions(IReadOnlyList<MinecraftLoaderVersion> versions)
@@ -501,23 +510,31 @@ public partial class VanillaVersionDetailsPage
             if (Choices.Count != visible.Length + (HasVersions ? 1 : 0)
                 || !Choices.Skip(1).Select(choice => choice.Label).SequenceEqual(visible.Select(version => version.Version)))
             {
-                Choices = HasVersions ? [new LoaderChoice(null, "无", "不添加此加载器"), .. visible.Select(version => new LoaderChoice(version, version.Version, DescribeVersion(version)))] : [];
+                Choices = HasVersions ? [new LoaderChoice(null, LocalizationManager.Get("common.none"), LocalizationManager.Get("versionDetails.doNotAddLoader")), .. visible.Select(version => new LoaderChoice(version, version.Version, DescribeVersion(version)))] : [];
             }
 
-            StatusText = SelectedVersion is not null ? $"已选 {SelectedVersion.Version}" : _allVersions.Count == 0 ? "无" : HasVersions ? "可以添加" : "无兼容版本";
+            StatusText = SelectedVersion is not null ? string.Format(LocalizationManager.Get("loader.selected"), SelectedVersion.Version) : _allVersions.Count == 0 ? LocalizationManager.Get("common.none") : HasVersions ? LocalizationManager.Get("versionDetails.availableToAdd") : LocalizationManager.Get("versionDetails.noCompatibleVersions");
         }
 
         internal void SetError()
         {
             IsLoading = false;
             HasError = true;
-            StatusText = "获取失败, 点击重试";
+            StatusText = LocalizationManager.Get("versionDetails.loadFailedRetry");
+        }
+
+        internal void RefreshLocalization()
+        {
+            if (IsLoading) StatusText = LocalizationManager.Get("versionDetails.loading");
+            else if (HasError) StatusText = LocalizationManager.Get("versionDetails.loadFailedRetry");
+            else if (HasLoaded) Choices = [];
+            else StatusText = LocalizationManager.Get("versionDetails.waiting");
         }
 
         internal void Select(MinecraftLoaderVersion? version)
         {
             SelectedVersion = version;
-            StatusText = version is null ? "可以添加" : $"已选 {version.Version}";
+            StatusText = version is null ? LocalizationManager.Get("versionDetails.availableToAdd") : string.Format(LocalizationManager.Get("loader.selected"), version.Version);
         }
 
         internal void ApplyModifiedDates(IReadOnlyDictionary<string, DateOnly> dates)
@@ -532,7 +549,7 @@ public partial class VanillaVersionDetailsPage
             {
                 if (dates.TryGetValue(choice.Label, out DateOnly modified))
                 {
-                    choice.SetDetail($"更新于 {modified:yyyy/MM/dd}");
+                    choice.SetDetail(string.Format(LocalizationManager.Get("loader.updatedAt"), modified));
                 }
             }
         }
@@ -565,23 +582,23 @@ public partial class VanillaVersionDetailsPage
             string date;
             if (version.ReleaseTime is { } releaseTime)
             {
-                date = $"发布于 {releaseTime.ToLocalTime():yyyy/MM/dd HH:mm}";
+                date = string.Format(LocalizationManager.Get("loader.releasedAtTime"), releaseTime.ToLocalTime());
             }
             else if (version.ReleaseDate is { } releaseDate)
             {
-                date = $"发布于 {releaseDate:yyyy/MM/dd}";
+                date = string.Format(LocalizationManager.Get("loader.releasedAt"), releaseDate);
             }
             else if (version.LastModifiedDate is { } modifiedDate)
             {
-                date = $"更新于 {modifiedDate:yyyy/MM/dd}";
+                date = string.Format(LocalizationManager.Get("loader.updatedAt"), modifiedDate);
             }
             else if (version.BuildDate is { } buildDate)
             {
-                date = $"构建于 {buildDate:yyyy/MM/dd}";
+                date = string.Format(LocalizationManager.Get("loader.builtAt"), buildDate);
             }
             else
             {
-                date = "发布时间未提供";
+                date = LocalizationManager.Get("versionDetails.releaseDateUnavailable");
             }
 
             if (Kind != MinecraftLoaderKind.OptiFine)
@@ -589,7 +606,9 @@ public partial class VanillaVersionDetailsPage
                 return date;
             }
 
-            return version.RequiredForgeVersion is { } requirement ? $"{date} · 兼容 Forge {(requirement.Length == 0 ? "任意版本" : requirement)}" : $"{date} · 不支持与 Forge 搭配";
+            return version.RequiredForgeVersion is { } requirement
+                ? string.Format(LocalizationManager.Get("loader.forgeCompatible"), date, requirement.Length == 0 ? LocalizationManager.Get("versionDetails.anyVersion") : requirement)
+                : string.Format(LocalizationManager.Get("loader.forgeIncompatible"), date);
         }
 
         private void Changed(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

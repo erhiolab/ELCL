@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using ErhioLab.Craft.Launcher.Core.Java;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Settings;
 
@@ -9,6 +10,9 @@ public sealed record LauncherSettings
 {
     /// <summary>当前明暗主题.</summary>
     public LauncherTheme Theme { get; init; } = LauncherTheme.Day;
+
+    /// <summary>界面语言代码，对应 Languages 下的 JSON 文件名.</summary>
+    public string Language { get; init; } = LocalizationManager.DefaultLanguage;
 
     /// <summary>六位 RGB 主题色, 默认值为 #80CEFF.</summary>
     public string AccentColor { get; init; } = "#80CEFF";
@@ -60,6 +64,7 @@ public sealed record LauncherSettings
         return this with
         {
             Theme = Enum.IsDefined(Theme) ? Theme : LauncherTheme.Day,
+            Language = LocalizationManager.IsAvailable(Language) ? Language : LocalizationManager.DefaultLanguage,
             TitleBarMode = Enum.IsDefined(TitleBarMode) ? TitleBarMode : TitleBarMode.Default,
             TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
             VersionListSource = Enum.IsDefined(VersionListSource) ? VersionListSource : VersionListSource.OfficialFirst,
@@ -97,12 +102,30 @@ public sealed record LauncherSettings
                 : folder.Name.Trim();
             if (name.Length == 0)
             {
-                name = "游戏文件夹";
+                name = "Minecraft";
             }
 
-            yield return new GameFolderSetting(path, name[..Math.Min(name.Length, 64)]);
+            string? nameKey = folder.NameKey is "folder.current" or "folder.official" ? folder.NameKey : null;
+            if (nameKey is null && !folder.IsNameCustomized)
+            {
+                string? defaultKey = SamePath(path, System.IO.Path.Combine(AppContext.BaseDirectory, ".minecraft"))
+                    ? "folder.current"
+                    : SamePath(path, System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft"))
+                        ? "folder.official"
+                        : null;
+                if (defaultKey is not null && LocalizationManager.AvailableLanguages.Any(language =>
+                        name == LocalizationManager.GetForLanguage(language, defaultKey)))
+                    nameKey = defaultKey;
+            }
+
+            yield return new GameFolderSetting(path, name[..Math.Min(name.Length, 64)], nameKey, folder.IsNameCustomized);
         }
     }
+
+    private static bool SamePath(string left, string right) => string.Equals(
+        left.TrimEnd(System.IO.Path.DirectorySeparatorChar),
+        right.TrimEnd(System.IO.Path.DirectorySeparatorChar),
+        StringComparison.OrdinalIgnoreCase);
 
     private static string? NormalizePath(string? value)
     {

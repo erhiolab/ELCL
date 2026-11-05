@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
@@ -31,6 +32,9 @@ public partial class PersonalizationPage
         OpacitySlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(OpacitySlider_DragStarted));
         OpacitySlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(OpacitySlider_DragCompleted));
         AccentPicker.ColorSelected += AccentPicker_ColorSelected;
+        LanguageComboBox.ItemsSource = LocalizationManager.AvailableLanguages
+            .Select(code => new KeyValuePair<string, string>(code, LocalizationManager.GetName(code)))
+            .ToArray();
         RefreshControls();
     }
 
@@ -43,6 +47,7 @@ public partial class PersonalizationPage
         if (App.UpdateSettings(App.Settings with
             {
                 Theme = LauncherTheme.Day,
+                Language = LocalizationManager.DefaultLanguage,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
                 TitleBarMode = TitleBarMode.Default,
@@ -66,6 +71,7 @@ public partial class PersonalizationPage
         DayThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Day;
         NightThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Night;
         AccentPicker.SetColor(App.Settings.AccentColor);
+        LanguageComboBox.SelectedValue = App.Settings.Language;
         NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
         DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
@@ -139,6 +145,13 @@ public partial class PersonalizationPage
         {
             RefreshControls();
         }
+    }
+
+    private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || LanguageComboBox.SelectedValue is not string language || language == App.Settings.Language)
+            return;
+        if (!App.UpdateSettings(App.Settings with { Language = language })) RefreshControls();
     }
 
     private void AccentPicker_ColorSelected(string color)

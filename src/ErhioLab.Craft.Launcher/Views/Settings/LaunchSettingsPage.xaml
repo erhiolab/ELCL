@@ -6,18 +6,28 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:java="clr-namespace:ErhioLab.Craft.Launcher.Core.Java;assembly=ErhioLab.Craft.Launcher.Core"
     Background="{DynamicResource InkBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="32,28,32,36">
+    <ScrollViewer
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            Margin="32,28,32,36">
             <controls:LauncherCard>
                 <controls:LauncherCard.Header>
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                            <ColumnDefinition
+                                Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Java" />
+                        <StackPanel
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Text="Java" />
                             <TextBlock
                                 x:Name="JavaCountText"
                                 Margin="8,3,0,0"
@@ -31,7 +41,7 @@
                             Height="34"
                             Margin="0,0,8,0"
                             Click="RefreshButton_Click"
-                            Content="重新获取"
+                            Content="{DynamicResource I18n.launchSettings.searchAgain}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             x:Name="AddButton"
@@ -39,7 +49,7 @@
                             Width="96"
                             Height="34"
                             Click="AddButton_Click"
-                            Content="手动添加"
+                            Content="{DynamicResource I18n.launchSettings.addManually}"
                             Style="{StaticResource SecondaryActionStyle}" />
                     </Grid>
                 </controls:LauncherCard.Header>
@@ -48,23 +58,28 @@
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
                         TextWrapping="Wrap"
-                        Text="启动游戏时, ELCL 会选择列表中第一个兼容当前 Minecraft 的 Java. 点击选项右侧的箭头可以进行排序, 以控制优先选择哪个 Java. 若想无视兼容性, 强制使用某个 Java, 请在版本独立设置中修改." />
+                        Text="{DynamicResource I18n.launchSettings.javaPriorityHint}" />
                     <TextBlock
                         x:Name="EmptyText"
                         Margin="0,18,0,2"
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="尚未找到 Java, 可以手动获取或添加 java.exe." />
-                    <ItemsControl x:Name="JavaList" Margin="0,12,0,0">
+                        Text="{DynamicResource I18n.launchSettings.noJavaHint}" />
+                    <ItemsControl
+                        x:Name="JavaList"
+                        Margin="0,12,0,0">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type java:JavaInstallation}">
+                            <DataTemplate
+                                DataType="{x:Type java:JavaInstallation}">
                                 <Border
                                     x:Name="JavaRow"
                                     Style="{StaticResource InsetListRowStyle}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition
+                                                Width="*" />
+                                            <ColumnDefinition
+                                                Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Border
                                             Grid.ColumnSpan="2"
@@ -72,10 +87,19 @@
                                             Background="{DynamicResource AccentHoverBrush}"
                                             CornerRadius="6"
                                             Style="{StaticResource VersionListHoverStyle}" />
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock FontSize="13" FontWeight="SemiBold" Text="Java " />
-                                                <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Version}" />
+                                        <StackPanel
+                                            Grid.Column="0"
+                                            VerticalAlignment="Center">
+                                            <StackPanel
+                                                Orientation="Horizontal">
+                                                <TextBlock
+                                                    FontSize="13"
+                                                    FontWeight="SemiBold"
+                                                    Text="Java " />
+                                                <TextBlock
+                                                    FontSize="13"
+                                                    FontWeight="SemiBold"
+                                                    Text="{Binding Version}" />
                                                 <TextBlock
                                                     Margin="10,0,0,0"
                                                     Foreground="{DynamicResource TextMutedBrush}"
@@ -95,25 +119,49 @@
                                             Orientation="Horizontal"
                                             Style="{StaticResource VersionListActionsStyle}"
                                             VerticalAlignment="Center">
-                                            <Button Width="30" Height="30" Margin="3,0" Click="MoveUp_Click"
-                                                    Content="↑" Style="{StaticResource SecondaryActionStyle}"
-                                                    Tag="{Binding}" ToolTip="上移" />
-                                            <Button Width="30" Height="30" Margin="3,0" Click="MoveDown_Click"
-                                                    Content="↓" Style="{StaticResource SecondaryActionStyle}"
-                                                    Tag="{Binding}" ToolTip="下移" />
-                                            <Button Width="30" Height="30" Margin="3,0" Click="OpenFolder_Click"
-                                                    Style="{StaticResource SecondaryActionStyle}" Tag="{Binding}"
-                                                    ToolTip="打开所在文件夹">
+                                            <Button
+                                                Width="30"
+                                                Height="30"
+                                                Margin="3,0"
+                                                Click="MoveUp_Click"
+                                                Content="↑"
+                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Tag="{Binding}"
+                                                ToolTip="{DynamicResource I18n.launchSettings.moveUp}" />
+                                            <Button
+                                                Width="30"
+                                                Height="30"
+                                                Margin="3,0"
+                                                Click="MoveDown_Click"
+                                                Content="↓"
+                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Tag="{Binding}"
+                                                ToolTip="{DynamicResource I18n.launchSettings.moveDown}" />
+                                            <Button
+                                                Width="30"
+                                                Height="30"
+                                                Margin="3,0"
+                                                Click="OpenFolder_Click"
+                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Tag="{Binding}"
+                                                ToolTip="{DynamicResource I18n.launchSettings.openContainingFolder}">
                                                 <Path
                                                     Width="15"
                                                     Height="15"
                                                     Data="{x:Static icons:LauncherIcons.Folder}"
-                                                    Stroke="{DynamicResource TextBrush}" StrokeThickness="1.6"
+                                                    Stroke="{DynamicResource TextBrush}"
+                                                    StrokeThickness="1.6"
                                                     StrokeLineJoin="Round" />
                                             </Button>
-                                            <Button Width="30" Height="30" Margin="3,0" Click="Remove_Click"
-                                                    Content="×" Style="{StaticResource SecondaryActionStyle}"
-                                                    Tag="{Binding}" ToolTip="从列表移除" />
+                                            <Button
+                                                Width="30"
+                                                Height="30"
+                                                Margin="3,0"
+                                                Click="Remove_Click"
+                                                Content="×"
+                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Tag="{Binding}"
+                                                ToolTip="{DynamicResource I18n.common.removeFromList}" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -125,7 +173,8 @@
                         Height="0"
                         ClipToBounds="True"
                         Visibility="Collapsed">
-                        <ItemsControl x:Name="MoreJavaList" />
+                        <ItemsControl
+                            x:Name="MoreJavaList" />
                     </Border>
                     <Button
                         x:Name="ExpandJavaButton"

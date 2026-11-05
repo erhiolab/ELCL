@@ -34,14 +34,17 @@
             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
 
-    <Grid x:Name="ShellRoot">
+    <Grid
+        x:Name="ShellRoot">
         <Grid
             x:Name="WindowRoot"
             Background="{DynamicResource InkBrush}"
             SizeChanged="WindowRoot_SizeChanged">
             <Grid.RowDefinitions>
-                <RowDefinition Height="54" />
-                <RowDefinition Height="*" />
+                <RowDefinition
+                    Height="54" />
+                <RowDefinition
+                    Height="*" />
             </Grid.RowDefinitions>
 
             <!-- 标题栏由应用绘制, 窗口按钮仍使用系统窗口命令. -->
@@ -53,9 +56,12 @@
                 MouseLeftButtonUp="TitleBar_MouseLeftButtonUp"
                 MouseMove="TitleBar_MouseMove">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition
+                        Width="180" />
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="150" />
                 </Grid.ColumnDefinitions>
 
                 <TextBlock
@@ -71,7 +77,8 @@
 
                 <StackPanel
                     x:Name="TaskTitle"
-                    Grid.Column="0" Margin="18,0,0,0"
+                    Grid.Column="0"
+                    Margin="18,0,0,0"
                     Orientation="Horizontal"
                     VerticalAlignment="Center"
                     Visibility="Collapsed">
@@ -79,7 +86,8 @@
                         Width="30"
                         Height="30"
                         Click="CloseTaskManager_Click"
-                        Style="{StaticResource SecondaryActionStyle}" ToolTip="返回">
+                        Style="{StaticResource SecondaryActionStyle}"
+                        ToolTip="{DynamicResource I18n.common.back}">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                             Text="{x:Static icons:LauncherIcons.Back}" />
@@ -89,20 +97,22 @@
                         VerticalAlignment="Center"
                         FontSize="14"
                         FontWeight="SemiBold"
-                        Text="任务管理" />
+                        Text="{DynamicResource I18n.taskManager.title}" />
                 </StackPanel>
 
                 <StackPanel
                     x:Name="VersionSelectionTitle"
-                    Grid.Column="0" Margin="18,0,0,0"
+                    Grid.Column="0"
+                    Margin="18,0,0,0"
                     Orientation="Horizontal"
-                    VerticalAlignment="Center" Visibility="Collapsed">
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
                     <Button
                         Width="30"
                         Height="30"
                         Click="CloseVersionSelection_Click"
                         Style="{StaticResource SecondaryActionStyle}"
-                        ToolTip="返回启动页">
+                        ToolTip="{DynamicResource I18n.mainWindow.backToLaunch}">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                             Text="{x:Static icons:LauncherIcons.Back}" />
@@ -112,19 +122,22 @@
                         VerticalAlignment="Center"
                         FontSize="14"
                         FontWeight="SemiBold"
-                        Text="版本选择" />
+                        Text="{DynamicResource I18n.common.selectVersion}" />
                 </StackPanel>
 
                 <StackPanel
                     x:Name="AccountManagementTitle"
-                    Grid.Column="0" Margin="18,0,0,0"
+                    Grid.Column="0"
+                    Margin="18,0,0,0"
                     Orientation="Horizontal"
-                    VerticalAlignment="Center" Visibility="Collapsed">
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
                     <Button
                         Width="30"
                         Height="30"
                         Click="CloseAccountManagement_Click"
-                        Style="{StaticResource SecondaryActionStyle}" ToolTip="返回启动页">
+                        Style="{StaticResource SecondaryActionStyle}"
+                        ToolTip="{DynamicResource I18n.mainWindow.backToLaunch}">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                             Text="{x:Static icons:LauncherIcons.Back}" />
@@ -134,27 +147,34 @@
                         VerticalAlignment="Center"
                         FontSize="14"
                         FontWeight="SemiBold"
-                        Text="账户管理" />
+                        Text="{DynamicResource I18n.mainWindow.accountManager}" />
                 </StackPanel>
 
                 <Grid
                     x:Name="TopNavigationHost"
                     Grid.Column="1"
                     SizeChanged="TopNavigationHost_SizeChanged">
-                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal">
                         <RadioButton
                             x:Name="LaunchNavigation"
                             GroupName="TopNavigation"
                             Tag="Launch"
                             Checked="PrimaryNavigation_Checked"
                             Style="{StaticResource TopNavigationStyle}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
                                 <TextBlock
                                     VerticalAlignment="Center"
                                     FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                     FontSize="14"
                                     Text="{x:Static icons:LauncherIcons.Launch}" />
-                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="启动" />
+                                <TextBlock
+                                    Margin="7,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.mainWindow.launch}" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
@@ -163,13 +183,18 @@
                             Tag="Download"
                             Checked="PrimaryNavigation_Checked"
                             Style="{StaticResource TopNavigationStyle}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
                                 <TextBlock
                                     VerticalAlignment="Center"
                                     FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                     FontSize="14"
                                     Text="{x:Static icons:LauncherIcons.Download}" />
-                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="下载" />
+                                <TextBlock
+                                    Margin="7,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.mainWindow.download}" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
@@ -177,13 +202,18 @@
                             Tag="Settings"
                             Checked="PrimaryNavigation_Checked"
                             Style="{StaticResource TopNavigationStyle}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
                                 <TextBlock
                                     VerticalAlignment="Center"
                                     FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                     FontSize="14"
                                     Text="{x:Static icons:LauncherIcons.Settings}" />
-                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="设置" />
+                                <TextBlock
+                                    Margin="7,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.mainWindow.settings}" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
@@ -192,14 +222,19 @@
                             Tag="More"
                             Checked="PrimaryNavigation_Checked"
                             Style="{StaticResource TopNavigationStyle}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
                                 <Path
                                     Width="14"
                                     Height="14"
                                     VerticalAlignment="Center"
                                     Data="{x:Static icons:LauncherIcons.More}"
                                     Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
-                                <TextBlock Margin="7,0,0,0" VerticalAlignment="Center" Text="更多" />
+                                <TextBlock
+                                    Margin="7,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.mainWindow.more}" />
                             </StackPanel>
                         </RadioButton>
                     </StackPanel>
@@ -213,7 +248,8 @@
                         IsHitTestVisible="False"
                         Opacity="0">
                         <Border.RenderTransform>
-                            <TranslateTransform x:Name="NavigationIndicatorOffset" />
+                            <TranslateTransform
+                                x:Name="NavigationIndicatorOffset" />
                         </Border.RenderTransform>
                     </Border>
                 </Grid>
@@ -226,7 +262,7 @@
                     <Button
                         Click="MinimizeButton_Click"
                         Style="{StaticResource CaptionButtonStyle}"
-                        ToolTip="最小化">
+                        ToolTip="{DynamicResource I18n.mainWindow.minimize}">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                             FontSize="10"
@@ -235,7 +271,7 @@
                     <Button
                         Click="MaximizeButton_Click"
                         Style="{StaticResource CaptionButtonStyle}"
-                        ToolTip="最大化/还原">
+                        ToolTip="{DynamicResource I18n.mainWindow.maximizeRestore}">
                         <TextBlock
                             x:Name="MaximizeGlyph"
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
@@ -245,7 +281,7 @@
                     <Button
                         Click="CloseButton_Click"
                         Style="{StaticResource CloseCaptionButtonStyle}"
-                        ToolTip="关闭">
+                        ToolTip="{DynamicResource I18n.mainWindow.close}">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                             FontSize="10"
@@ -255,10 +291,15 @@
             </Grid>
 
             <!-- 一级页面只替换侧栏和主体内容. -->
-            <Grid Grid.Row="1">
+            <Grid
+                Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition x:Name="SidebarColumn" Width="310" MinWidth="135" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition
+                        x:Name="SidebarColumn"
+                        Width="310"
+                        MinWidth="135" />
+                    <ColumnDefinition
+                        Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <Border
@@ -280,9 +321,18 @@
             </Grid>
 
             <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
-            <tasks:TaskManagerView x:Name="TaskManagerPage" Grid.Row="1" Visibility="Collapsed" />
-            <launch:VersionSelectionView x:Name="VersionSelectionPage" Grid.Row="1" Visibility="Collapsed" />
-            <launch:AccountManagementView x:Name="AccountManagementPage" Grid.Row="1" Visibility="Collapsed" />
+            <tasks:TaskManagerView
+                x:Name="TaskManagerPage"
+                Grid.Row="1"
+                Visibility="Collapsed" />
+            <launch:VersionSelectionView
+                x:Name="VersionSelectionPage"
+                Grid.Row="1"
+                Visibility="Collapsed" />
+            <launch:AccountManagementView
+                x:Name="AccountManagementPage"
+                Grid.Row="1"
+                Visibility="Collapsed" />
             <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->
             <Image
                 x:Name="ThemeTransitionImage"
@@ -302,18 +352,24 @@
             VerticalAlignment="Bottom"
             Click="OpenTaskManager_Click"
             Style="{StaticResource FloatingTaskButtonStyle}"
-            ToolTip="任务管理"
+            ToolTip="{DynamicResource I18n.taskManager.title}"
             Visibility="Collapsed">
             <Path
                 Width="22"
                 Height="22"
                 Data="{x:Static icons:LauncherIcons.TaskList}"
                 Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                StrokeThickness="1.7"
+                StrokeStartLineCap="Round"
+                StrokeEndLineCap="Round"
+                StrokeLineJoin="Round" />
         </Button>
         <!-- 左下角的非阻塞通知始终跟随主窗口. -->
-        <notifications:ToastHostView x:Name="ToastHost" />
+        <notifications:ToastHostView
+            x:Name="ToastHost" />
         <!-- 弹窗常驻可视树, 点击时直接显示, 不再创建新的顶层窗口. -->
-        <dialogs:LauncherDialogView x:Name="DialogOverlay" Visibility="Collapsed" />
+        <dialogs:LauncherDialogView
+            x:Name="DialogOverlay"
+            Visibility="Collapsed" />
     </Grid>
 </Window>

@@ -1,14 +1,26 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Style x:Key="AccountListItemStyle" TargetType="ListBoxItem">
-        <Setter Property="Height" Value="64" />
-        <Setter Property="Margin" Value="0,0,0,8" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Template">
+    <Style
+        x:Key="AccountListItemStyle"
+        TargetType="ListBoxItem">
+        <Setter
+            Property="Height"
+            Value="64" />
+        <Setter
+            Property="Margin"
+            Value="0,0,0,8" />
+        <Setter
+            Property="FocusVisualStyle"
+            Value="{x:Null}" />
+        <Setter
+            Property="Cursor"
+            Value="Hand" />
+        <Setter
+            Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
+                <ControlTemplate
+                    TargetType="ListBoxItem">
                     <Border
                         x:Name="Root"
                         Background="{DynamicResource InkRaisedBrush}"
@@ -26,30 +38,63 @@
                                 Margin="0,10,0,10"
                                 HorizontalAlignment="Left"
                                 Background="{DynamicResource AccentBrush}"
-                                CornerRadius="2" Visibility="Collapsed" />
-                            <ContentPresenter Margin="16,0" VerticalAlignment="Center" />
+                                CornerRadius="2"
+                                Visibility="Collapsed" />
+                            <ContentPresenter
+                                Margin="16,0"
+                                VerticalAlignment="Center" />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding IsActive}" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentMutedBrush}" />
-                            <Setter TargetName="ActiveStripe" Property="Visibility" Value="Visible" />
+                        <DataTrigger
+                            Binding="{Binding IsActive}"
+                            Value="True">
+                            <Setter
+                                TargetName="Root"
+                                Property="Background"
+                                Value="{DynamicResource AccentMutedBrush}" />
+                            <Setter
+                                TargetName="ActiveStripe"
+                                Property="Visibility"
+                                Value="Visible" />
                         </DataTrigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource PanelHoverBrush}" />
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        <Trigger
+                            Property="IsSelected"
+                            Value="True">
+                            <Setter
+                                TargetName="Root"
+                                Property="Background"
+                                Value="{DynamicResource PanelHoverBrush}" />
+                            <Setter
+                                TargetName="Root"
+                                Property="BorderBrush"
+                                Value="{DynamicResource AccentBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="AccountSmallActionStyle" TargetType="Button" BasedOn="{StaticResource SecondaryActionStyle}">
-        <Setter Property="Height" Value="36" />
-        <Setter Property="Padding" Value="14,0" />
+    <Style
+        x:Key="AccountSmallActionStyle"
+        TargetType="Button"
+        BasedOn="{StaticResource SecondaryActionStyle}">
+        <Setter
+            Property="Height"
+            Value="36" />
+        <Setter
+            Property="Padding"
+            Value="14,0" />
     </Style>
-    <Style x:Key="AccountPrimaryActionStyle" TargetType="Button" BasedOn="{StaticResource PrimaryActionStyle}">
-        <Setter Property="Height" Value="38" />
-        <Setter Property="Padding" Value="14,0" />
+    <Style
+        x:Key="AccountPrimaryActionStyle"
+        TargetType="Button"
+        BasedOn="{StaticResource PrimaryActionStyle}">
+        <Setter
+            Property="Height"
+            Value="38" />
+        <Setter
+            Property="Padding"
+            Value="14,0" />
     </Style>
 </ResourceDictionary>

@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -28,36 +29,36 @@ public partial class DebugSettingsPage
     private void InformationButton_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Debug", "预览普通提示弹窗.");
-        LauncherDialogs.Information("普通提示", "这是普通提示弹窗的调试预览.");
+        LauncherDialogs.Information(LocalizationManager.Get("debug.information"), LocalizationManager.Get("debug.informationDialogPreview"));
     }
 
     private void WarningButton_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Debug", "预览警告弹窗.");
-        LauncherDialogs.Warning("警告", "这项操作存在风险, 请先检查相关设置.");
+        LauncherDialogs.Warning(LocalizationManager.Get("debug.warning"), LocalizationManager.Get("debug.riskDescription"));
     }
 
     private void ErrorButton_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Debug", "预览错误弹窗.");
-        LauncherDialogs.Error("操作失败", "这是操作失败时显示的错误弹窗预览.");
+        LauncherDialogs.Error(LocalizationManager.Get("debug.operationFailed"), LocalizationManager.Get("debug.errorDialogPreview"));
     }
 
     private async void Second_Confirmation_Button_Click(object sender, RoutedEventArgs e)
     {
         App.Logger.Information("Debug", "预览二次确认弹窗.");
-        bool confirmed = await LauncherDialogs.ConfirmAsync("二次确认(普通)", "这是普通确认弹窗的调试预览. 确认后不会执行任何操作.", LauncherDialogLevel.Information);
+        bool confirmed = await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("debug.confirmationNormal"), LocalizationManager.Get("debug.confirmationPreview"), LauncherDialogLevel.Information);
         App.Logger.Information("Debug", $"普通确认弹窗调试结果: {(confirmed ? "确认" : "取消")}.");
     }
 
     private void ToastInformationButton_Click(object sender, RoutedEventArgs e) =>
-        LauncherToasts.Information("正在检查游戏文件...");
+        LauncherToasts.Information(LocalizationManager.Get("debug.checkingGameFiles"));
 
     private void ToastSuccessButton_Click(object sender, RoutedEventArgs e) =>
-        LauncherToasts.Success("检查完成, 游戏文件已就绪.");
+        LauncherToasts.Success(LocalizationManager.Get("debug.checkComplete"));
 
     private void ToastErrorButton_Click(object sender, RoutedEventArgs e) =>
-        LauncherToasts.Error("检查失败, 请查看日志.");
+        LauncherToasts.Error(LocalizationManager.Get("debug.checkFailed"));
 
     private void ToastStressButton_Click(object sender, RoutedEventArgs e)
     {
@@ -68,7 +69,7 @@ public partial class DebugSettingsPage
 
         _toastStressIndex = 0;
         ToastStressButton.IsEnabled = false;
-        ToastStressButton.Content = $"测试中 (0/{StressToastCount})";
+        ToastStressButton.Content = string.Format(LocalizationManager.Get("debug.testing"), 0, StressToastCount);
         App.Logger.Information("Debug", $"开始逐条触发 {StressToastCount} 条随机通知.");
         _toastStressTimer.Start();
     }
@@ -77,12 +78,12 @@ public partial class DebugSettingsPage
     {
         int number = ++_toastStressIndex;
         ToastLevel level = (ToastLevel)Random.Shared.Next(3);
-        string message = $"性能测试 {number:0000}/{StressToastCount} - {level switch
+        string message = string.Format(LocalizationManager.Get("debug.message"), number, StressToastCount, level switch
         {
-            ToastLevel.Success => "成功",
-            ToastLevel.Error => "错误",
-            _ => "信息"
-        }}";
+            ToastLevel.Success => LocalizationManager.Get("debug.success"),
+            ToastLevel.Error => LocalizationManager.Get("debug.error"),
+            _ => LocalizationManager.Get("debug.informationTitle")
+        });
         switch (level)
         {
             case ToastLevel.Success:
@@ -98,7 +99,7 @@ public partial class DebugSettingsPage
 
         if (number % 25 == 0 || number == StressToastCount)
         {
-            ToastStressButton.Content = $"测试中 ({number}/{StressToastCount})";
+            ToastStressButton.Content = string.Format(LocalizationManager.Get("debug.testing"), number, StressToastCount);
         }
 
         if (number < StressToastCount)
@@ -107,7 +108,7 @@ public partial class DebugSettingsPage
         }
 
         _toastStressTimer.Stop();
-        ToastStressButton.Content = $"性能测试 ({StressToastCount} 条)";
+        ToastStressButton.Content = string.Format(LocalizationManager.Get("debug.stressButton"), StressToastCount);
         ToastStressButton.IsEnabled = true;
         App.Logger.Information("Debug", $"已逐条触发 {StressToastCount} 条随机通知.");
     }

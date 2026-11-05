@@ -11,6 +11,7 @@ using ErhioLab.Craft.Launcher.Accounts;
 using ErhioLab.Craft.Launcher.Core.Accounts;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
 
@@ -18,7 +19,7 @@ internal sealed record AccountRow(AccountEntry Account, bool IsActive)
 {
     public string UserName => Account.UserName;
     public Guid Uuid => Account.Uuid;
-    public string KindText => Account.IsMicrosoft ? "Microsoft" : "离线";
+    public string KindText => Account.IsMicrosoft ? "Microsoft" : LocalizationManager.Get("account.offlineShort");
 }
 
 /// <summary>管理离线账户, 同时为在线登录与皮肤功能保留界面位置.</summary>
@@ -28,6 +29,8 @@ public partial class AccountManagementView
     private bool _microsoftPanelOpen;
     private CancellationTokenSource? _loginCancellation;
     private MicrosoftDeviceAuthorization? _deviceAuthorization;
+    private string? _microsoftStatusKey;
+    private object? _microsoftStatusArgument;
     private static readonly HttpClient MicrosoftHttpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly MicrosoftMinecraftAuthClient _microsoftAuth = new(MicrosoftHttpClient);
 
@@ -40,6 +43,11 @@ public partial class AccountManagementView
         {
             if (!IsVisible) _loginCancellation?.Cancel();
         };
+        LocalizationManager.Changed += (_, _) =>
+        {
+            RefreshAccounts(AccountsList.SelectedItem is AccountRow row ? row.Uuid : App.Accounts.SelectedUuid);
+            RefreshMicrosoftStatus();
+        };
         RefreshAccounts(App.Accounts.SelectedUuid);
     }
 
@@ -50,7 +58,7 @@ public partial class AccountManagementView
             .ToArray();
         AccountsList.ItemsSource = null;
         AccountsList.ItemsSource = rows;
-        AccountCountText.Text = $"{rows.Length} 个账户";
+        AccountCountText.Text = string.Format(LocalizationManager.Get("account.count"), rows.Length);
         EmptyHint.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         AccountsList.SelectedItem = rows.FirstOrDefault(row => row.Uuid == focusedUuid);
         RefreshSelection();
@@ -58,11 +66,25 @@ public partial class AccountManagementView
 
     internal void FocusCurrentAccount() => RefreshAccounts(App.Accounts.SelectedUuid);
 
+    private void SetMicrosoftStatus(string key, object? argument = null)
+    {
+        _microsoftStatusKey = key;
+        _microsoftStatusArgument = argument;
+        RefreshMicrosoftStatus();
+    }
+
+    private void RefreshMicrosoftStatus()
+    {
+        if (_microsoftStatusKey is null) return;
+        string format = LocalizationManager.Get(_microsoftStatusKey);
+        MicrosoftStatusText.Text = _microsoftStatusArgument is null ? format : string.Format(format, _microsoftStatusArgument);
+    }
+
     private void RefreshSelection()
     {
         if (AccountsList.SelectedItem is not AccountRow row)
         {
-            SelectedNameText.Text = "尚未选择";
+            SelectedNameText.Text = LocalizationManager.Get("account.noneSelected");
             SelectedInfoIcon.Visibility = Visibility.Collapsed;
             SelectedInfoIcon.ToolTip = null;
             UseButton.IsEnabled = DeleteButton.IsEnabled = false;
@@ -72,8 +94,8 @@ public partial class AccountManagementView
         SelectedNameText.Text = row.UserName;
         SelectedInfoIcon.Visibility = Visibility.Visible;
         SelectedInfoIcon.ToolTip = row.Account.IsMicrosoft
-            ? $"Microsoft 账户 UUID: {row.Uuid:D}"
-            : $"离线账户 UUID: {row.Uuid:D}\n离线账户不验证用户名所有权. ";
+            ? string.Format(LocalizationManager.Get("account.microsoftUuid"), row.Uuid)
+            : string.Format(LocalizationManager.Get("account.offlineUuid"), row.Uuid);
         UseButton.IsEnabled = !row.IsActive;
         DeleteButton.IsEnabled = true;
     }
@@ -86,7 +108,7 @@ public partial class AccountManagementView
         CancellationTokenSource cancellation = new();
         _loginCancellation = cancellation;
         _deviceAuthorization = null;
-        MicrosoftStatusText.Text = "正在获取登录代码...";
+        SetMicrosoftStatus("account.gettingCode");
         MicrosoftCodeText.Clear();
         CopyMicrosoftCodeButton.IsEnabled = OpenMicrosoftPageButton.IsEnabled = false;
         ShowMicrosoftPanel();
@@ -98,16 +120,14 @@ public partial class AccountManagementView
             MicrosoftCodeText.Text = authorization.UserCode;
             CopyMicrosoftCodeButton.IsEnabled = OpenMicrosoftPageButton.IsEnabled = true;
             bool copied = TryCopyCode();
-            MicrosoftStatusText.Text = copied
-                ? "代码已复制. 请在打开的网页中粘贴并完成授权. "
-                : "请复制代码, 在打开的网页中输入并完成授权. ";
+            SetMicrosoftStatus(copied ? "account.codeCopiedOpened" : "account.enterCodeOpened");
             OpenMicrosoftPage();
             MicrosoftMinecraftSession session = await _microsoftAuth.CompleteDeviceAuthorizationAsync(clientId, authorization, cancellation.Token);
             App.Accounts.AddOrUpdateMicrosoft(session);
             App.Logger.Information("Accounts", $"已添加 Microsoft 账户: {session.UserName}.");
             HideMicrosoftPanel();
             RefreshAccounts(session.Uuid);
-            LauncherToasts.Success($"已登录 Microsoft 账户 {session.UserName}.");
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("account.signedIn"), session.UserName));
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -116,8 +136,8 @@ public partial class AccountManagementView
         catch (Exception exception)
         {
             App.Logger.Error("Accounts", "Microsoft 账户登录失败.", exception);
-            MicrosoftStatusText.Text = $"登录失败: {exception.Message}";
-            LauncherToasts.Error("Microsoft 登录失败, 请查看账户管理中的提示. ");
+            SetMicrosoftStatus("account.loginFailed", exception.Message);
+            LauncherToasts.Error(LocalizationManager.Get("account.loginFailedHint"));
         }
         finally
         {
@@ -151,7 +171,7 @@ public partial class AccountManagementView
 
     private void CopyMicrosoftCode_Click(object sender, RoutedEventArgs e)
     {
-        MicrosoftStatusText.Text = TryCopyCode() ? "代码已复制. 请在网页中完成授权. " : "无法访问剪贴板, 请手动选中并复制代码. ";
+        SetMicrosoftStatus(TryCopyCode() ? "account.codeCopied" : "account.copyFailed");
     }
 
     private bool TryCopyCode()
@@ -178,7 +198,7 @@ public partial class AccountManagementView
         }
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            MicrosoftStatusText.Text = "无法自动打开浏览器, 请在浏览器中访问 " + _deviceAuthorization.VerificationUri;
+            SetMicrosoftStatus("account.openFailed", _deviceAuthorization.VerificationUri);
         }
     }
 
@@ -264,7 +284,7 @@ public partial class AccountManagementView
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Accounts", "保存离线账户失败.", exception);
-            LauncherDialogs.Error("添加账户失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("account.addFailed"), exception.Message);
         }
     }
 
@@ -280,7 +300,7 @@ public partial class AccountManagementView
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Accounts", "切换账户失败.", exception);
-            LauncherDialogs.Error("切换账户失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("account.switchFailed"), exception.Message);
         }
     }
 
@@ -289,7 +309,7 @@ public partial class AccountManagementView
         if (AccountsList.SelectedItem is not AccountRow row) return;
         try
         {
-            if (!await LauncherDialogs.ConfirmAsync("删除离线账户", $"从列表中删除 {row.UserName}？", confirmText: "删除")) return;
+            if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("account.deleteOfflineTitle"), string.Format(LocalizationManager.Get("account.confirmDelete"), row.UserName), confirmText: LocalizationManager.Get("common.delete"))) return;
             App.Accounts.Remove(row.Uuid);
             App.Logger.Information("Accounts", $"已删除离线账户: {row.UserName}.");
             RefreshAccounts(App.Accounts.SelectedUuid);
@@ -297,7 +317,7 @@ public partial class AccountManagementView
         catch (Exception exception)
         {
             App.Logger.Error("Accounts", "删除账户失败.", exception);
-            LauncherDialogs.Error("删除账户失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("account.deleteFailed"), exception.Message);
         }
     }
 }

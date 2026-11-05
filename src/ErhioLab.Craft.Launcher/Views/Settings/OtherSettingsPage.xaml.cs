@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -22,8 +23,8 @@ public partial class OtherSettingsPage
     {
         SaveFileDialog dialog = new()
         {
-            Title = "导出启动器配置",
-            Filter = "JSON 配置文件 (*.json)|*.json",
+            Title = LocalizationManager.Get("settings.exportDialogTitle"),
+            Filter = LocalizationManager.Get("settings.jsonFileFilter"),
             DefaultExt = ".json",
             AddExtension = true,
             FileName = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json"
@@ -36,12 +37,12 @@ public partial class OtherSettingsPage
         try
         {
             App.ExportSettings(dialog.FileName);
-            LauncherToasts.Success("配置已导出.");
+            LauncherToasts.Success(LocalizationManager.Get("settings.exported"));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Settings", "导出配置失败.", exception);
-            LauncherDialogs.Error("导出配置失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("settings.exportFailed"), exception.Message);
         }
     }
 
@@ -54,7 +55,7 @@ public partial class OtherSettingsPage
         catch (Exception exception)
         {
             App.Logger.Error("Settings", "导入配置时发生未预期的错误.", exception);
-            LauncherDialogs.Error("导入配置失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("settings.importFailed"), exception.Message);
         }
     }
 
@@ -62,8 +63,8 @@ public partial class OtherSettingsPage
     {
         OpenFileDialog dialog = new()
         {
-            Title = "导入启动器配置",
-            Filter = "JSON 配置文件 (*.json)|*.json",
+            Title = LocalizationManager.Get("settings.importDialogTitle"),
+            Filter = LocalizationManager.Get("settings.jsonFileFilter"),
             DefaultExt = ".json",
             CheckFileExists = true
         };
@@ -79,11 +80,11 @@ public partial class OtherSettingsPage
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
         {
             App.Logger.Error("Settings", "导入配置失败.", exception);
-            LauncherDialogs.Error("导入配置失败", $"无法使用所选配置文件: \n{exception.Message}");
+            LauncherDialogs.Error(LocalizationManager.Get("settings.importFailed"), string.Format(LocalizationManager.Get("settings.invalidImport"), exception.Message));
             return;
         }
 
-        await LauncherDialogs.WarningAsync("配置已导入", "配置已验证并保存. 点击\"知道了\"后, 启动器将自动重启以应用全部设置. ");
+        await LauncherDialogs.WarningAsync(LocalizationManager.Get("settings.imported"), LocalizationManager.Get("settings.importRestartMessage"));
         try
         {
             App.Restart();
@@ -91,7 +92,7 @@ public partial class OtherSettingsPage
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
             App.Logger.Error("Settings", "导入配置后自动重启失败.", exception);
-            LauncherDialogs.Error("自动重启失败", $"配置已保存, 请手动重启启动器: \n{exception.Message}");
+            LauncherDialogs.Error(LocalizationManager.Get("settings.automaticRestartFailed"), string.Format(LocalizationManager.Get("settings.restartFailed"), exception.Message));
         }
     }
 }

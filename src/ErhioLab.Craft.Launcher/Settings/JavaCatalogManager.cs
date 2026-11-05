@@ -2,6 +2,7 @@ using System.IO;
 
 using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Settings;
 
@@ -28,7 +29,7 @@ internal sealed class JavaCatalogManager
         App.Logger.Information("Java", "开始查找本机 Java.");
         if (showNotification)
         {
-            LauncherToasts.Information("正在查找 Java...");
+        LauncherToasts.Information(LocalizationManager.Get("java.finding"));
         }
 
         try
@@ -59,15 +60,15 @@ internal sealed class JavaCatalogManager
                 App.Logger.Information("Java", $"Java 搜索完成, 共 {result.Count} 个, 新发现 {added} 个.");
                 if (showNotification)
                 {
-                    if (result.Count > 0) LauncherToasts.Success($"已找到 {result.Count} 个 Java.");
-                    else LauncherToasts.Error("未找到可用的 Java, 请手动添加.");
+                if (result.Count > 0) LauncherToasts.Success(string.Format(LocalizationManager.Get("java.found"), result.Count));
+                else LauncherToasts.Error(LocalizationManager.Get("java.noneFound"));
                 }
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
             App.Logger.Error("Java", "查找 Java 失败.", error);
-            LauncherToasts.Error("查找 Java 失败, 请手动添加或重试.");
+                LauncherToasts.Error(LocalizationManager.Get("java.findFailed"));
         }
         finally
         {
@@ -83,7 +84,7 @@ internal sealed class JavaCatalogManager
         if (java is null)
         {
             App.Logger.Warning("Java", $"手动添加的 Java 无法通过验证: {path}.");
-            LauncherToasts.Error("此 Java 无法运行或无法读取版本信息.");
+            LauncherToasts.Error(LocalizationManager.Get("java.invalid"));
             return;
         }
 
@@ -93,7 +94,7 @@ internal sealed class JavaCatalogManager
         {
             Changed?.Invoke();
             App.Logger.Information("Java", $"手动添加 Java: {java.Path}.");
-            LauncherToasts.Success($"已添加 Java {java.Version}.");
+        LauncherToasts.Success(string.Format(LocalizationManager.Get("java.added"), java.Version));
         }
     }
 
@@ -123,7 +124,7 @@ internal sealed class JavaCatalogManager
         {
             Changed?.Invoke();
             App.Logger.Information("Java", $"从列表移除 Java: {java.Path}.");
-            LauncherToasts.Success("已从列表中移除 Java.");
+        LauncherToasts.Success(LocalizationManager.Get("java.removed"));
         }
     }
 

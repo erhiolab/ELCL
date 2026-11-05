@@ -8,6 +8,7 @@ using ErhioLab.Craft.Launcher.Views.Settings;
 using ErhioLab.Craft.Launcher.Views.Shared;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Navigation;
 
@@ -19,7 +20,7 @@ internal static class ShellRouteCatalog
     internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create()
     {
         // 下载页当前只提供原版游戏版本列表.
-        SectionSidebarItem vanillaItem = new("原版游戏", LauncherIcons.GameVersions, CanRefresh: true);
+        SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.GameVersions, CanRefresh: true);
         SectionSidebarView downloadSidebar = new(vanillaItem);
         VanillaVersionsPage versionList = new();
         AnimatedPageHost downloadContent = new(versionList);
@@ -33,15 +34,15 @@ internal static class ShellRouteCatalog
 
         // 设置
         LaunchSettingsPage launchSettingsPage = new();
-        SectionSidebarItem launchSettingsItem = new("启动", LauncherIcons.LaunchSettings, CanReset: true);
+        SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.LaunchSettings, CanReset: true);
         PersonalizationPage personalizationPage = new();
-        SectionSidebarItem personalizationItem = new("个性化", LauncherIcons.Personalization, CanReset: true);
+        SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true);
         DownloadSettingsPage downloadSettingsPage = new();
-        SectionSidebarItem downloadSettingsItem = new("下载", LauncherIcons.DownloadSettings, CanReset: true);
+        SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.DownloadSettings, CanReset: true);
         OtherSettingsPage otherSettingsPage = new();
-        SectionSidebarItem otherItem = new("其他", LauncherIcons.More);
+        SectionSidebarItem otherItem = new("sidebar.other", LauncherIcons.More);
         DebugSettingsPage debugSettingsPage = new();
-        SectionSidebarItem debugItem = new("调试", LauncherIcons.Debug);
+        SectionSidebarItem debugItem = new("sidebar.debug", LauncherIcons.Debug);
         SectionSidebarView settingsSidebar = new(
             launchSettingsItem,
             personalizationItem,
@@ -80,23 +81,23 @@ internal static class ShellRouteCatalog
         };
         settingsSidebar.ActionRequested += async item =>
         {
-            if (ReferenceEquals(item, launchSettingsItem) && await LauncherDialogs.ConfirmAsync("重置启动设置", "是否要重置 启动 的所有设置? 此操作不可逆.", confirmText: "重置"))
+            if (ReferenceEquals(item, launchSettingsItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.launchTitle"), LocalizationManager.Get("reset.launchPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {
                 await App.JavaCatalog.ResetAsync();
             }
-            else if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync("重置个性化设置", "是否要重置 个性化 的所有设置? 此操作不可逆.", confirmText: "重置"))
+            else if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.personalizationTitle"), LocalizationManager.Get("reset.personalizationPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {
                 personalizationPage.ResetToDefaults();
             }
-            else if (ReferenceEquals(item, downloadSettingsItem) && await LauncherDialogs.ConfirmAsync("重置下载设置", "是否要重置 下载 的所有设置? 此操作不可逆.", confirmText: "重置"))
+            else if (ReferenceEquals(item, downloadSettingsItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.downloadTitle"), LocalizationManager.Get("reset.downloadPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {
                 downloadSettingsPage.ResetToDefaults();
             }
         };
 
         // 更多
-        SectionSidebarItem aboutItem = new("关于与鸣谢", LauncherIcons.About);
-        SectionSidebarItem toolboxItem = new("百宝箱", LauncherIcons.Toolbox);
+        SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.About);
+        SectionSidebarItem toolboxItem = new("sidebar.toolbox", LauncherIcons.Toolbox);
         SectionSidebarView moreSidebar = new(aboutItem, toolboxItem);
         AboutPage aboutPage = new();
         ContentControl moreContent = new()

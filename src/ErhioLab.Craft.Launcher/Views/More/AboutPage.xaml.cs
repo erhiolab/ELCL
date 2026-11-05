@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -18,23 +19,28 @@ public partial class AboutPage
     public AboutPage()
     {
         InitializeComponent();
+        LocalizationManager.Changed += (_, _) => RefreshCredits();
+        RefreshCredits();
+    }
 
+    private void RefreshCredits()
+    {
         string launcherVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown";
         ImageSource brandIcon = LoadBrandIcon();
 
         AboutEntries.ItemsSource = new[]
         {
-            new CreditEntry("EL", "洱海", "ErhioLab Craft Launcher 和 ErhioLab Craft Launcher Core的开发者.", "GitHub仓库", "https://github.com/ErhioLab/ELCL"),
-            new CreditEntry("EL", "ErhioLab Craft Launcher", $"启动器版本: {launcherVersion}", AvatarImage: brandIcon),
-            new CreditEntry("CO", "ErhioLab Craft Launcher Core", $"核心版本: {CoreInfo.Version}", AvatarImage: brandIcon)
+            new CreditEntry("EL", LocalizationManager.Get("about.erhai"), LocalizationManager.Get("about.elclDeveloperDescription"), LocalizationManager.Get("about.githubRepository"), "https://github.com/ErhioLab/ELCL"),
+            new CreditEntry("EL", "ErhioLab Craft Launcher", string.Format(LocalizationManager.Get("about.launcherVersion"), launcherVersion), AvatarImage: brandIcon),
+            new CreditEntry("CO", "ErhioLab Craft Launcher Core", string.Format(LocalizationManager.Get("about.coreVersion"), CoreInfo.Version), AvatarImage: brandIcon)
         };
         ThanksEntries.ItemsSource = new[]
         {
-            new CreditEntry("P", "PCL2", "参考了界面布局与部分代码实现", "项目主页", "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.png")),
-            new CreditEntry("PL", "Prism Launcher", "参考了部分代码实现.", "项目主页", "https://github.com/PrismLauncher/PrismLauncher", LoadAvatar("PrismLauncher.png")),
-            new CreditEntry("BM", "BMCLAPI", "提供 Minecraft 版本清单的备用镜像源.", "赞助镜像源", "https://afdian.com/a/bangbang93", LoadAvatar("Bmclapi.jpg")),
-            new CreditEntry("MC", "Minecraft Wiki", "提供游戏版本的更新摘要和更新日志页面.", "打开 Wiki", "https://zh.minecraft.wiki/", LoadAvatar("MinecraftWiki.png")),
-            new CreditEntry("UI", "WPF UI", "提供界面控件与主题资源.", "项目主页", "https://wpfui.lepo.co/", LoadAvatar("WpfUi.png"))
+            new CreditEntry("P", "PCL2", LocalizationManager.Get("about.layoutAndCodeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.png")),
+            new CreditEntry("PL", "Prism Launcher", LocalizationManager.Get("about.codeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/PrismLauncher/PrismLauncher", LoadAvatar("PrismLauncher.png")),
+            new CreditEntry("BM", "BMCLAPI", LocalizationManager.Get("about.mirrorDescription"), LocalizationManager.Get("about.sponsorMirror"), "https://afdian.com/a/bangbang93", LoadAvatar("Bmclapi.jpg")),
+            new CreditEntry("MC", "Minecraft Wiki", LocalizationManager.Get("about.wikiDescription"), LocalizationManager.Get("about.openWiki"), "https://zh.minecraft.wiki/", LoadAvatar("MinecraftWiki.png")),
+            new CreditEntry("UI", "WPF UI", LocalizationManager.Get("about.wpfUiDescription"), LocalizationManager.Get("about.projectHomepage"), "https://wpfui.lepo.co/", LoadAvatar("WpfUi.png"))
         };
     }
 
@@ -59,7 +65,7 @@ public partial class AboutPage
         catch (Exception error) when (error is Win32Exception or InvalidOperationException)
         {
             App.Logger.Error("More", $"无法打开鸣谢链接: {url}", error);
-            LauncherToasts.Error("无法在浏览器中打开页面.");
+            LauncherToasts.Error(LocalizationManager.Get("about.openBrowserFailed"));
         }
     }
 

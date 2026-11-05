@@ -1,11 +1,19 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Style x:Key="HoverLayerStyle" TargetType="Border">
-        <Setter Property="IsHitTestVisible" Value="False" />
-        <Setter Property="Opacity" Value="0" />
+    <Style
+        x:Key="HoverLayerStyle"
+        TargetType="Border">
+        <Setter
+            Property="IsHitTestVisible"
+            Value="False" />
+        <Setter
+            Property="Opacity"
+            Value="0" />
         <Style.Triggers>
-            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+            <DataTrigger
+                Binding="{Binding IsMouseOver, RelativeSource={RelativeSource TemplatedParent}}"
+                Value="True">
                 <DataTrigger.EnterActions>
                     <BeginStoryboard>
                         <Storyboard>
@@ -14,7 +22,8 @@
                                 To="1"
                                 Duration="0:0:0.16">
                                 <DoubleAnimation.EasingFunction>
-                                    <CubicEase EasingMode="EaseOut" />
+                                    <CubicEase
+                                        EasingMode="EaseOut" />
                                 </DoubleAnimation.EasingFunction>
                             </DoubleAnimation>
                         </Storyboard>

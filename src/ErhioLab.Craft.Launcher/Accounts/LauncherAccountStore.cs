@@ -5,6 +5,7 @@ using System.Text.Json;
 
 using ErhioLab.Craft.Launcher.Core.Accounts;
 using ErhioLab.Craft.Launcher.Core.Storage;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Accounts;
 
@@ -76,13 +77,13 @@ internal sealed class LauncherAccountStore
         name = name.Trim();
         if (!IsValidName(name))
         {
-            error = "用户名需要 3–16 位, 只能包含英文字母/数字和下划线. ";
+            error = LocalizationManager.Get("account.invalidName");
             return false;
         }
 
         if (_data.OfflineAccounts.Any(account => string.Equals(account.UserName, name, StringComparison.OrdinalIgnoreCase)))
         {
-            error = "这个用户名已经在账户列表中. ";
+            error = LocalizationManager.Get("account.nameExists");
             return false;
         }
 
@@ -95,7 +96,7 @@ internal sealed class LauncherAccountStore
     internal void Select(Guid uuid)
     {
         if (_data.SelectedUuid == uuid) return;
-        if (AllAccounts.All(account => account.Uuid != uuid)) throw new ArgumentException("账户不存在. ", nameof(uuid));
+        if (AllAccounts.All(account => account.Uuid != uuid)) throw new ArgumentException(LocalizationManager.Get("account.notFound"), nameof(uuid));
         Save(_data with { SelectedUuid = uuid });
     }
 
@@ -116,7 +117,7 @@ internal sealed class LauncherAccountStore
 
     internal string GetMicrosoftRefreshToken(Guid uuid)
     {
-        MicrosoftAccount account = MicrosoftAccounts.FirstOrDefault(item => item.Uuid == uuid) ?? throw new ArgumentException("Microsoft 账户不存在.", nameof(uuid));
+        MicrosoftAccount account = MicrosoftAccounts.FirstOrDefault(item => item.Uuid == uuid) ?? throw new ArgumentException(LocalizationManager.Get("account.microsoftNotFound"), nameof(uuid));
         return Unprotect(account.ProtectedRefreshToken);
     }
 
@@ -130,7 +131,7 @@ internal sealed class LauncherAccountStore
 
     private void Save(AccountFile next)
     {
-        if (!_canWrite) throw new IOException("账户文件无法读取. 请先备份并修复 ELCL/accounts.json. 原文件未被覆盖. ");
+        if (!_canWrite) throw new IOException(LocalizationManager.Get("account.fileUnreadable"));
         _store.Save(next);
         _data = next;
         Changed?.Invoke(this, EventArgs.Empty);

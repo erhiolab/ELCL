@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -57,7 +58,7 @@ public partial class ToolboxPage
     {
         OpenFolderDialog dialog = new()
         {
-            Title = "选择下载保存位置",
+            Title = LocalizationManager.Get("toolbox.chooseDownloadDestination"),
             InitialDirectory = Directory.Exists(SaveFolderBox.Text) ? SaveFolderBox.Text : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) == true)
@@ -71,7 +72,7 @@ public partial class ToolboxPage
         if (!Uri.TryCreate(DownloadUrlBox.Text.Trim(), UriKind.Absolute, out Uri? url)
             || url.Scheme is not ("https" or "http"))
         {
-            LauncherToasts.Error("请输入有效的 HTTP 或 HTTPS 下载地址.");
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.invalidDownloadUrl"));
             return;
         }
 
@@ -82,7 +83,7 @@ public partial class ToolboxPage
             fileName is "." or ".." || fileName != Path.GetFileName(fileName) ||
             fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
-            LauncherToasts.Error("保存位置或文件名无效.");
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.invalidSavePathOrName"));
             return;
         }
 
@@ -93,12 +94,12 @@ public partial class ToolboxPage
         }
         catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
         {
-            LauncherToasts.Error("保存位置无效.");
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.invalidSaveLocation"));
             return;
         }
 
         if (File.Exists(destination)
-            && !await LauncherDialogs.ConfirmAsync("覆盖现有文件", $"{fileName} 已存在, 是否重新下载并覆盖?", confirmText: "覆盖"))
+            && !await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("toolbox.overwriteExistingFile"), string.Format(LocalizationManager.Get("toolbox.confirmOverwrite"), fileName), confirmText: LocalizationManager.Get("toolbox.overwrite")))
         {
             return;
         }
@@ -108,11 +109,11 @@ public partial class ToolboxPage
         try
         {
             App.Tasks.StartCustomDownload(destination, url, options);
-            LauncherToasts.Information($"已创建下载任务: {fileName}");
+            LauncherToasts.Information(string.Format(LocalizationManager.Get("toolbox.taskCreated"), fileName));
         }
         catch (Exception error)
         {
-            LauncherToasts.Error($"无法创建任务: {error.Message}");
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("toolbox.taskFailed"), error.Message));
             App.Logger.Error("Tasks", $"创建自定义下载任务失败: {fileName}.", error);
         }
     }
@@ -122,7 +123,7 @@ public partial class ToolboxPage
         string folder = SaveFolderBox.Text.Trim();
         if (!Directory.Exists(folder))
         {
-            LauncherToasts.Error("保存文件夹尚不存在.");
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.saveFolderMissing"));
             return;
         }
 
@@ -133,7 +134,7 @@ public partial class ToolboxPage
         catch (Exception error) when (error is Win32Exception or InvalidOperationException)
         {
             App.Logger.Error("Download", $"无法打开文件夹: {folder}.", error);
-            LauncherToasts.Error("无法打开保存文件夹.");
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.openSaveFolderFailed"));
         }
     }
 }

@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Http;
@@ -41,6 +42,7 @@ public partial class VanillaVersionsPage
     public VanillaVersionsPage()
     {
         InitializeComponent();
+        LocalizationManager.Changed += (_, _) => ApplySearch();
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -85,7 +87,7 @@ public partial class VanillaVersionsPage
                 MinecraftManifestSource.Official, string.Empty, string.Empty, []));
             if (!IsValidCatalog(cached))
             {
-                throw new JsonException("缓存的版本清单不完整.");
+                throw new JsonException(LocalizationManager.Get("versionCatalog.cacheIncomplete"));
             }
 
             _catalog = cached;
@@ -110,7 +112,7 @@ public partial class VanillaVersionsPage
         _loadedPreference = App.Settings.VersionListSource;
         if (manualRefresh || _catalog is null)
         {
-            LauncherToasts.Information("正在获取游戏版本列表...");
+            LauncherToasts.Information(LocalizationManager.Get("versionCatalog.loading"));
         }
         try
         {
@@ -132,7 +134,7 @@ public partial class VanillaVersionsPage
             App.Logger.Information("Download", $"版本列表获取完成, 实际来源: {catalog.Source}, 数量: {catalog.Versions.Count}.");
             if (changed || manualRefresh)
             {
-                LauncherToasts.Success(changed ? "游戏版本列表已更新." : "游戏版本列表已是最新.");
+                LauncherToasts.Success(changed ? LocalizationManager.Get("versionCatalog.updated") : LocalizationManager.Get("versionCatalog.upToDate"));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -143,8 +145,8 @@ public partial class VanillaVersionsPage
         {
             App.Logger.Error("Download", "版本列表获取失败.", error);
             LauncherToasts.Error(_catalog is null
-                ? "获取游戏版本失败, 请检查网络并在左侧刷新重试."
-                : "更新游戏版本列表失败, 正在使用已缓存的版本.");
+                ? LocalizationManager.Get("versionCatalog.fetchFailed")
+                : LocalizationManager.Get("versionCatalog.updateFailedUsingCache"));
         }
         finally
         {
@@ -229,7 +231,7 @@ public partial class VanillaVersionsPage
             .Select(version => new VersionRow(version, null))
             .ToArray();
         EmptySearchText.Visibility = matches.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        VersionGroups.ItemsSource = matches.Length == 0 ? Array.Empty<VersionGroup>() : new[] { new VersionGroup($"搜索结果 ({matches.Length})", true, matches) };
+        VersionGroups.ItemsSource = matches.Length == 0 ? Array.Empty<VersionGroup>() : new[] { new VersionGroup(string.Format(LocalizationManager.Get("versions.searchResults"), matches.Length), true, matches) };
     }
 
     private void GroupContent_Loaded(object sender, RoutedEventArgs e)
@@ -292,11 +294,11 @@ public partial class VanillaVersionsPage
             .ToArray();
         return
         [
-            new VersionGroup("最新版本", true, latest.Select(version => new VersionRow(version, version.Id == catalog.LatestReleaseId ? "最新正式版" : "最新预览版")).ToArray()),
-            Group("正式版", MinecraftVersionKind.Release),
-            Group("预览版", MinecraftVersionKind.Preview),
-            Group("远古版", MinecraftVersionKind.Ancient),
-            Group("愚人节版", MinecraftVersionKind.AprilFools)
+            new VersionGroup(LocalizationManager.Get("versionCatalog.latestVersions"), true, latest.Select(version => new VersionRow(version, version.Id == catalog.LatestReleaseId ? LocalizationManager.Get("versionCatalog.latestRelease") : LocalizationManager.Get("versionCatalog.latestSnapshot"))).ToArray()),
+            Group(LocalizationManager.Get("version.release"), MinecraftVersionKind.Release),
+            Group(LocalizationManager.Get("versionCatalog.snapshotCategory"), MinecraftVersionKind.Preview),
+            Group(LocalizationManager.Get("version.oldVersions"), MinecraftVersionKind.Ancient),
+            Group(LocalizationManager.Get("versionCatalog.aprilFoolsVersions"), MinecraftVersionKind.AprilFools)
         ];
 
         VersionGroup Group(string title, MinecraftVersionKind kind) => new(title, false, catalog.Versions.Where(version => version.Kind == kind).Select(version => new VersionRow(version, null)).ToArray());
@@ -312,7 +314,7 @@ public partial class VanillaVersionsPage
         try
         {
             MinecraftWikiPage? page = await _wikiClient.GetSummaryAsync(row.Version.Id, _pageCancellation.Token);
-            row.TooltipText = page is null ? "Minecraft Wiki 暂无该版本的更新摘要." : page.Text.Length > 700 ? page.Text[..700] + "..." : page.Text;
+            row.TooltipText = page is null ? LocalizationManager.Get("versionCatalog.noWikiSummary") : page.Text.Length > 700 ? page.Text[..700] + "..." : page.Text;
         }
         catch (OperationCanceledException)
         {
@@ -321,7 +323,7 @@ public partial class VanillaVersionsPage
         catch (Exception error)
         {
             row.ResetSummaryRequest();
-            row.TooltipText = "暂时无法获取 Minecraft Wiki 更新摘要.";
+            row.TooltipText = LocalizationManager.Get("versionCatalog.wikiSummaryFailed");
             App.Logger.Error("Wiki", $"获取 {row.Version.Id} 更新摘要失败.", error);
         }
     }
@@ -342,7 +344,7 @@ public partial class VanillaVersionsPage
         catch (Exception error) when (error is Win32Exception or InvalidOperationException)
         {
             App.Logger.Error("Wiki", $"无法在浏览器打开 {row.Version.Id} 的更新日志.", error);
-            LauncherToasts.Error("无法打开 Minecraft Wiki 页面.");
+            LauncherToasts.Error(LocalizationManager.Get("versionCatalog.openWikiFailed"));
         }
     }
 
@@ -357,13 +359,13 @@ public partial class VanillaVersionsPage
 
     internal sealed class VersionRow : INotifyPropertyChanged
     {
-        private string _tooltipText = "正在从 Minecraft Wiki 获取更新摘要...";
+        private string _tooltipText = LocalizationManager.Get("versionCatalog.loadingWikiSummary");
         private bool _summaryRequested;
 
         internal VersionRow(MinecraftVersion version, string? label)
         {
             Version = version;
-            Description = $"{label ?? KindName(version.Kind)}, 发布于 {version.ReleaseTime.ToLocalTime():yyyy/MM/dd HH:mm}";
+            Description = string.Format(LocalizationManager.Get("versions.description"), label ?? KindName(version.Kind), version.ReleaseTime.ToLocalTime());
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -399,10 +401,10 @@ public partial class VanillaVersionsPage
 
         private static string KindName(MinecraftVersionKind kind) => kind switch
         {
-            MinecraftVersionKind.Release => "正式版",
-            MinecraftVersionKind.Preview => "预览版",
-            MinecraftVersionKind.Ancient => "远古版",
-            _ => "愚人节版"
+            MinecraftVersionKind.Release => LocalizationManager.Get("version.release"),
+            MinecraftVersionKind.Preview => LocalizationManager.Get("versionCatalog.snapshotCategory"),
+            MinecraftVersionKind.Ancient => LocalizationManager.Get("version.oldVersions"),
+            _ => LocalizationManager.Get("versionCatalog.aprilFoolsVersions")
         };
     }
 }

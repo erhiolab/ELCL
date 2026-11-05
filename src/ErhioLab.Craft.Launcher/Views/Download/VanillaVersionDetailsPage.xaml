@@ -7,15 +7,30 @@
     Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 输入框的背景和边框由外层容器绘制. -->
-        <Style x:Key="LoaderHeaderStyle" TargetType="ToggleButton">
-            <Setter Property="Height" Value="48" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
+        <Style
+            x:Key="LoaderHeaderStyle"
+            TargetType="ToggleButton">
+            <Setter
+                Property="Height"
+                Value="48" />
+            <Setter
+                Property="Background"
+                Value="Transparent" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
+            <Setter
+                Property="FocusVisualStyle"
+                Value="{x:Null}" />
+            <Setter
+                Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="HeaderRoot" Background="{TemplateBinding Background}" CornerRadius="8">
+                    <ControlTemplate
+                        TargetType="ToggleButton">
+                        <Border
+                            x:Name="HeaderRoot"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
                             <Grid>
                                 <Border
                                     Background="{DynamicResource AccentHoverBrush}"
@@ -25,7 +40,9 @@
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
+                            <Trigger
+                                Property="IsChecked"
+                                Value="True">
                                 <Setter
                                     TargetName="HeaderRoot"
                                     Property="Background"
@@ -36,21 +53,33 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="LoaderStatusStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+        <Style
+            x:Key="LoaderStatusStyle"
+            TargetType="TextBlock">
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextMutedBrush}" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding HasError}" Value="True">
-                    <Setter Property="Foreground" Value="#FFE5484D" />
+                <DataTrigger
+                    Binding="{Binding HasError}"
+                    Value="True">
+                    <Setter
+                        Property="Foreground"
+                        Value="#FFE5484D" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="24,24,24,20">
+    <Grid
+        Margin="24,24,24,20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
         </Grid.RowDefinitions>
 
         <Border
@@ -59,14 +88,17 @@
             Style="{StaticResource PanelCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="42" />
-                    <ColumnDefinition Width="42" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition
+                        Width="42" />
+                    <ColumnDefinition
+                        Width="42" />
+                    <ColumnDefinition
+                        Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button
                     Click="BackButton_Click"
                     Style="{StaticResource DetailsBackButtonStyle}"
-                    ToolTip="返回版本列表">
+                    ToolTip="{DynamicResource I18n.versionDetails.backToVersionList}">
                     <TextBlock
                         FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                         FontSize="18"
@@ -99,7 +131,7 @@
                         FontSize="13"
                         Foreground="{DynamicResource TextBrush}"
                         Style="{StaticResource BareTextBoxStyle}"
-                        ToolTip="可自定义下载后的版本名称" />
+                        ToolTip="{DynamicResource I18n.versionDetails.versionNameHint}" />
                 </Border>
             </Grid>
         </Border>
@@ -121,11 +153,15 @@
                                     Click="LoaderHeader_Click"
                                     Style="{StaticResource LoaderHeaderStyle}"
                                     Tag="{Binding ElementName=LoaderContent}">
-                                    <Grid Margin="16,0">
+                                    <Grid
+                                        Margin="16,0">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="150" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition
+                                                Width="150" />
+                                            <ColumnDefinition
+                                                Width="*" />
+                                            <ColumnDefinition
+                                                Width="20" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock
                                             VerticalAlignment="Center"
@@ -147,15 +183,28 @@
                                             Stroke="{DynamicResource TextMutedBrush}"
                                             StrokeThickness="1.5">
                                             <Path.Style>
-                                                <Style TargetType="Path">
-                                                    <Setter Property="Data" Value="M 1,1 L 5,5 L 9,1" />
-                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style
+                                                    TargetType="Path">
+                                                    <Setter
+                                                        Property="Data"
+                                                        Value="M 1,1 L 5,5 L 9,1" />
+                                                    <Setter
+                                                        Property="Visibility"
+                                                        Value="Collapsed" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding HasVersions}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        <DataTrigger
+                                                            Binding="{Binding HasVersions}"
+                                                            Value="True">
+                                                            <Setter
+                                                                Property="Visibility"
+                                                                Value="Visible" />
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                                                            <Setter Property="Data" Value="M 1,5 L 5,1 L 9,5" />
+                                                        <DataTrigger
+                                                            Binding="{Binding IsExpanded}"
+                                                            Value="True">
+                                                            <Setter
+                                                                Property="Data"
+                                                                Value="M 1,5 L 5,1 L 9,5" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -186,10 +235,13 @@
                                             <DataTemplate>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition
+                                                            Width="*" />
+                                                        <ColumnDefinition
+                                                            Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-                                                    <StackPanel VerticalAlignment="Center">
+                                                    <StackPanel
+                                                        VerticalAlignment="Center">
                                                         <TextBlock
                                                             FontSize="13"
                                                             FontWeight="SemiBold"
@@ -213,16 +265,25 @@
                                                             x:Name="BadgeText"
                                                             FontSize="10"
                                                             Foreground="{DynamicResource AccentTextBrush}"
-                                                            Text="正式版" />
+                                                            Text="{DynamicResource I18n.version.release}" />
                                                     </Border>
                                                 </Grid>
                                                 <DataTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding IsPreview}" Value="True">
-                                                        <Setter TargetName="BadgeText" Property="Text" Value="预览版" />
+                                                    <DataTrigger
+                                                        Binding="{Binding IsPreview}"
+                                                        Value="True">
+                                                        <Setter
+                                                            TargetName="BadgeText"
+                                                            Property="Text"
+                                                            Value="{DynamicResource I18n.version.preview}" />
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsNone}" Value="True">
-                                                        <Setter TargetName="VersionBadge" Property="Visibility"
-                                                                Value="Collapsed" />
+                                                    <DataTrigger
+                                                        Binding="{Binding IsNone}"
+                                                        Value="True">
+                                                        <Setter
+                                                            TargetName="VersionBadge"
+                                                            Property="Visibility"
+                                                            Value="Collapsed" />
                                                     </DataTrigger>
                                                 </DataTemplate.Triggers>
                                             </DataTemplate>
@@ -243,13 +304,18 @@
             HorizontalAlignment="Center"
             Click="StartDownloadButton_Click"
             Style="{StaticResource PrimaryActionStyle}">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel
+                Orientation="Horizontal">
                 <TextBlock
                     VerticalAlignment="Center"
                     FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                     FontSize="17"
                     Text="{x:Static icons:LauncherIcons.Download}" />
-                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontSize="13" Text="开始下载" />
+                <TextBlock
+                    Margin="9,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    Text="{DynamicResource I18n.common.startDownload}" />
             </StackPanel>
         </Button>
     </Grid>

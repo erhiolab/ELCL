@@ -1,3 +1,4 @@
+using ErhioLab.Craft.Launcher.Localization;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -24,6 +25,7 @@ public partial class VersionSelectionView
 {
     private readonly ObservableCollection<FolderRow> _folders = [];
     private int _scanVersion;
+    private string _emptyVersionsKey = "versionSelector.readingVersions";
 
     /// <summary>用户选择版本后通知主窗口返回启动页.</summary>
     internal event Action<LocalMinecraftVersion>? VersionChosen;
@@ -35,6 +37,14 @@ public partial class VersionSelectionView
     {
         InitializeComponent();
         FolderList.ItemsSource = _folders;
+        LocalizationManager.Changed += (_, _) =>
+        {
+            ReloadFolders();
+            FolderTitle.Text = _folders.FirstOrDefault(folder => folder.IsSelected)?.Name ?? LocalizationManager.Get("versionSelector.versionList");
+            EmptyVersionsText.Text = LocalizationManager.Get(_emptyVersionsKey);
+            VersionList.Items.Refresh();
+            _ = Dispatcher.InvokeAsync(() => MoveSelectedFolderHighlight(false), DispatcherPriority.Loaded);
+        };
     }
 
     private async void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -54,7 +64,7 @@ public partial class VersionSelectionView
         _folders.Clear();
         foreach (GameFolderSetting folder in App.Settings.GameFolders)
         {
-            _folders.Add(new FolderRow(folder.Path, folder.Name)
+            _folders.Add(new FolderRow(folder.Path, folder.NameKey is { } key ? LocalizationManager.Get(key) : folder.Name)
             {
                 IsSelected = SamePath(folder.Path, App.Settings.SelectedGameFolderPath)
             });
@@ -143,7 +153,7 @@ public partial class VersionSelectionView
     {
         int version = ++_scanVersion;
         FolderRow? selected = _folders.FirstOrDefault(folder => folder.IsSelected);
-        FolderTitle.Text = selected?.Name ?? "版本列表";
+        FolderTitle.Text = selected?.Name ?? LocalizationManager.Get("versionSelector.versionList");
         FolderPathText.Text = selected?.Path ?? string.Empty;
         FolderTitle.BeginAnimation(OpacityProperty, EaseOut(0.45, 1, 180));
         FolderPathText.BeginAnimation(OpacityProperty, EaseOut(0.45, 1, 180));
@@ -161,7 +171,7 @@ public partial class VersionSelectionView
         VersionList.BeginAnimation(OpacityProperty, null);
         VersionList.Opacity = 0;
         VersionList.ItemsSource = null;
-        EmptyVersionsText.Text = selected is null ? "请先添加游戏文件夹" : "正在读取本地版本…";
+        SetEmptyVersionsText(selected is null ? "versionSelector.addFolderFirst" : "versionSelector.readingVersions");
         EmptyVersionsText.Visibility = Visibility.Visible;
         if (selected is null)
         {
@@ -178,7 +188,7 @@ public partial class VersionSelectionView
             }
 
             VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath))).ToArray();
-            EmptyVersionsText.Text = "此文件夹中没有找到游戏版本";
+            SetEmptyVersionsText("versionSelector.noVersions");
             EmptyVersionsText.Visibility = found.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (found.Count > 0)
             {
@@ -200,11 +210,17 @@ public partial class VersionSelectionView
                 return;
             }
 
-            EmptyVersionsText.Text = "无法读取此游戏文件夹";
+            SetEmptyVersionsText("versionSelector.folderReadFailed");
             AnimateEmptyText();
             App.Logger.Error("Versions", $"扫描游戏目录失败: {selected.Path}", exception);
-            LauncherToasts.Error("读取本地版本失败，请检查文件夹权限.");
+            LauncherToasts.Error(LocalizationManager.Get("versionSelector.readVersionsFailed"));
         }
+    }
+
+    private void SetEmptyVersionsText(string key)
+    {
+        _emptyVersionsKey = key;
+        EmptyVersionsText.Text = LocalizationManager.Get(key);
     }
 
     private void AnimateEmptyText()
@@ -317,7 +333,7 @@ public partial class VersionSelectionView
         if (name != row.Name)
         {
             GameFolderSetting[] folders = App.Settings.GameFolders
-                .Select(folder => SamePath(folder.Path, row.Path) ? folder with { Name = name } : folder)
+                .Select(folder => SamePath(folder.Path, row.Path) ? folder with { Name = name, NameKey = null, IsNameCustomized = true } : folder)
                 .ToArray();
             if (App.UpdateSettings(App.Settings with { GameFolders = folders }))
             {
@@ -341,7 +357,7 @@ public partial class VersionSelectionView
 
         if (!Directory.Exists(row.Path))
         {
-            LauncherToasts.Error("游戏文件夹不存在.");
+            LauncherToasts.Error(LocalizationManager.Get("versionSelector.folderMissing"));
             return;
         }
 
@@ -353,7 +369,7 @@ public partial class VersionSelectionView
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
             App.Logger.Error("Versions", $"打开游戏文件夹失败: {row.Path}", exception);
-            LauncherToasts.Error("无法打开游戏文件夹.");
+            LauncherToasts.Error(LocalizationManager.Get("versionSelector.openFolderFailed"));
         }
     }
 
@@ -368,7 +384,7 @@ public partial class VersionSelectionView
     private async void RemoveFolder_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: FolderRow row } ||
-            !await LauncherDialogs.ConfirmAsync("移除游戏文件夹", $"从列表移除“{row.Name}”？磁盘上的文件不会删除.", confirmText: "移除"))
+                !await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.removeFolderTitle"), string.Format(LocalizationManager.Get("folder.confirmRemove"), row.Name), confirmText: LocalizationManager.Get("versionSelector.remove")))
         {
             return;
         }
@@ -396,7 +412,7 @@ public partial class VersionSelectionView
 
     private async void AddFolder_Click(object sender, RoutedEventArgs e)
     {
-        OpenFolderDialog dialog = new() { Title = "选择 Minecraft 游戏文件夹" };
+        OpenFolderDialog dialog = new() { Title = LocalizationManager.Get("versionSelector.chooseFolder") };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true)
         {
             return;
@@ -446,11 +462,11 @@ public partial class VersionSelectionView
             !Directory.Exists(versionFolder) ||
             File.GetAttributes(versionFolder).HasFlag(FileAttributes.ReparsePoint))
         {
-            LauncherToasts.Error("版本目录已变化，无法删除.");
+            LauncherToasts.Error(LocalizationManager.Get("versionSelector.directoryChanged"));
             return;
         }
 
-        if (!await LauncherDialogs.ConfirmAsync("删除游戏版本", $"确定永久删除“{row.Version.Id}”及其版本文件？此操作不可逆.", LauncherDialogLevel.Danger, "删除"))
+            if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.deleteVersionTitle"), string.Format(LocalizationManager.Get("folder.confirmDeleteVersion"), row.Version.Id), LauncherDialogLevel.Danger, LocalizationManager.Get("common.delete")))
         {
             return;
         }
@@ -465,13 +481,13 @@ public partial class VersionSelectionView
             }
 
             App.Logger.Information("Versions", $"删除本地版本: {versionFolder}");
-            LauncherToasts.Success("版本已删除.");
+            LauncherToasts.Success(LocalizationManager.Get("versionSelector.deleted"));
             await RefreshVersionsAsync();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Versions", $"删除本地版本失败: {versionFolder}", exception);
-            LauncherDialogs.Error("删除失败", exception.Message);
+            LauncherDialogs.Error(LocalizationManager.Get("versionSelector.deleteFailed"), exception.Message);
         }
     }
 
@@ -570,10 +586,10 @@ public partial class VersionSelectionView
             {
                 string type = Version.Type switch
                 {
-                    "release" => "正式版",
-                    "snapshot" => "快照版",
-                    "old_alpha" or "old_beta" => "远古版",
-                    _ => "自定义版本"
+                    "release" => LocalizationManager.Get("version.release"),
+                    "snapshot" => LocalizationManager.Get("versionSelector.snapshotType"),
+                    "old_alpha" or "old_beta" => LocalizationManager.Get("version.oldVersions"),
+                    _ => LocalizationManager.Get("versionSelector.customVersion")
                 };
                 return Version.ReleaseTime is { } time ? $"{type}  ·  {time:yyyy-MM-dd HH:mm}" : type;
             }

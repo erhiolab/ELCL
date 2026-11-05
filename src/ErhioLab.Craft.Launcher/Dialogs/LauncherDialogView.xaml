@@ -7,21 +7,47 @@
     PreviewKeyDown="DialogView_PreviewKeyDown">
     <UserControl.Resources>
         <!-- 弹窗操作按钮, 使用主题颜色和缓动悬浮层. -->
-        <Style x:Key="DialogButtonStyle" TargetType="Button">
-            <Setter Property="MinWidth" Value="86" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="15,0" />
-            <Setter Property="Margin" Value="10,0,0,0" />
-            <Setter Property="Background" Value="{DynamicResource InkRaisedBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
+        <Style
+            x:Key="DialogButtonStyle"
+            TargetType="Button">
+            <Setter
+                Property="MinWidth"
+                Value="86" />
+            <Setter
+                Property="Height"
+                Value="38" />
+            <Setter
+                Property="Padding"
+                Value="15,0" />
+            <Setter
+                Property="Margin"
+                Value="10,0,0,0" />
+            <Setter
+                Property="Background"
+                Value="{DynamicResource InkRaisedBrush}" />
+            <Setter
+                Property="BorderBrush"
+                Value="{DynamicResource LineBrush}" />
+            <Setter
+                Property="BorderThickness"
+                Value="1" />
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+            <Setter
+                Property="FontSize"
+                Value="13" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
+            <Setter
+                Property="FocusVisualStyle"
+                Value="{x:Null}" />
+            <Setter
+                Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
+                    <ControlTemplate
+                        TargetType="Button">
                         <Border
                             x:Name="ButtonRoot"
                             Background="{TemplateBinding Background}"
@@ -33,12 +59,19 @@
                                     Background="{DynamicResource AccentHoverBrush}"
                                     CornerRadius="5"
                                     Style="{StaticResource HoverLayerStyle}" />
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <ContentPresenter
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.75" />
+                            <Trigger
+                                Property="IsPressed"
+                                Value="True">
+                                <Setter
+                                    TargetName="ButtonRoot"
+                                    Property="Opacity"
+                                    Value="0.75" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -49,12 +82,22 @@
 
     <Grid>
         <!-- 灰色暗层与等级色层共同覆盖主窗口. -->
-        <Grid x:Name="Backdrop" IsHitTestVisible="False" Opacity="0">
-            <Border x:Name="BaseShade" Background="#99000000" />
-            <Border x:Name="LevelTint" Background="#332C8BCF" />
+        <Grid
+            x:Name="Backdrop"
+            IsHitTestVisible="False"
+            Opacity="0">
+            <Border
+                x:Name="BaseShade"
+                Background="#99000000" />
+            <Border
+                x:Name="LevelTint"
+                Background="#332C8BCF" />
         </Grid>
         <!-- 只拦截页面区域, 标题栏仍接收窗口拖动手势. -->
-        <Border x:Name="InteractionShield" Margin="0,54,0,0" Background="Transparent" />
+        <Border
+            x:Name="InteractionShield"
+            Margin="0,54,0,0"
+            Background="Transparent" />
         <Border
             x:Name="DialogCard"
             Width="480"
@@ -70,16 +113,25 @@
             RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
                 <TransformGroup>
-                    <ScaleTransform x:Name="CardScale" ScaleX="0.96" ScaleY="0.96" />
-                    <TranslateTransform x:Name="CardOffset" Y="12" />
+                    <ScaleTransform
+                        x:Name="CardScale"
+                        ScaleX="0.96"
+                        ScaleY="0.96" />
+                    <TranslateTransform
+                        x:Name="CardOffset"
+                        Y="12" />
                 </TransformGroup>
             </Border.RenderTransform>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition
+                        Height="Auto" />
+                    <RowDefinition
+                        Height="Auto" />
+                    <RowDefinition
+                        Height="*" />
+                    <RowDefinition
+                        Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <TextBlock
@@ -94,7 +146,10 @@
                     Grid.Row="1"
                     Height="2"
                     Margin="0,12,0,18" />
-                <ScrollViewer Grid.Row="2" MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer
+                    Grid.Row="2"
+                    MaxHeight="260"
+                    VerticalScrollBarVisibility="Auto">
                     <TextBlock
                         x:Name="DialogMessage"
                         FontSize="15"
@@ -109,13 +164,13 @@
                     <Button
                         x:Name="CancelButton"
                         Click="CancelButton_Click"
-                        Content="取消"
+                        Content="{DynamicResource I18n.common.cancel}"
                         Style="{StaticResource DialogButtonStyle}"
                         Visibility="Collapsed" />
                     <Button
                         x:Name="ConfirmButton"
                         Click="ConfirmButton_Click"
-                        Content="知道了"
+                        Content="{DynamicResource I18n.common.gotIt}"
                         Style="{StaticResource DialogButtonStyle}" />
                 </StackPanel>
             </Grid>

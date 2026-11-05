@@ -7,6 +7,7 @@ using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Localization;
 
 using Microsoft.Win32;
 
@@ -24,6 +25,7 @@ public partial class LaunchSettingsPage
         InitializeComponent();
         MoreJavaList.ItemTemplate = JavaList.ItemTemplate;
         App.JavaCatalog.Changed += RefreshControls;
+        LocalizationManager.Changed += (_, _) => RefreshControls();
         RefreshControls();
     }
 
@@ -33,7 +35,7 @@ public partial class LaunchSettingsPage
         JavaList.ItemsSource = installed.Take(PreviewCount).ToArray();
         MoreJavaList.ItemsSource = installed.Skip(PreviewCount).ToArray();
         JavaList.Visibility = installed.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        JavaCountText.Text = $"{installed.Count} 个";
+        JavaCountText.Text = string.Format(LocalizationManager.Get("java.count"), installed.Count);
         ExpandJavaButton.Visibility = installed.Count > PreviewCount ? Visibility.Visible : Visibility.Collapsed;
         if (installed.Count <= PreviewCount)
         {
@@ -45,17 +47,19 @@ public partial class LaunchSettingsPage
             MoreJavaClip.Visibility = Visibility.Collapsed;
         }
 
-        ExpandJavaButton.Content = _showAllJava ? "收起列表 ↑" : $"展开其余 {installed.Count - PreviewCount} 个 ↓";
+        ExpandJavaButton.Content = _showAllJava ? LocalizationManager.Get("java.collapse")
+            : string.Format(LocalizationManager.Get("java.expand"), installed.Count - PreviewCount);
         EmptyText.Visibility = installed.Count == 0 && !App.JavaCatalog.IsRefreshing ? Visibility.Visible : Visibility.Collapsed;
         RefreshButton.IsEnabled = !App.JavaCatalog.IsRefreshing;
         AddButton.IsEnabled = !App.JavaCatalog.IsRefreshing;
-        RefreshButton.Content = App.JavaCatalog.IsRefreshing ? "正在获取..." : "手动获取";
+        RefreshButton.Content = App.JavaCatalog.IsRefreshing ? LocalizationManager.Get("java.searching") : LocalizationManager.Get("java.search");
     }
 
     private void ExpandJavaButton_Click(object sender, RoutedEventArgs e)
     {
         _showAllJava = !_showAllJava;
-        ExpandJavaButton.Content = _showAllJava ? "收起列表 ↑" : $"展开其余 {App.Settings.JavaInstallations.Count - PreviewCount} 个 ↓";
+        ExpandJavaButton.Content = _showAllJava ? LocalizationManager.Get("java.collapse")
+            : string.Format(LocalizationManager.Get("java.expand"), App.Settings.JavaInstallations.Count - PreviewCount);
         AnimateJavaExpansion();
     }
 
@@ -97,8 +101,8 @@ public partial class LaunchSettingsPage
     {
         OpenFileDialog dialog = new()
         {
-            Title = "选择 Java 可执行文件",
-            Filter = "Java 可执行文件 (java.exe)|java.exe",
+            Title = LocalizationManager.Get("launchSettings.chooseJavaExecutable"),
+            Filter = LocalizationManager.Get("launchSettings.javaExecutableFilter"),
             CheckFileExists = true
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) == true)
@@ -129,7 +133,7 @@ public partial class LaunchSettingsPage
         if (!_showAllJava && App.Settings.JavaInstallations.Count > PreviewCount && App.Settings.JavaInstallations[PreviewCount - 1].Path == java.Path)
         {
             _showAllJava = true;
-            ExpandJavaButton.Content = "收起列表 ↑";
+            ExpandJavaButton.Content = LocalizationManager.Get("java.collapse");
             // 排序完成后列表内容会刷新, 再启动展开动画.
             App.JavaCatalog.Move(java, 1);
             AnimateJavaExpansion();
@@ -154,7 +158,7 @@ public partial class LaunchSettingsPage
         string? folder = Path.GetDirectoryName(java.Path);
         if (folder is null || !Directory.Exists(folder))
         {
-            LauncherToasts.Error("Java 所在文件夹不存在.");
+            LauncherToasts.Error(LocalizationManager.Get("launchSettings.javaFolderMissing"));
             return;
         }
 
@@ -166,7 +170,7 @@ public partial class LaunchSettingsPage
         catch (Exception error) when (error is IOException or Win32Exception or InvalidOperationException)
         {
             App.Logger.Error("Java", $"无法打开 Java 文件夹: {folder}.", error);
-            LauncherToasts.Error("无法打开 Java 所在文件夹.");
+            LauncherToasts.Error(LocalizationManager.Get("launchSettings.openJavaFolderFailed"));
         }
     }
 }

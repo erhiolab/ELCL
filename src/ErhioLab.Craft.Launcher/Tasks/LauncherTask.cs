@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 using ErhioLab.Craft.Launcher.Core.Downloads;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
 
@@ -16,7 +17,8 @@ internal sealed class LauncherTaskStage(string name, Func<LauncherTaskContext, T
     private double _progress;
 
     internal Func<LauncherTaskContext, Task> Execute { get; } = execute;
-    public string Name { get; } = name;
+    internal Func<string>? LocalizedName { get; init; }
+    public string Name => LocalizedName?.Invoke() ?? name;
     public LauncherTaskStatus Status { get => _status; internal set { _status = value; Changed(); Changed(nameof(StatusText)); } }
     public double Progress { get => _progress; internal set { _progress = value; Changed(); Changed(nameof(ProgressText)); } }
     public string StatusText => Status switch
@@ -30,7 +32,8 @@ internal sealed class LauncherTaskStage(string name, Func<LauncherTaskContext, T
     public string ProgressText => $"{Progress:0}%";
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    private void Changed([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    internal void RefreshLocalization() => Changed(nameof(Name));
+    private void Changed([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 /// <summary>一个可跨页面观察并取消的启动器操作.</summary>
@@ -44,25 +47,35 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
 
     internal CancellationTokenSource Cancellation { get; } = new();
     public Guid Id { get; } = Guid.NewGuid();
-    public string Title { get; } = title;
+    internal Func<string>? LocalizedTitle { get; set; }
+    public string Title => LocalizedTitle?.Invoke() ?? title;
     public string? TargetPath { get; } = targetPath;
     public ObservableCollection<LauncherTaskStage> Stages { get; } = new(stages);
-    public LauncherTaskStatus Status { get => _status; internal set { _status = value; Changed(); Changed(nameof(StatusText)); Changed(nameof(IsActive)); Changed(nameof(ActionText)); } }
+    public LauncherTaskStatus Status { get => _status; internal set { _status = value; Changed(); Changed(nameof(StatusCode)); Changed(nameof(StatusText)); Changed(nameof(IsActive)); Changed(nameof(ActionText)); } }
     public double Progress { get => _progress; internal set { _progress = value; Changed(); Changed(nameof(ProgressText)); } }
     public long SpeedBytesPerSecond { get => _speed; internal set { _speed = value; Changed(); } }
     public int RemainingFiles { get => _remainingFiles; internal set { _remainingFiles = value; Changed(); } }
     public string? Error { get => _error; internal set { _error = value; Changed(); } }
     public string ProgressText => $"{Progress:0.0}%";
     public bool IsActive => Status is LauncherTaskStatus.Queued or LauncherTaskStatus.Running;
-    public string ActionText => IsActive ? "取消" : "移除";
+    public string ActionText => IsActive ? LocalizationManager.Get("task.cancel") : LocalizationManager.Get("task.remove");
+    public string StatusCode => Status.ToString();
     public string StatusText => Status switch
     {
-        LauncherTaskStatus.Queued => "等待中",
-        LauncherTaskStatus.Running => "进行中",
-        LauncherTaskStatus.Completed => "已完成",
-        LauncherTaskStatus.Canceled => "已取消",
-        _ => "失败"
+        LauncherTaskStatus.Queued => LocalizationManager.Get("task.queued"),
+        LauncherTaskStatus.Running => LocalizationManager.Get("task.running"),
+        LauncherTaskStatus.Completed => LocalizationManager.Get("task.completed"),
+        LauncherTaskStatus.Canceled => LocalizationManager.Get("task.canceled"),
+        _ => LocalizationManager.Get("task.failed")
     };
+
+    internal void RefreshLocalization()
+    {
+        Changed(nameof(Title));
+        Changed(nameof(StatusText));
+        Changed(nameof(ActionText));
+        foreach (LauncherTaskStage stage in Stages) stage.RefreshLocalization();
+    }
 
     internal void RefreshProgress()
     {

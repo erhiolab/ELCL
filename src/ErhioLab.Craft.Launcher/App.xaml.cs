@@ -11,6 +11,7 @@ using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Accounts;
 using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
 using ErhioLab.Craft.Launcher.Tasks;
@@ -68,8 +69,9 @@ public partial class App
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
+            LocalizationManager.Apply(Settings.Language);
             LauncherThemeManager.Apply(Settings);
-            LauncherDialogs.Error("ELCL 启动失败", $"无法初始化启动器数据目录:\n{exception.Message}");
+            LauncherDialogs.Error(LocalizationManager.Get("app.startFailed"), string.Format(LocalizationManager.Get("app.dataDirectoryFailed"), exception.Message));
             Shutdown(1);
             return;
         }
@@ -87,13 +89,14 @@ public partial class App
         try
         {
             Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
+            LocalizationManager.Apply(Settings.Language);
             if (Settings.GameFolders.Count == 0)
             {
                 string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
                 GameFolderSetting[] folders =
                 [
-                    new(localGameDirectory, "当前文件夹"),
-                    new(officialDirectory, "官方启动器文件夹")
+                    new(localGameDirectory, LocalizationManager.Get("folder.current"), "folder.current"),
+                    new(officialDirectory, LocalizationManager.Get("folder.official"), "folder.official")
                 ];
                 Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
                 _settingsStore.Save(Settings);
@@ -110,6 +113,7 @@ public partial class App
             // 保留无法解析的配置文件, 只在本次运行中使用默认值.
             Logger.Error("Settings", "读取配置失败, 本次使用默认设置.", exception);
             Settings = new LauncherSettings();
+            LocalizationManager.Apply(Settings.Language);
         }
 
         LauncherThemeManager.Apply(Settings);
@@ -117,6 +121,8 @@ public partial class App
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
+        if (Current.MainWindow is { } mainWindow)
+            mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
         _ = JavaCatalog.InitializeIfEmptyAsync();
     }
 
@@ -133,11 +139,12 @@ public partial class App
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Logger.Error("Settings", $"保存配置失败, 路径: {_settingsStore!.FilePath}.", exception);
-            LauncherDialogs.Error("无法保存设置", $"无法保存设置:\n{exception.Message}");
+            LauncherDialogs.Error(LocalizationManager.Get("app.saveFailed"), string.Format(LocalizationManager.Get("app.saveFailedDetail"), exception.Message));
             return false;
         }
 
         bool themeChanged = Settings.Theme != normalized.Theme;
+        bool languageChanged = Settings.Language != normalized.Language;
         bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
         MainWindow? window = Current.MainWindow as MainWindow;
@@ -147,6 +154,10 @@ public partial class App
         }
 
         Settings = normalized;
+        if (languageChanged)
+        {
+            LocalizationManager.Apply(Settings.Language);
+        }
         if (paletteChanged)
         {
             LauncherThemeManager.Apply(Settings);

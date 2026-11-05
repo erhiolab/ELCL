@@ -7,21 +7,41 @@
     Background="{DynamicResource InkBrush}"
     IsVisibleChanged="View_IsVisibleChanged">
     <UserControl.Resources>
-        <Style x:Key="FolderRowStyle" TargetType="Border">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
+        <Style
+            x:Key="FolderRowStyle"
+            TargetType="Border">
+            <Setter
+                Property="Background"
+                Value="Transparent" />
+            <Setter
+                Property="CornerRadius"
+                Value="6" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter Property="Cursor" Value="Arrow" />
+                <DataTrigger
+                    Binding="{Binding IsSelected}"
+                    Value="True">
+                    <Setter
+                        Property="Cursor"
+                        Value="Arrow" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="FolderGearStyle" TargetType="Button" BasedOn="{StaticResource SecondaryActionStyle}">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="IsHitTestVisible" Value="False" />
+        <Style
+            x:Key="FolderGearStyle"
+            TargetType="Button"
+            BasedOn="{StaticResource SecondaryActionStyle}">
+            <Setter
+                Property="Opacity"
+                Value="0" />
+            <Setter
+                Property="IsHitTestVisible"
+                Value="False" />
         </Style>
-        <DataTemplate DataType="{x:Type local:VersionSelectionView+FolderRow}">
+        <DataTemplate
+            DataType="{x:Type local:VersionSelectionView+FolderRow}">
             <Border
                 x:Name="FolderItem"
                 Margin="0,2,0,2"
@@ -30,19 +50,31 @@
                 PreviewMouseRightButtonDown="Folder_PreviewMouseRightButtonDown"
                 Style="{StaticResource FolderRowStyle}">
                 <Border.ContextMenu>
-                    <ContextMenu Opened="FolderMenu_Opened">
-                        <MenuItem Header="重命名" Click="RenameFolder_Click" />
-                        <MenuItem Header="打开" Click="OpenFolder_Click" />
-                        <MenuItem Header="刷新" Click="RefreshFolder_Click" />
+                    <ContextMenu
+                        Opened="FolderMenu_Opened">
+                        <MenuItem
+                            Header="{DynamicResource I18n.versionSelector.rename}"
+                            Click="RenameFolder_Click" />
+                        <MenuItem
+                            Header="{DynamicResource I18n.versionSelector.open}"
+                            Click="OpenFolder_Click" />
+                        <MenuItem
+                            Header="{DynamicResource I18n.versionSelector.refresh}"
+                            Click="RefreshFolder_Click" />
                         <Separator />
-                        <MenuItem Header="从列表移除" Click="RemoveFolder_Click" />
+                        <MenuItem
+                            Header="{DynamicResource I18n.common.removeFromList}"
+                            Click="RemoveFolder_Click" />
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="3" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition
+                            Width="3" />
+                        <ColumnDefinition
+                            Width="*" />
+                        <ColumnDefinition
+                            Width="30" />
                     </Grid.ColumnDefinitions>
                     <Border
                         x:Name="FolderHover"
@@ -53,7 +85,10 @@
                         CornerRadius="6"
                         IsHitTestVisible="False"
                         Opacity="0" />
-                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <StackPanel
+                        Grid.Column="1"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center">
                         <TextBlock
                             x:Name="FolderName"
                             FontSize="13"
@@ -98,9 +133,10 @@
                         VerticalAlignment="Center"
                         Click="FolderGear_Click"
                         Style="{StaticResource FolderGearStyle}"
-                        ToolTip="文件夹操作">
+                        ToolTip="{DynamicResource I18n.versionSelector.folderActions}">
                         <Button.RenderTransform>
-                            <TranslateTransform X="5" />
+                            <TranslateTransform
+                                X="5" />
                         </Button.RenderTransform>
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
@@ -110,17 +146,25 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
-                <Trigger SourceName="FolderItem" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="FolderGear" Property="IsHitTestVisible" Value="True" />
+                <Trigger
+                    SourceName="FolderItem"
+                    Property="IsMouseOver"
+                    Value="True">
+                    <Setter
+                        TargetName="FolderGear"
+                        Property="IsHitTestVisible"
+                        Value="True" />
                     <Trigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation
                                     Storyboard.TargetName="FolderHover"
-                                    Storyboard.TargetProperty="Opacity" To="0.45"
+                                    Storyboard.TargetProperty="Opacity"
+                                    To="0.45"
                                     Duration="0:0:0.18">
                                     <DoubleAnimation.EasingFunction>
-                                        <CubicEase EasingMode="EaseOut" />
+                                        <CubicEase
+                                            EasingMode="EaseOut" />
                                     </DoubleAnimation.EasingFunction>
                                 </DoubleAnimation>
                                 <DoubleAnimation
@@ -131,7 +175,8 @@
                                 <DoubleAnimation
                                     Storyboard.TargetName="FolderGear"
                                     Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
-                                    To="0" Duration="0:0:0.18" />
+                                    To="0"
+                                    Duration="0:0:0.18" />
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.EnterActions>
@@ -157,27 +202,40 @@
                         </BeginStoryboard>
                     </Trigger.ExitActions>
                 </Trigger>
-                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
-                    <Setter TargetName="FolderName" Property="Visibility" Value="Collapsed" />
-                    <Setter TargetName="FolderNameEditHost" Property="Visibility" Value="Visible" />
+                <DataTrigger
+                    Binding="{Binding IsRenaming}"
+                    Value="True">
+                    <Setter
+                        TargetName="FolderName"
+                        Property="Visibility"
+                        Value="Collapsed" />
+                    <Setter
+                        TargetName="FolderNameEditHost"
+                        Property="Visibility"
+                        Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
-        <DataTemplate DataType="{x:Type local:VersionSelectionView+VersionRow}">
+        <DataTemplate
+            DataType="{x:Type local:VersionSelectionView+VersionRow}">
             <Border
                 x:Name="VersionItem"
                 Style="{StaticResource VersionListRowStyle}"
                 MouseLeftButtonDown="Version_MouseLeftButtonDown">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="34" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition
+                            Width="34" />
+                        <ColumnDefinition
+                            Width="*" />
+                        <ColumnDefinition
+                            Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Border
                         x:Name="VersionSelection"
                         Grid.Column="0"
-                        Grid.ColumnSpan="3" Margin="-8,0"
+                        Grid.ColumnSpan="3"
+                        Margin="-8,0"
                         Background="{DynamicResource AccentMutedBrush}"
                         CornerRadius="6"
                         IsHitTestVisible="False"
@@ -185,7 +243,8 @@
                     <Border
                         x:Name="VersionHover"
                         Grid.Column="0"
-                        Grid.ColumnSpan="3" Margin="-8,0"
+                        Grid.ColumnSpan="3"
+                        Margin="-8,0"
                         Background="{DynamicResource AccentMutedBrush}"
                         CornerRadius="6"
                         Style="{StaticResource VersionListHoverStyle}" />
@@ -201,8 +260,13 @@
                         StrokeStartLineCap="Round"
                         Stretch="Uniform"
                         StrokeThickness="1.6" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock FontSize="13" FontWeight="Medium" Text="{Binding Version.Id}" />
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="{Binding Version.Id}" />
                         <TextBlock
                             Margin="0,2,0,0"
                             FontSize="10"
@@ -219,10 +283,15 @@
                             Click="DeleteVersion_Click"
                             Style="{StaticResource VersionActionStyle}"
                             Tag="{Binding}"
-                            ToolTip="删除版本">
-                            <TextBlock FontFamily="{x:Static icons:LauncherIcons.GlyphFont}" Text="&#xE74D;" />
+                            ToolTip="{DynamicResource I18n.versionSelector.deleteVersion}">
+                            <TextBlock
+                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                Text="&#xE74D;" />
                         </Button>
-                        <Button IsEnabled="False" Style="{StaticResource VersionActionStyle}" ToolTip="版本设置（尚未实现）">
+                        <Button
+                            IsEnabled="False"
+                            Style="{StaticResource VersionActionStyle}"
+                            ToolTip="{DynamicResource I18n.versionSelector.versionSettingsUnavailable}">
                             <TextBlock
                                 FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
                                 Text="{x:Static icons:LauncherIcons.Settings}" />
@@ -231,7 +300,9 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                <DataTrigger
+                    Binding="{Binding IsSelected}"
+                    Value="True">
                     <DataTrigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
@@ -261,22 +332,27 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition
+                Width="260" />
+            <ColumnDefinition
+                Width="*" />
         </Grid.ColumnDefinitions>
         <Border
             Grid.Column="0"
             Background="{DynamicResource InkRaisedBrush}"
             BorderBrush="{DynamicResource LineSoftBrush}"
             BorderThickness="0,1,1,0">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="18,18,18,24">
+            <ScrollViewer
+                VerticalScrollBarVisibility="Auto">
+                <StackPanel
+                    Margin="18,18,18,24">
                     <TextBlock
                         Margin="0,0,0,8"
                         FontSize="11"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="文件夹列表" />
-                    <Grid x:Name="FolderListContainer">
+                        Text="{DynamicResource I18n.versionSelector.gameFolders}" />
+                    <Grid
+                        x:Name="FolderListContainer">
                         <Border
                             x:Name="SelectedFolderHighlight"
                             Height="0"
@@ -295,35 +371,44 @@
                                 <TranslateTransform />
                             </Border.RenderTransform>
                         </Border>
-                        <ItemsControl x:Name="FolderList" />
+                        <ItemsControl
+                            x:Name="FolderList" />
                     </Grid>
                     <TextBlock
                         Margin="0,18,0,8"
                         FontSize="11"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="添加或导入" />
+                        Text="{DynamicResource I18n.versionSelector.addOrImport}" />
                     <Button
                         Height="34"
                         HorizontalContentAlignment="Left"
                         Click="AddFolder_Click"
-                        Content="＋  添加已有文件夹"
+                        Content="{DynamicResource I18n.versionSelector.addExistingFolder}"
                         Style="{StaticResource SecondaryActionStyle}" />
                     <Button
                         Height="34"
                         Margin="0,5,0,0"
                         HorizontalContentAlignment="Left"
-                        Content="导入整合包（尚未实现）"
+                        Content="{DynamicResource I18n.versionSelector.importModpackUnavailable}"
                         IsEnabled="False"
                         Style="{StaticResource SecondaryActionStyle}" />
                 </StackPanel>
             </ScrollViewer>
         </Border>
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="24,24,24,32">
-                <TextBlock x:Name="FolderTitle" FontSize="17" FontWeight="SemiBold" Text="版本列表" />
+        <ScrollViewer
+            Grid.Column="1"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                Margin="24,24,24,32">
+                <TextBlock
+                    x:Name="FolderTitle"
+                    FontSize="17"
+                    FontWeight="SemiBold"
+                    Text="{DynamicResource I18n.versionSelector.versionList}" />
                 <TextBlock
                     x:Name="FolderPathText"
-                    Margin="0,4,0,15" FontSize="11"
+                    Margin="0,4,0,15"
+                    FontSize="11"
                     Foreground="{DynamicResource TextMutedBrush}"
                     TextTrimming="CharacterEllipsis" />
                 <Border
@@ -335,8 +420,10 @@
                             Margin="12,16"
                             HorizontalAlignment="Center"
                             Foreground="{DynamicResource TextMutedBrush}"
-                            Text="此文件夹中没有找到游戏版本" />
-                        <ItemsControl x:Name="VersionList" Margin="12,12,12,12">
+                            Text="{DynamicResource I18n.versionSelector.noVersions}" />
+                        <ItemsControl
+                            x:Name="VersionList"
+                            Margin="12,12,12,12">
                             <ItemsControl.RenderTransform>
                                 <TranslateTransform />
                             </ItemsControl.RenderTransform>

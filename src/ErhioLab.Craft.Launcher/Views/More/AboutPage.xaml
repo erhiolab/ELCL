@@ -7,21 +7,32 @@
     <UserControl.Resources>
         <!-- 链接按钮的填充和边框使用同一层透明度缓动. -->
         <!-- 两张卡片共用的头像/名称/说明行, 按钮只在有链接时显示. -->
-        <DataTemplate x:Key="CreditRowTemplate" DataType="{x:Type more:AboutPage+CreditEntry}">
-            <Grid MinHeight="58" Margin="0,2">
+        <DataTemplate
+            x:Key="CreditRowTemplate"
+            DataType="{x:Type more:AboutPage+CreditEntry}">
+            <Grid
+                MinHeight="58"
+                Margin="0,2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="42" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition
+                        Width="42" />
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid
                     Width="32"
                     Height="32"
                     VerticalAlignment="Center">
-                    <Ellipse Fill="{DynamicResource AccentMutedBrush}" />
-                    <Ellipse x:Name="AvatarPhoto">
+                    <Ellipse
+                        Fill="{DynamicResource AccentMutedBrush}" />
+                    <Ellipse
+                        x:Name="AvatarPhoto">
                         <Ellipse.Fill>
-                            <ImageBrush ImageSource="{Binding AvatarImage}" Stretch="UniformToFill" />
+                            <ImageBrush
+                                ImageSource="{Binding AvatarImage}"
+                                Stretch="UniformToFill" />
                         </Ellipse.Fill>
                     </Ellipse>
                     <TextBlock
@@ -35,8 +46,14 @@
                         Text="{Binding AvatarText}"
                         Visibility="Collapsed" />
                 </Grid>
-                <StackPanel Grid.Column="1" Margin="8,0,12,0" VerticalAlignment="Center">
-                    <TextBlock FontSize="13" FontWeight="Medium" Text="{Binding Name}" />
+                <StackPanel
+                    Grid.Column="1"
+                    Margin="8,0,12,0"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="Medium"
+                        Text="{Binding Name}" />
                     <TextBlock
                         Margin="0,3,0,0"
                         FontSize="11"
@@ -57,24 +74,42 @@
                     Tag="{Binding Url}" />
             </Grid>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding AvatarImage}" Value="{x:Null}">
-                    <Setter TargetName="AvatarPhoto" Property="Visibility" Value="Collapsed" />
-                    <Setter TargetName="AvatarFallback" Property="Visibility" Value="Visible" />
+                <DataTrigger
+                    Binding="{Binding AvatarImage}"
+                    Value="{x:Null}">
+                    <Setter
+                        TargetName="AvatarPhoto"
+                        Property="Visibility"
+                        Value="Collapsed" />
+                    <Setter
+                        TargetName="AvatarFallback"
+                        Property="Visibility"
+                        Value="Visible" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ActionText}" Value="{x:Null}">
-                    <Setter TargetName="LinkButton" Property="Visibility" Value="Collapsed" />
+                <DataTrigger
+                    Binding="{Binding ActionText}"
+                    Value="{x:Null}">
+                    <Setter
+                        TargetName="LinkButton"
+                        Property="Visibility"
+                        Value="Collapsed" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24,24,24,36">
+    <ScrollViewer
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            Margin="24,24,24,36">
             <Border
                 Padding="18,14"
                 Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
-                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="关于" />
+                    <TextBlock
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="{DynamicResource I18n.about.title}" />
                     <ItemsControl
                         x:Name="AboutEntries"
                         Margin="0,10,0,0"
@@ -86,7 +121,10 @@
                 Padding="18,14"
                 Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
-                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="特别鸣谢" />
+                    <TextBlock
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="{DynamicResource I18n.about.specialThanks}" />
                     <ItemsControl
                         x:Name="ThanksEntries"
                         Margin="0,10,0,0"

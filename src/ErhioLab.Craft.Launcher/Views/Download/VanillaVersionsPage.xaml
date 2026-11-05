@@ -9,27 +9,48 @@
     <UserControl.Resources>
         <!-- 搜索输入框只显示文字和光标, 外观由外层 Border 绘制. -->
         <!-- 折叠区只使用一层卡片, 内容高度由代码平滑改变. -->
-        <Style x:Key="VersionGroupHeaderStyle" TargetType="ToggleButton">
-            <Setter Property="Height" Value="42" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
+        <Style
+            x:Key="VersionGroupHeaderStyle"
+            TargetType="ToggleButton">
+            <Setter
+                Property="Height"
+                Value="42" />
+            <Setter
+                Property="Background"
+                Value="Transparent" />
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+            <Setter
+                Property="Cursor"
+                Value="Hand" />
+            <Setter
+                Property="FocusVisualStyle"
+                Value="{x:Null}" />
+            <Setter
+                Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="HeaderRoot" Background="{TemplateBinding Background}" CornerRadius="8">
+                    <ControlTemplate
+                        TargetType="ToggleButton">
+                        <Border
+                            x:Name="HeaderRoot"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
                             <Grid>
                                 <Border
                                     Background="{DynamicResource AccentHoverBrush}"
                                     CornerRadius="8"
                                     Style="{StaticResource HoverLayerStyle}" />
-                                <Grid Margin="12,0">
+                                <Grid
+                                    Margin="12,0">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition
+                                            Width="*" />
+                                        <ColumnDefinition
+                                            Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <ContentPresenter VerticalAlignment="Center" />
+                                    <ContentPresenter
+                                        VerticalAlignment="Center" />
                                     <Path
                                         x:Name="Chevron"
                                         Grid.Column="1"
@@ -43,23 +64,33 @@
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Chevron" Property="Data" Value="M 1,5 L 5,1 L 9,5" />
+                            <Trigger
+                                Property="IsChecked"
+                                Value="True">
+                                <Setter
+                                    TargetName="Chevron"
+                                    Property="Data"
+                                    Value="M 1,5 L 5,1 L 9,5" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <DataTemplate x:Key="VersionTemplate" DataType="{x:Type download:VanillaVersionsPage+VersionRow}">
+        <DataTemplate
+            x:Key="VersionTemplate"
+            DataType="{x:Type download:VanillaVersionsPage+VersionRow}">
             <Border
                 x:Name="VersionRow"
                 Style="{StaticResource VersionListRowStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="34" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition
+                            Width="34" />
+                        <ColumnDefinition
+                            Width="*" />
+                        <ColumnDefinition
+                            Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <!-- 高亮层的透明度缓动, 不改变列表行的布局. -->
                     <Border
@@ -81,8 +112,13 @@
                         StrokeStartLineCap="Round"
                         StrokeThickness="1.6"
                         Stretch="Uniform" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock FontSize="13" FontWeight="Medium" Text="{Binding Version.Id}" />
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="{Binding Version.Id}" />
                         <TextBlock
                             Margin="0,2,0,0"
                             FontSize="10"
@@ -106,7 +142,10 @@
                                     MaxWidth="440"
                                     Content="{Binding TooltipText}" />
                             </Button.ToolTip>
-                            <TextBlock FontFamily="{x:Static icons:LauncherIcons.GlyphFont}" FontSize="15" Text="&#xE946;" />
+                            <TextBlock
+                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
+                                FontSize="15"
+                                Text="&#xE946;" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -114,18 +153,24 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24,24,24,36">
+    <ScrollViewer
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            Margin="24,24,24,36">
             <Border
                 Height="42"
                 Margin="0,0,0,14"
                 CornerRadius="8"
                 Style="{StaticResource PanelCardStyle}">
-                <Grid Margin="13,0,10,0">
+                <Grid
+                    Margin="13,0,10,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition
+                            Width="24" />
+                        <ColumnDefinition
+                            Width="*" />
+                        <ColumnDefinition
+                            Width="28" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
                         VerticalAlignment="Center"
@@ -133,7 +178,8 @@
                         FontSize="15"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{x:Static icons:LauncherIcons.Search}" />
-                    <Grid Grid.Column="1">
+                    <Grid
+                        Grid.Column="1">
                         <TextBox
                             x:Name="VersionSearchBox"
                             VerticalContentAlignment="Center"
@@ -148,14 +194,14 @@
                             VerticalAlignment="Center"
                             Foreground="{DynamicResource TextMutedBrush}"
                             IsHitTestVisible="False"
-                            Text="搜索版本号, 例如 1.20.1" />
+                            Text="{DynamicResource I18n.versionCatalog.searchPlaceholder}" />
                     </Grid>
                     <Button
                         x:Name="ClearSearchButton"
                         Grid.Column="2"
                         Click="ClearSearchButton_Click"
                         Style="{StaticResource VersionActionStyle}"
-                        ToolTip="清空搜索"
+                        ToolTip="{DynamicResource I18n.versionCatalog.clearSearch}"
                         Visibility="Collapsed">
                         <TextBlock
                             FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
@@ -168,11 +214,13 @@
                 x:Name="EmptySearchText"
                 Margin="2,14"
                 Foreground="{DynamicResource TextMutedBrush}"
-                Text="没有找到匹配的游戏版本."
+                Text="{DynamicResource I18n.versionCatalog.noMatches}"
                 Visibility="Collapsed" />
-            <ItemsControl x:Name="VersionGroups">
+            <ItemsControl
+                x:Name="VersionGroups">
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type download:VanillaVersionsPage+VersionGroup}">
+                    <DataTemplate
+                        DataType="{x:Type download:VanillaVersionsPage+VersionGroup}">
                         <Border
                             Margin="0,0,0,12"
                             Style="{StaticResource PanelCardStyle}">

@@ -4,28 +4,33 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     Background="{DynamicResource InkBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="32,28,32,36">
-            <controls:LauncherCard Header="配置文件">
+    <ScrollViewer
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            Margin="32,28,32,36">
+            <controls:LauncherCard
+                Header="{DynamicResource I18n.settings.configuration}">
                 <StackPanel>
                     <TextBlock
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="将当前设置保存为 JSON 文件, 或从已有文件恢复设置. 导入后会自动重启启动器. "
+                        Text="{DynamicResource I18n.settings.configurationDescription}"
                         TextWrapping="Wrap" />
-                    <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                    <StackPanel
+                        Margin="0,16,0,0"
+                        Orientation="Horizontal">
                         <Button
                             Width="112"
                             Height="36"
                             Click="ExportSettings_Click"
-                            Content="导出配置"
+                            Content="{DynamicResource I18n.settings.export}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="112"
                             Height="36"
                             Margin="10,0,0,0"
                             Click="ImportSettings_Click"
-                            Content="导入配置"
+                            Content="{DynamicResource I18n.settings.import}"
                             Style="{StaticResource SecondaryActionStyle}" />
                     </StackPanel>
                 </StackPanel>

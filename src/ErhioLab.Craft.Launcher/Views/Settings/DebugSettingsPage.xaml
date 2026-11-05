@@ -4,73 +4,80 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     Background="{DynamicResource InkBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="32,28,32,36">
-            <controls:LauncherCard Header="弹窗">
+    <ScrollViewer
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            Margin="32,28,32,36">
+            <controls:LauncherCard
+                Header="{DynamicResource I18n.debug.dialogs}">
                 <StackPanel>
                     <TextBlock
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="手动预览不同等级的弹窗. 调试操作不会更改设置." />
-                    <WrapPanel Margin="0,16,0,0">
+                        Text="{DynamicResource I18n.debug.dialogPreviewDescription}" />
+                    <WrapPanel
+                        Margin="0,16,0,0">
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="InformationButton_Click"
-                            Content="普通提示"
+                            Content="{DynamicResource I18n.debug.information}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="WarningButton_Click"
-                            Content="警告"
+                            Content="{DynamicResource I18n.debug.warning}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="ErrorButton_Click"
-                            Content="错误"
+                            Content="{DynamicResource I18n.debug.error}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="Second_Confirmation_Button_Click"
-                            Content="二次确认"
+                            Content="{DynamicResource I18n.debug.confirmation}"
                             Style="{StaticResource SecondaryActionStyle}" />
                     </WrapPanel>
                 </StackPanel>
             </controls:LauncherCard>
-            <controls:LauncherCard Margin="0,14,0,0" Header="通知条">
+            <controls:LauncherCard
+                Margin="0,14,0,0"
+                Header="{DynamicResource I18n.debug.notifications}">
                 <StackPanel>
                     <TextBlock
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="通知从左下角弹出并自动消失." />
-                    <WrapPanel Margin="0,16,0,0">
+                        Text="{DynamicResource I18n.debug.notificationDescription}" />
+                    <WrapPanel
+                        Margin="0,16,0,0">
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="ToastInformationButton_Click"
-                            Content="信息通知"
+                            Content="{DynamicResource I18n.debug.informationNotification}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="ToastSuccessButton_Click"
-                            Content="成功通知"
+                            Content="{DynamicResource I18n.debug.successNotification}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             Width="116"
                             Margin="0,0,10,10"
                             Click="ToastErrorButton_Click"
-                            Content="错误通知"
+                            Content="{DynamicResource I18n.debug.errorNotification}"
                             Style="{StaticResource SecondaryActionStyle}" />
                         <Button
                             x:Name="ToastStressButton"
                             Width="164"
                             Margin="0,0,10,10"
                             Click="ToastStressButton_Click"
-                            Content="性能测试 (1000 条)"
+                            Content="{DynamicResource I18n.debug.performanceTest}"
                             Style="{StaticResource SecondaryActionStyle}" />
                     </WrapPanel>
                 </StackPanel>

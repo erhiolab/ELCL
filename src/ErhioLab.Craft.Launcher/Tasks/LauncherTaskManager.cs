@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 
 using ErhioLab.Craft.Launcher.Core.Downloads;
+using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
@@ -17,13 +18,17 @@ internal sealed class LauncherTaskManager
         destination = Path.GetFullPath(destination);
         if (Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, destination, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new InvalidOperationException("该文件已有正在进行的下载任务.");
+            throw new InvalidOperationException(LocalizationManager.Get("task.alreadyDownloading"));
         }
 
         string fileName = Path.GetFileName(destination);
         DownloadTaskRequest request = new(fileName, [new DownloadFileRequest(destination, [source])]);
-        LauncherTaskStage stage = new("下载文件", context => context.DownloadAsync(request, options));
-        LauncherTask task = Start($"自定义下载 · {fileName}", [stage], destination);
+        LauncherTaskStage stage = new(LocalizationManager.Get("task.downloadFile"), context => context.DownloadAsync(request, options))
+        {
+            LocalizedName = () => LocalizationManager.Get("task.downloadFile")
+        };
+        LauncherTask task = Start(string.Format(LocalizationManager.Get("task.customDownload"), fileName), [stage], destination);
+        task.LocalizedTitle = () => string.Format(LocalizationManager.Get("task.customDownload"), fileName);
         App.Logger.Information("Tasks", $"创建自定义下载任务: {fileName}, 来源主机: {source.Host}.");
         return task;
     }
@@ -34,7 +39,7 @@ internal sealed class LauncherTaskManager
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         if (stages.Count == 0)
         {
-            throw new ArgumentException("任务至少需要一个阶段.", nameof(stages));
+            throw new ArgumentException(LocalizationManager.Get("task.stageRequired"), nameof(stages));
         }
 
         LauncherTask task = new(title, stages, targetPath);
@@ -76,7 +81,7 @@ internal sealed class LauncherTaskManager
             }
 
             task.Status = LauncherTaskStatus.Completed;
-            LauncherToasts.Success($"任务已完成: {task.Title}");
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("task.completedToast"), task.Title));
             App.Logger.Information("Tasks", $"任务完成: {task.Title}.");
             App.Tasks.Tasks.Remove(task);
         }
@@ -87,7 +92,7 @@ internal sealed class LauncherTaskManager
                 stage.Status = LauncherTaskStatus.Canceled;
             }
             task.Status = LauncherTaskStatus.Canceled;
-            LauncherToasts.Information($"任务已取消: {task.Title}");
+            LauncherToasts.Information(string.Format(LocalizationManager.Get("task.canceledToast"), task.Title));
             App.Logger.Information("Tasks", $"任务取消: {task.Title}.");
         }
         catch (Exception error)
@@ -98,7 +103,7 @@ internal sealed class LauncherTaskManager
             }
             task.Error = error.GetBaseException().Message;
             task.Status = LauncherTaskStatus.Failed;
-            LauncherToasts.Error($"任务失败: {task.Error}");
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("task.failedToast"), task.Error));
             App.Logger.Error("Tasks", $"任务失败: {task.Title}.", error);
         }
         finally

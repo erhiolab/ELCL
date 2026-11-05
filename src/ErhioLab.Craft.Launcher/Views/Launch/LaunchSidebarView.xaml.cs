@@ -1,5 +1,6 @@
 using System.Windows;
 using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
 
@@ -11,6 +12,12 @@ public partial class LaunchSidebarView
     {
         InitializeComponent();
         App.Accounts.Changed += (_, _) => RefreshAccount();
+        LocalizationManager.Changed += (_, _) =>
+        {
+            RefreshAccount();
+            if (App.Settings.SelectedVersionId is { Length: > 0 } selectedVersionId) ShowSelectedVersion(selectedVersionId);
+            else ClearSelectedVersion();
+        };
         RefreshAccount();
         if (App.Settings.SelectedVersionId is { Length: > 0 } id)
         {
@@ -21,20 +28,21 @@ public partial class LaunchSidebarView
     private void RefreshAccount()
     {
         var account = App.Accounts.SelectedAccount;
-        AccountNameText.Text = account?.UserName ?? "尚未登录";
-        AccountDescriptionText.Text = account is null ? "点击打开账户管理" : account.IsMicrosoft ? "Microsoft 账户" : "离线账户";
+        AccountNameText.Text = account?.UserName ?? LocalizationManager.Get("launch.notSignedIn");
+        AccountDescriptionText.Text = account is null ? LocalizationManager.Get("launch.manageAccounts")
+            : account.IsMicrosoft ? LocalizationManager.Get("launch.microsoftAccount") : LocalizationManager.Get("launch.offlineAccount");
     }
 
     internal void ShowSelectedVersion(string id)
     {
         MainActionTitle.Text = id;
-        MainActionDescription.Text = "启动游戏尚未实现";
+        MainActionDescription.Text = LocalizationManager.Get("launch.notImplemented");
     }
 
     internal void ClearSelectedVersion()
     {
-        MainActionTitle.Text = "下载游戏版本";
-        MainActionDescription.Text = "当前没有可启动的实例";
+        MainActionTitle.Text = LocalizationManager.Get("launch.downloadVersion");
+        MainActionDescription.Text = LocalizationManager.Get("launch.noInstance");
     }
 
     private void AccountManagement_Click(object sender, RoutedEventArgs e)
@@ -49,7 +57,7 @@ public partial class LaunchSidebarView
     {
         if (App.Settings.SelectedVersionId is not null)
         {
-            LauncherDialogs.Information("游戏启动", "游戏启动功能尚未实现.");
+            LauncherDialogs.Information(LocalizationManager.Get("launch.gameLaunch"), LocalizationManager.Get("launch.gameLaunchNotImplemented"));
             return;
         }
 

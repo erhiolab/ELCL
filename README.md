@@ -32,6 +32,12 @@ dotnet build .\ErhioLab.Craft.Launcher.Core.slnx
 
 在 JetBrains Rider 中选择共享运行配置 `Run ELCL`, 点击运行或调试即可. Rider 会先构建启动器, 并通过项目引用自动构建 Core.
 
+### 界面翻译
+
+启动器的语言文件位于 `src/ErhioLab.Craft.Launcher/Languages/`, 目前包含 `zh_cn.json` 和 `en_us.json`. 设置 → 个性化 → 语言可切换, 选择会保存到配置中. 构建项目时会自动嵌入该目录下的所有 JSON 文件; 新增语言只需按现有结构添加一个以语言代码命名的文件, 无需修改项目文件. 缺少的词条会回退到简体中文.
+
+翻译平台可以只提交语言 JSON 文件. 开发者新增界面文案时, 请按功能命名词条(例如 `account.addAccount`), 同时在两份语言文件中添加对应文本; XAML 使用 `{DynamicResource I18n.account.addAccount}`, C# 使用 `LocalizationManager.Get("account.addAccount")`. 动态文本可以在词条里使用 `{0}` 等格式参数. 不要使用哈希键或把界面文字直接写在 XAML/C# 中.
+
 ### 文档站
 
 文档站以 `web/docs/` 中的 Markdown 为内容源, 使用 VitePress 和 pnpm. 需要 Node.js 20 或更新版本, 在 `web/` 目录执行:

@@ -12,5 +12,6 @@
     ShowInTaskbar="False"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None">
-    <dialogs:LauncherDialogView x:Name="DialogView" />
+    <dialogs:LauncherDialogView
+        x:Name="DialogView" />
 </Window>
