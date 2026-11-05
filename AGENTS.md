@@ -11,7 +11,7 @@
 
 - `src/ErhioLab.Craft.Launcher.Core` 是可复用的 .NET 类库；Minecraft 领域逻辑可以放在这里，WPF、启动器配置、主题、通知和数据目录选择留在 `src/ErhioLab.Craft.Launcher`。
 - WPF 界面优先复用 `src/ErhioLab.Craft.Launcher/Styles/` 的按钮、列表和卡片样式；新控件使用动态主题资源。展开、切页、悬浮及选中状态要有与现有界面一致的缓动。
-- 启动器界面图标统一从 `src/ErhioLab.Craft.Launcher/Icons/LauncherIcons.cs` 取用. 新增图标前先查找并复用语义相同的现有图标; 确实没有时, 先在该文件定义并命名, 再在 XAML 或代码中引用. 避免在页面里直接写 `!`/Unicode 符号或重复的 Path 数据充当图标. 
+- 启动器界面图标统一从 `src/ErhioLab.Craft.Launcher/Icons/LauncherIcons.cs` 取用. 新增图标前先查找并复用语义相同的现有图标; 确实没有时, 先在该文件定义并命名, 再在 XAML 或代码中引用. 避免在页面里直接写 `!`/Unicode 符号或重复的 Path 数据充当图标.
 - 字体图标使用 `LauncherIcons.GlyphFont`, 矢量图标使用 `LauncherIcons` 中的 Geometry; 颜色使用主题动态资源, 保持深浅主题一致.
 - 修改核心代码后构建核心与启动器；修改 `web/docs/` 后从 `web/` 运行 `pnpm build`，确认文档站可以生成。
 - 用户要求检查 IDE 问题时，读取 Rider 的问题视图并逐项处理可解决的问题；报告构建和检查结果。
