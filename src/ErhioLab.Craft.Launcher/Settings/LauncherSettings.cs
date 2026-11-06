@@ -60,6 +60,17 @@ public sealed record LauncherSettings
         string accent = NormalizeAccent(AccentColor);
         string titleText = TitleBarText ?? string.Empty;
         bool validAccent = accent.Length == 7 && accent[0] == '#' && uint.TryParse(accent.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _);
+        string? selectedFolderPath = NormalizePath(SelectedGameFolderPath);
+        string? selectedVersionPath = NormalizePath(SelectedVersionPath);
+        GameFolderSetting[] gameFolders = ValidGameFolders(GameFolders).DistinctBy(folder => folder.Path, StringComparer.OrdinalIgnoreCase).ToArray();
+        // 旧配置只在顶层保存当前版本；首次读取时把它归入对应文件夹.
+        if (selectedFolderPath is not null && selectedVersionPath is not null)
+        {
+            gameFolders = gameFolders.Select(folder =>
+                folder.LastSelectedVersionPath is null && SamePath(folder.Path, selectedFolderPath) && IsVersionInFolder(selectedVersionPath, folder.Path)
+                    ? folder with { LastSelectedVersionPath = selectedVersionPath }
+                    : folder).ToArray();
+        }
 
         return this with
         {
@@ -74,9 +85,9 @@ public sealed record LauncherSettings
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
             JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
             IgnoredJavaPaths = OrEmpty(IgnoredJavaPaths).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-            GameFolders = ValidGameFolders(GameFolders).DistinctBy(folder => folder.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
-            SelectedGameFolderPath = NormalizePath(SelectedGameFolderPath),
-            SelectedVersionPath = NormalizePath(SelectedVersionPath),
+            GameFolders = gameFolders,
+            SelectedGameFolderPath = selectedFolderPath,
+            SelectedVersionPath = selectedVersionPath,
             SelectedVersionId = string.IsNullOrWhiteSpace(SelectedVersionId) ? null : SelectedVersionId.Trim()[..Math.Min(SelectedVersionId.Trim().Length, 128)]
         };
     }
@@ -118,7 +129,9 @@ public sealed record LauncherSettings
                     nameKey = defaultKey;
             }
 
-            yield return new GameFolderSetting(path, name[..Math.Min(name.Length, 64)], nameKey, folder.IsNameCustomized);
+            string? lastVersionPath = NormalizePath(folder.LastSelectedVersionPath);
+            if (lastVersionPath is not null && !IsVersionInFolder(lastVersionPath, path)) lastVersionPath = null;
+            yield return new GameFolderSetting(path, name[..Math.Min(name.Length, 64)], nameKey, folder.IsNameCustomized, lastVersionPath);
         }
     }
 
@@ -126,6 +139,10 @@ public sealed record LauncherSettings
         left.TrimEnd(System.IO.Path.DirectorySeparatorChar),
         right.TrimEnd(System.IO.Path.DirectorySeparatorChar),
         StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsVersionInFolder(string versionPath, string folderPath) =>
+        System.IO.Path.GetDirectoryName(versionPath) is { } parent &&
+        SamePath(parent, System.IO.Path.Combine(folderPath, "versions"));
 
     private static string? NormalizePath(string? value)
     {

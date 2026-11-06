@@ -63,6 +63,13 @@ public partial class MainWindow
 
         _routes = ShellRouteCatalog.Create();
         VersionSelectionPage.VersionChosen += OnVersionChosen;
+        VersionSelectionPage.VersionSelectionChanged += version =>
+        {
+            if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
+            {
+                sidebar.ShowSelectedVersion(version.Id);
+            }
+        };
         VersionSelectionPage.VersionSelectionCleared += () =>
         {
             if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)

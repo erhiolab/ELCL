@@ -1,4 +1,5 @@
 using ErhioLab.Craft.Launcher.Localization;
+
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -29,6 +30,9 @@ public partial class VersionSelectionView
 
     /// <summary>用户选择版本后通知主窗口返回启动页.</summary>
     internal event Action<LocalMinecraftVersion>? VersionChosen;
+
+    /// <summary>扫描后自动选择版本时同步启动页, 不关闭版本选择页.</summary>
+    internal event Action<LocalMinecraftVersion>? VersionSelectionChanged;
 
     /// <summary>当前所选版本被删除或所在文件夹被移除.</summary>
     internal event Action? VersionSelectionCleared;
@@ -134,10 +138,17 @@ public partial class VersionSelectionView
             return;
         }
 
-        if (!App.UpdateSettings(App.Settings with { SelectedGameFolderPath = row.Path }))
+        if (!App.UpdateSettings(App.Settings with
+            {
+                SelectedGameFolderPath = row.Path,
+                SelectedVersionPath = null,
+                SelectedVersionId = null
+            }))
         {
             return;
         }
+
+        VersionSelectionCleared?.Invoke();
 
         foreach (FolderRow folder in _folders)
         {
@@ -153,6 +164,21 @@ public partial class VersionSelectionView
     {
         int version = ++_scanVersion;
         FolderRow? selected = _folders.FirstOrDefault(folder => folder.IsSelected);
+        if (selected is not null && !SamePath(selected.Path, App.Settings.SelectedGameFolderPath))
+        {
+            if (!App.UpdateSettings(App.Settings with
+                {
+                    SelectedGameFolderPath = selected.Path,
+                    SelectedVersionPath = null,
+                    SelectedVersionId = null
+                }))
+            {
+                return;
+            }
+
+            VersionSelectionCleared?.Invoke();
+        }
+
         FolderTitle.Text = selected?.Name ?? LocalizationManager.Get("versionSelector.versionList");
         FolderPathText.Text = selected?.Path ?? string.Empty;
         FolderTitle.BeginAnimation(OpacityProperty, EaseOut(0.45, 1, 180));
@@ -175,6 +201,7 @@ public partial class VersionSelectionView
         EmptyVersionsText.Visibility = Visibility.Visible;
         if (selected is null)
         {
+            UpdateSelectedVersion(null);
             AnimateEmptyText();
             return;
         }
@@ -187,6 +214,10 @@ public partial class VersionSelectionView
                 return;
             }
 
+            string? rememberedPath = App.Settings.GameFolders.FirstOrDefault(folder => SamePath(folder.Path, selected.Path))?.LastSelectedVersionPath;
+            string? preferredPath = rememberedPath ?? App.Settings.SelectedVersionPath;
+            LocalMinecraftVersion? selectedVersion = found.FirstOrDefault(item => SamePath(item.FolderPath, preferredPath)) ?? found.FirstOrDefault();
+            UpdateSelectedVersion(selectedVersion);
             VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath))).ToArray();
             SetEmptyVersionsText("versionSelector.noVersions");
             EmptyVersionsText.Visibility = found.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -211,10 +242,44 @@ public partial class VersionSelectionView
             }
 
             SetEmptyVersionsText("versionSelector.folderReadFailed");
+            UpdateSelectedVersion(null, clearFolderMemory: false);
             AnimateEmptyText();
             App.Logger.Error("Versions", $"扫描游戏目录失败: {selected.Path}", exception);
             LauncherToasts.Error(LocalizationManager.Get("versionSelector.readVersionsFailed"));
         }
+    }
+
+    private bool UpdateSelectedVersion(LocalMinecraftVersion? selectedVersion, bool clearFolderMemory = true)
+    {
+        string? path = selectedVersion?.FolderPath;
+        string? id = selectedVersion?.Id;
+        string? selectedFolderPath = App.Settings.SelectedGameFolderPath;
+        GameFolderSetting? folder = App.Settings.GameFolders.FirstOrDefault(item => SamePath(item.Path, selectedFolderPath));
+        string? rememberedPath = folder?.LastSelectedVersionPath;
+        bool currentMatches = (SamePath(App.Settings.SelectedVersionPath, path) || App.Settings.SelectedVersionPath is null && path is null) && App.Settings.SelectedVersionId == id;
+        bool memoryMatches = !clearFolderMemory || SamePath(rememberedPath, path) || rememberedPath is null && path is null;
+        if (currentMatches && memoryMatches)
+        {
+            return true;
+        }
+
+        GameFolderSetting[] folders = App.Settings.GameFolders.Select(item =>
+            folder is not null && SamePath(item.Path, folder.Path) && clearFolderMemory
+                ? item with { LastSelectedVersionPath = path }
+                : item).ToArray();
+        if (!App.UpdateSettings(App.Settings with
+            {
+                GameFolders = folders,
+                SelectedVersionPath = path,
+                SelectedVersionId = id
+            }))
+        {
+            return false;
+        }
+
+        if (selectedVersion is null) VersionSelectionCleared?.Invoke();
+        else VersionSelectionChanged?.Invoke(selectedVersion);
+        return true;
     }
 
     private void SetEmptyVersionsText(string key)
@@ -384,7 +449,7 @@ public partial class VersionSelectionView
     private async void RemoveFolder_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: FolderRow row } ||
-                !await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.removeFolderTitle"), string.Format(LocalizationManager.Get("folder.confirmRemove"), row.Name), confirmText: LocalizationManager.Get("versionSelector.remove")))
+            !await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.removeFolderTitle"), string.Format(LocalizationManager.Get("folder.confirmRemove"), row.Name), confirmText: LocalizationManager.Get("versionSelector.remove")))
         {
             return;
         }
@@ -440,7 +505,7 @@ public partial class VersionSelectionView
     private void Version_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: VersionRow row } ||
-            !App.UpdateSettings(App.Settings with { SelectedVersionPath = row.Version.FolderPath, SelectedVersionId = row.Version.Id }))
+            !UpdateSelectedVersion(row.Version))
         {
             return;
         }
@@ -466,7 +531,7 @@ public partial class VersionSelectionView
             return;
         }
 
-            if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.deleteVersionTitle"), string.Format(LocalizationManager.Get("folder.confirmDeleteVersion"), row.Version.Id), LauncherDialogLevel.Danger, LocalizationManager.Get("common.delete")))
+        if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.deleteVersionTitle"), string.Format(LocalizationManager.Get("folder.confirmDeleteVersion"), row.Version.Id), LauncherDialogLevel.Danger, LocalizationManager.Get("common.delete")))
         {
             return;
         }
@@ -474,10 +539,10 @@ public partial class VersionSelectionView
         try
         {
             Directory.Delete(versionFolder, true);
-            if (SamePath(App.Settings.SelectedVersionPath, versionFolder))
+            if (SamePath(App.Settings.SelectedVersionPath, versionFolder) ||
+                App.Settings.GameFolders.Any(item => SamePath(item.Path, folder.Path) && SamePath(item.LastSelectedVersionPath, versionFolder)))
             {
-                App.UpdateSettings(App.Settings with { SelectedVersionPath = null, SelectedVersionId = null });
-                VersionSelectionCleared?.Invoke();
+                UpdateSelectedVersion(null);
             }
 
             App.Logger.Information("Versions", $"删除本地版本: {versionFolder}");
