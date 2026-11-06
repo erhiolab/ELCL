@@ -18,9 +18,10 @@ internal sealed class LauncherTaskStage(string name, Func<LauncherTaskContext, T
 
     internal Func<LauncherTaskContext, Task> Execute { get; } = execute;
     internal Func<string>? LocalizedName { get; init; }
+    internal long PlannedBytes { get; set; } = 1;
     public string Name => LocalizedName?.Invoke() ?? name;
     public LauncherTaskStatus Status { get => _status; internal set { _status = value; Changed(); Changed(nameof(StatusText)); } }
-    public double Progress { get => _progress; internal set { _progress = value; Changed(); Changed(nameof(ProgressText)); } }
+    public double Progress { get => _progress; internal set { _progress = value; Changed(); Changed(nameof(ProgressText)); Changed(nameof(StatusText)); } }
     public string StatusText => Status switch
     {
         LauncherTaskStatus.Completed => "✓",
@@ -46,6 +47,8 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     private string? _error;
 
     internal CancellationTokenSource Cancellation { get; } = new();
+    internal Task Completion { get; set; } = Task.CompletedTask;
+    internal Action? CleanupOnRemove { get; set; }
     public Guid Id { get; } = Guid.NewGuid();
     internal Func<string>? LocalizedTitle { get; set; }
     public string Title => LocalizedTitle?.Invoke() ?? title;
@@ -79,7 +82,8 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
 
     internal void RefreshProgress()
     {
-        Progress = Stages.Count == 0 ? 100 : Stages.Average(stage => stage.Progress);
+        double totalBytes = Stages.Sum(stage => (double)stage.PlannedBytes);
+        Progress = totalBytes <= 0 ? 100 : Stages.Sum(stage => stage.Progress * stage.PlannedBytes) / totalBytes;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -91,6 +95,30 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
 {
     private long _previousBytes;
     private long _previousTicks = Environment.TickCount64;
+    private long _plannedTotalBytes;
+    private long _alreadyCompleteBytes;
+    internal CancellationToken CancellationToken => task.Cancellation.Token;
+
+    internal void ConfigureStageWeights(IReadOnlyList<long> weights)
+    {
+        if (weights.Count != task.Stages.Count) throw new ArgumentException("阶段数量不匹配.", nameof(weights));
+        for (int index = 0; index < weights.Count; index++)
+            task.Stages[index].PlannedBytes = Math.Max(1, weights[index]);
+        task.RefreshProgress();
+    }
+
+    internal void ConfigureDownloadPlan(IReadOnlyList<DownloadFileRequest> allFiles, IReadOnlyList<DownloadFileRequest> missingFiles)
+    {
+        _plannedTotalBytes = allFiles.Sum(EstimatedSize);
+        long missingBytes = missingFiles.Sum(EstimatedSize);
+        _alreadyCompleteBytes = Math.Max(0, _plannedTotalBytes - missingBytes);
+        stage.PlannedBytes = Math.Max(1, _plannedTotalBytes);
+        task.RemainingFiles = missingFiles.Count;
+        stage.Progress = _plannedTotalBytes == 0 ? 0 : Math.Clamp(_alreadyCompleteBytes * 100.0 / _plannedTotalBytes, 0, 99.9);
+        task.RefreshProgress();
+    }
+
+    internal static long EstimatedSize(DownloadFileRequest file) => Math.Max(1, file.ExpectedSize ?? 1024 * 1024);
 
     internal async Task DownloadAsync(DownloadTaskRequest request, DownloadOptions options)
     {
@@ -107,7 +135,12 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
         }
 
         task.RemainingFiles = Math.Max(0, progress.TotalFiles - progress.CompletedFiles);
-        if (progress.TotalBytes is > 0 and var total)
+        if (_plannedTotalBytes > 0)
+        {
+            stage.Progress = Math.Clamp((_alreadyCompleteBytes + progress.BytesReceived) * 100.0 / _plannedTotalBytes, 0, 99.9);
+            task.RefreshProgress();
+        }
+        else if (progress.TotalBytes is > 0 and var total)
         {
             stage.Progress = Math.Clamp(progress.BytesReceived * 100.0 / total, 0, 99.9);
             task.RefreshProgress();

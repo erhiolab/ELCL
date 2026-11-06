@@ -61,11 +61,11 @@ public partial class TaskManagerView
         EmptyText.Visibility = App.Tasks.Tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void TaskAction_Click(object sender, RoutedEventArgs e)
+    private async void TaskAction_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: LauncherTask task })
         {
-            App.Tasks.CancelOrRemove(task);
+            await App.Tasks.CancelOrRemoveAsync(task);
         }
     }
 }

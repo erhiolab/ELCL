@@ -40,6 +40,36 @@
                                 Content="{DynamicResource I18n.downloadSettings.preferMirror}" />
                         </ComboBox>
                     </Grid>
+                    <Grid
+                        Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                FontSize="12"
+                                Text="{DynamicResource I18n.downloadSettings.fileDownloadSource}" />
+                            <TextBlock
+                                Margin="0,3,0,0"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{DynamicResource I18n.downloadSettings.fallbackDescription}" />
+                        </StackPanel>
+                        <ComboBox
+                            x:Name="FileDownloadSourceBox"
+                            Grid.Column="1"
+                            Style="{StaticResource FormComboBoxStyle}"
+                            SelectionChanged="FileDownloadSourceBox_SelectionChanged">
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.downloadSettings.preferOfficial}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.downloadSettings.preferMirror}" />
+                        </ComboBox>
+                    </Grid>
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard

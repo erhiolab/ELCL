@@ -25,6 +25,7 @@ public partial class DownloadSettingsPage
         if (App.UpdateSettings(App.Settings with
             {
                 VersionListSource = VersionListSource.OfficialFirst,
+                FileDownloadSource = VersionListSource.OfficialFirst,
                 DownloadMaxConnections = 8,
                 DownloadSpeedLimitMiBPerSecond = 0
             }))
@@ -39,10 +40,19 @@ public partial class DownloadSettingsPage
     {
         _initializing = true;
         VersionListSourceBox.SelectedIndex = App.Settings.VersionListSource == VersionListSource.MirrorFirst ? 1 : 0;
+        FileDownloadSourceBox.SelectedIndex = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst ? 1 : 0;
         ThreadCountSlider.Value = App.Settings.DownloadMaxConnections;
         ThreadCountText.Text = App.Settings.DownloadMaxConnections.ToString(CultureInfo.InvariantCulture);
         SpeedLimitBox.Text = App.Settings.DownloadSpeedLimitMiBPerSecond.ToString("0.##", CultureInfo.InvariantCulture);
         _initializing = false;
+    }
+
+    private void FileDownloadSourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || FileDownloadSourceBox.SelectedIndex < 0) return;
+        VersionListSource selected = FileDownloadSourceBox.SelectedIndex == 1 ? VersionListSource.MirrorFirst : VersionListSource.OfficialFirst;
+        if (App.Settings.FileDownloadSource == selected) return;
+        if (!App.UpdateSettings(App.Settings with { FileDownloadSource = selected })) RefreshControls();
     }
 
     private void VersionListSourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

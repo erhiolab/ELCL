@@ -1,5 +1,6 @@
 using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
+using System.IO;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,13 +8,14 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Views.Download;
 
-/// <summary>展示原版游戏版本的下载前设置, 下载功能将在后续接入.</summary>
+/// <summary>展示原版游戏版本的下载前设置并提交安装任务.</summary>
 public partial class VanillaVersionDetailsPage
 {
     private static readonly HttpClient HttpClient = CreateHttpClient();
@@ -385,8 +387,49 @@ public partial class VanillaVersionDetailsPage
 
     private void StartDownloadButton_Click(object sender, RoutedEventArgs e)
     {
-        App.Logger.Information("Download", $"点击开始下载: {_version.Id}, 自定义名称: {VersionNameBox.Text}. 下载功能尚未实现.");
-        LauncherToasts.Information(LocalizationManager.Get("versionDetails.downloadUnavailable"));
+        if (LoaderSections.Any(section => section.SelectedVersion is not null))
+        {
+            LauncherToasts.Information(LocalizationManager.Get("install.loadersUnavailable"));
+            return;
+        }
+
+        string name = VersionNameBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 128 || name is "." or ".." ||
+            name.EndsWith('.') || name.EndsWith(' ') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            LauncherToasts.Error(LocalizationManager.Get("install.invalidName"));
+            return;
+        }
+
+        string? gameDirectory = App.Settings.SelectedGameFolderPath ?? App.Settings.GameFolders.FirstOrDefault()?.Path;
+        if (gameDirectory is null)
+        {
+            LauncherToasts.Error(LocalizationManager.Get("install.noGameFolder"));
+            return;
+        }
+
+        if (File.Exists(Path.Combine(gameDirectory, "versions", name, name + ".json")))
+        {
+            LauncherToasts.Error(LocalizationManager.Get("install.versionExists"));
+            return;
+        }
+
+        try
+        {
+            MinecraftManifestSource preferred = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst
+                ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
+            DownloadOptions options = new(App.Settings.DownloadMaxConnections,
+                (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+            App.Tasks.StartVanillaInstall(_version, name, gameDirectory, preferred, options);
+            App.Logger.Information("Download", $"已创建原版安装任务: {_version.Id} -> {name}, 游戏目录: {gameDirectory}.");
+            LauncherToasts.Information(string.Format(LocalizationManager.Get("install.queued"), name));
+            BackButton_Click(sender, e);
+        }
+        catch (Exception error) when (error is ArgumentException or IOException or InvalidOperationException)
+        {
+            App.Logger.Error("Download", $"无法创建 {_version.Id} 的原版安装任务.", error);
+            LauncherToasts.Error(error.Message);
+        }
     }
 
     private static HttpClient CreateHttpClient()

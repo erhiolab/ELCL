@@ -29,6 +29,9 @@ public sealed record LauncherSettings
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;
 
+    /// <summary>游戏文件下载的优先来源，另一来源在失败时回退.</summary>
+    public VersionListSource FileDownloadSource { get; init; } = VersionListSource.OfficialFirst;
+
     /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
     public int DownloadMaxConnections { get; init; } = 8;
 
@@ -79,6 +82,7 @@ public sealed record LauncherSettings
             TitleBarMode = Enum.IsDefined(TitleBarMode) ? TitleBarMode : TitleBarMode.Default,
             TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
             VersionListSource = Enum.IsDefined(VersionListSource) ? VersionListSource : VersionListSource.OfficialFirst,
+            FileDownloadSource = Enum.IsDefined(FileDownloadSource) ? FileDownloadSource : VersionListSource.OfficialFirst,
             DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
             DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",

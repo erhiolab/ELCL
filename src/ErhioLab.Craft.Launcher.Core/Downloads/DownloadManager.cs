@@ -10,6 +10,9 @@ namespace ErhioLab.Craft.Launcher.Core.Downloads;
 public sealed class DownloadManager : IAsyncDisposable
 {
     private const long MinimumSegmentSize = 2 * 1024 * 1024;
+    private const int MaximumSegmentsPerFile = 4;
+    private const int MaximumAttemptsPerSource = 3;
+    private const int MaximumParallelFiles = 32;
     private readonly HttpClient _httpClient;
 
     private readonly Channel<QueuedTask> _queue = Channel.CreateUnbounded<QueuedTask>(
@@ -137,7 +140,7 @@ public sealed class DownloadManager : IAsyncDisposable
         await Parallel.ForEachAsync(queued.Request.Files,
             new ParallelOptions
             {
-                MaxDegreeOfParallelism = Math.Min(queued.Options.MaxConnections, 8),
+                MaxDegreeOfParallelism = Math.Min(queued.Options.MaxConnections, MaximumParallelFiles),
                 CancellationToken = cancellationToken
             }, async (file, token) =>
             {
@@ -158,70 +161,83 @@ public sealed class DownloadManager : IAsyncDisposable
 
         foreach (Uri source in file.Sources)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            string temporary = Path.Combine(directory, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.part");
-            AttemptCounter attemptBytes = new();
-            try
+            for (int attempt = 0; attempt < MaximumAttemptsPerSource; attempt++)
             {
-                FileProbe probe = await ProbeAsync(source, cancellationToken).ConfigureAwait(false);
-                if (!lengthRegistered)
-                {
-                    state.RegisterLength(probe.Length);
-                    lengthRegistered = true;
-                }
-
-                if (file.ExpectedSize is { } expected && probe.Length is { } actual && actual != expected)
-                {
-                    throw new InvalidDataException($"文件大小与预期不符: {source}");
-                }
-
+                cancellationToken.ThrowIfCancellationRequested();
+                string temporary = Path.Combine(directory, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.part");
+                AttemptCounter attemptBytes = new();
                 try
                 {
-                    await TransferAsync(source, temporary, probe, options.MaxConnections,
-                        connections, limiter, state, file.DestinationPath,
-                        attemptBytes.Add, cancellationToken).ConfigureAwait(false);
+                    // 分段连接失败后改用普通 GET，避免持续触发同一站点的连接限制.
+                    FileProbe probe = attempt == 0 && file.ExpectedSize is not <= MinimumSegmentSize
+                        ? await ProbeWithConnectionAsync(source, connections, cancellationToken).ConfigureAwait(false)
+                        : new FileProbe(file.ExpectedSize, false);
+                    if (!lengthRegistered)
+                    {
+                        state.RegisterLength(probe.Length, file.ExpectedSize);
+                        lengthRegistered = true;
+                    }
+
+                    if (file.ExpectedSize is { } expected && probe.Length is { } actual && actual != expected)
+                    {
+                        throw new InvalidDataException($"文件大小与预期不符: {source}");
+                    }
+
+                    try
+                    {
+                        await TransferAsync(source, temporary, probe, options.MaxConnections,
+                            connections, limiter, state, file.DestinationPath,
+                            attemptBytes.Add, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (RangeUnsupportedException)
+                    {
+                        state.RevertBytes(attemptBytes.Take());
+                        File.Delete(temporary);
+                        await TransferAsync(source, temporary, new FileProbe(null, false), 1,
+                            connections, limiter, state, file.DestinationPath,
+                            attemptBytes.Add, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (file.ExpectedSize is { } requiredSize && new FileInfo(temporary).Length != requiredSize)
+                    {
+                        throw new InvalidDataException($"文件大小与预期不符: {source}");
+                    }
+
+                    if (file.ExpectedSha1 is { } expectedSha1)
+                    {
+                        await using FileStream input = File.OpenRead(temporary);
+                        string actualSha1 = Convert.ToHexString(await SHA1.HashDataAsync(input, cancellationToken).ConfigureAwait(false));
+                        if (!actualSha1.Equals(expectedSha1, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new InvalidDataException($"SHA-1 校验失败: {source}");
+                        }
+                    }
+
+                    File.Move(temporary, destination, overwrite: true);
+                    return;
                 }
-                catch (RangeUnsupportedException)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or OperationCanceledException)
                 {
                     state.RevertBytes(attemptBytes.Take());
-                    File.Delete(temporary);
-                    await TransferAsync(source, temporary, new FileProbe(null, false), 1,
-                        connections, limiter, state, file.DestinationPath,
-                        attemptBytes.Add, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (file.ExpectedSize is { } requiredSize && new FileInfo(temporary).Length != requiredSize)
-                {
-                    throw new InvalidDataException($"文件大小与预期不符: {source}");
-                }
-
-                if (file.ExpectedSha1 is { } expectedSha1)
-                {
-                    await using FileStream input = File.OpenRead(temporary);
-                    string actualSha1 = Convert.ToHexString(await SHA1.HashDataAsync(input, cancellationToken).ConfigureAwait(false));
-                    if (!actualSha1.Equals(expectedSha1, StringComparison.OrdinalIgnoreCase))
+                    if (attempt + 1 < MaximumAttemptsPerSource && IsTransient(error))
                     {
-                        throw new InvalidDataException($"SHA-1 校验失败: {source}");
+                        await Task.Delay(TimeSpan.FromMilliseconds(600 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+                        continue;
                     }
-                }
 
-                File.Move(temporary, destination, overwrite: true);
-                return;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or OperationCanceledException)
-            {
-                failures.Add(new IOException($"来源 {source} 下载失败.", error));
-                state.RevertBytes(attemptBytes.Take());
-            }
-            finally
-            {
-                if (File.Exists(temporary))
+                    failures.Add(new IOException($"来源 {source} 下载失败.", error));
+                    break;
+                }
+                finally
                 {
-                    File.Delete(temporary);
+                    if (File.Exists(temporary))
+                    {
+                        File.Delete(temporary);
+                    }
                 }
             }
         }
@@ -267,6 +283,24 @@ public sealed class DownloadManager : IAsyncDisposable
         }
     }
 
+    private async Task<FileProbe> ProbeWithConnectionAsync(Uri source, SemaphoreSlim connections, CancellationToken token)
+    {
+        await connections.WaitAsync(token).ConfigureAwait(false);
+        try { return await ProbeAsync(source, token).ConfigureAwait(false); }
+        finally { connections.Release(); }
+    }
+
+    private static bool IsTransient(Exception error) => error switch
+    {
+        HttpRequestException { StatusCode: null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
+            or HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout } => true,
+        HttpRequestException => false,
+        OperationCanceledException => true,
+        IOException => true,
+        _ => false
+    };
+
     private async Task TransferAsync(
         Uri source, string temporary, FileProbe probe, int maxConnections,
         SemaphoreSlim connections, SpeedLimiter limiter, DownloadState state,
@@ -277,7 +311,8 @@ public sealed class DownloadManager : IAsyncDisposable
         if (probe.RangeSupported && probe.Length is > 0 and var length)
         {
             output.SetLength(length);
-            int count = (int)Math.Min(maxConnections, Math.Max(1, (length + MinimumSegmentSize - 1) / MinimumSegmentSize));
+            int count = (int)Math.Min(Math.Min(maxConnections, MaximumSegmentsPerFile),
+                Math.Max(1, (length + MinimumSegmentSize - 1) / MinimumSegmentSize));
             long segmentSize = (length + count - 1) / count;
             Task[] segments = Enumerable.Range(0, count).Select(index => TransferSegmentAsync(
                 source, output.SafeFileHandle, index * segmentSize,
@@ -448,26 +483,19 @@ public sealed class DownloadManager : IAsyncDisposable
     {
         private readonly object _sync = new();
         private long _bytes;
-        private long _totalBytes;
-        private int _probedFiles;
-        private int _unknownFiles;
+        private long _totalBytes = task.Request.Files.Sum(file => file.ExpectedSize ?? 0);
+        private int _unknownFiles = task.Request.Files.Count(file => file.ExpectedSize is null);
         private int _completedFiles;
         private long _lastReport;
         private string? _currentFile;
 
-        internal void RegisterLength(long? length)
+        internal void RegisterLength(long? length, long? expectedSize)
         {
+            if (expectedSize.HasValue || !length.HasValue) return;
             lock (_sync)
             {
-                _probedFiles++;
-                if (length.HasValue)
-                {
-                    _totalBytes += length.Value;
-                }
-                else
-                {
-                    _unknownFiles++;
-                }
+                _totalBytes += length.Value;
+                _unknownFiles--;
             }
         }
 
@@ -510,7 +538,7 @@ public sealed class DownloadManager : IAsyncDisposable
                 _lastReport = now;
                 snapshot = new DownloadProgress(task.Id, task.Request.Name, status,
                     _completedFiles, task.Request.Files.Count, Math.Max(0, Interlocked.Read(ref _bytes)),
-                    _probedFiles == task.Request.Files.Count && _unknownFiles == 0 ? _totalBytes : null,
+                    _unknownFiles == 0 ? _totalBytes : null,
                     _currentFile);
             }
 
