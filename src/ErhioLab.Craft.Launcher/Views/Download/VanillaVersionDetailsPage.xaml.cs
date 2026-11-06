@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -463,6 +464,9 @@ public partial class VanillaVersionDetailsPage
 
         /// <summary>显示名称.</summary>
         public string Name { get; }
+
+        /// <summary>加载器线框图标.</summary>
+        public Geometry Icon => LauncherIcons.ForLoader(Kind);
 
         /// <summary>当前获取或选择状态.</summary>
         public string StatusText

@@ -637,26 +637,36 @@ public partial class VersionSelectionView
     /// <summary>本地版本与显示描述.</summary>
     public sealed record VersionRow(LocalMinecraftVersion Version, bool IsSelected)
     {
-        public Geometry Icon => Version.Type switch
+        public Geometry Icon => Version.Loader is { } loader && Enum.TryParse(loader, true, out MinecraftLoaderKind kind)
+            ? LauncherIcons.ForLoader(kind)
+            : Version.Type switch
         {
-            "release" => LauncherIcons.VersionRelease,
             "snapshot" => LauncherIcons.VersionPreview,
             "old_alpha" or "old_beta" => LauncherIcons.VersionAncient,
-            _ => LauncherIcons.GameVersions
+            _ => LauncherIcons.VersionRelease
         };
 
-        public string Description
+        public bool HasParsedVersion => !string.IsNullOrWhiteSpace(Version.GameVersion)
+            && (Version.Loader is null || !string.IsNullOrWhiteSpace(Version.LoaderVersion));
+
+        public bool HasLoader => HasParsedVersion && Version.Loader is not null;
+
+        public string GameBadge => Version.GameVersion ?? string.Empty;
+
+        public string LoaderBadge => Version.Loader is null ? string.Empty : $"{Version.Loader} {Version.LoaderVersion}";
+
+        public string StatusText
         {
             get
             {
-                string type = Version.Type switch
+                if (!HasParsedVersion) return LocalizationManager.Get("versionSelector.parseFailed");
+                return Version.Type switch
                 {
                     "release" => LocalizationManager.Get("version.release"),
                     "snapshot" => LocalizationManager.Get("versionSelector.snapshotType"),
                     "old_alpha" or "old_beta" => LocalizationManager.Get("version.oldVersions"),
                     _ => LocalizationManager.Get("versionSelector.customVersion")
                 };
-                return Version.ReleaseTime is { } time ? $"{type}  ·  {time:yyyy-MM-dd HH:mm}" : type;
             }
         }
     }

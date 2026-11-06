@@ -675,7 +675,7 @@ public partial class MainWindow
     private void Window_StateChanged(object? sender, EventArgs e)
     {
         UpdateWindowClip();
-        MaximizeGlyph.Text = WindowState == WindowState.Maximized ? LauncherIcons.Restore : LauncherIcons.Maximize;
+        MaximizeGlyph.Data = WindowState == WindowState.Maximized ? LauncherIcons.Restore : LauncherIcons.Maximize;
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 

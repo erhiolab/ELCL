@@ -6,5 +6,8 @@ public sealed record LocalMinecraftVersion(
     string FolderPath,
     string JsonPath,
     string Type,
-    DateTimeOffset? ReleaseTime
+    DateTimeOffset? ReleaseTime,
+    string? GameVersion = null,
+    string? Loader = null,
+    string? LoaderVersion = null
 );

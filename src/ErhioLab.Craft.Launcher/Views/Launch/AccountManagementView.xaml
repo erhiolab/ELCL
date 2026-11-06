@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Launch.AccountManagementView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -29,8 +29,9 @@
                             Margin="0,0,0,13">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition
-                                    Width="*" /><ColumnDefinition
-    Width="Auto" />
+                                    Width="*" />
+                                <ColumnDefinition
+                                    Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 VerticalAlignment="Center"
@@ -63,8 +64,9 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition
-                                                Width="36" /><ColumnDefinition
-    Width="*" />
+                                                Width="36" />
+                                            <ColumnDefinition
+                                                Width="*" />
                                             <ColumnDefinition
                                                 Width="Auto" />
                                         </Grid.ColumnDefinitions>
@@ -73,13 +75,18 @@
                                             Height="30"
                                             CornerRadius="7"
                                             Background="{DynamicResource AccentMutedBrush}">
-                                            <TextBlock
+                                            <Path
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
-                                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                                FontSize="16"
-                                                Foreground="{DynamicResource AccentTextBrush}"
-                                                Text="{x:Static icons:LauncherIcons.User}" />
+                                                Width="16"
+                                                Height="16"
+                                                Data="{x:Static icons:LauncherIcons.User}"
+                                                Stroke="{DynamicResource AccentTextBrush}"
+                                                StrokeThickness="1.5"
+                                                StrokeStartLineCap="Round"
+                                                StrokeEndLineCap="Round"
+                                                StrokeLineJoin="Round"
+                                                Stretch="Uniform" />
                                         </Border>
                                         <StackPanel
                                             Grid.Column="1"
@@ -174,8 +181,9 @@
                                     Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition
-                                            Width="*" /><ColumnDefinition
-    Width="8" />
+                                            Width="*" />
+                                        <ColumnDefinition
+                                            Width="8" />
                                         <ColumnDefinition
                                             Width="*" />
                                     </Grid.ColumnDefinitions>
@@ -227,8 +235,9 @@
                                     Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition
-                                            Width="*" /><ColumnDefinition
-    Width="8" />
+                                            Width="*" />
+                                        <ColumnDefinition
+                                            Width="8" />
                                         <ColumnDefinition
                                             Width="*" />
                                     </Grid.ColumnDefinitions>
@@ -287,7 +296,7 @@
                                     Height="13"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    Data="{x:Static icons:LauncherIcons.About}"
+                                    Data="{x:Static icons:LauncherIcons.Info}"
                                     Stroke="{DynamicResource AccentTextBrush}"
                                     StrokeThickness="1.3"
                                     Stretch="Uniform" />

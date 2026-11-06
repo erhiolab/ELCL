@@ -34,11 +34,11 @@ internal static class ShellRouteCatalog
 
         // 设置
         LaunchSettingsPage launchSettingsPage = new();
-        SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.LaunchSettings, CanReset: true);
+        SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.Launch, CanReset: true);
         PersonalizationPage personalizationPage = new();
         SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true);
         DownloadSettingsPage downloadSettingsPage = new();
-        SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.DownloadSettings, CanReset: true);
+        SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.Download, CanReset: true);
         OtherSettingsPage otherSettingsPage = new();
         SectionSidebarItem otherItem = new("sidebar.other", LauncherIcons.More);
         DebugSettingsPage debugSettingsPage = new();
@@ -96,7 +96,7 @@ internal static class ShellRouteCatalog
         };
 
         // 更多
-        SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.About);
+        SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.Info);
         SectionSidebarItem toolboxItem = new("sidebar.toolbox", LauncherIcons.Toolbox);
         SectionSidebarView moreSidebar = new(aboutItem, toolboxItem);
         AboutPage aboutPage = new();

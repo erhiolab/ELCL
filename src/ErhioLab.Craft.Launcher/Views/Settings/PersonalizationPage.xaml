@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Settings.PersonalizationPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -142,13 +142,17 @@
                                 Style="{StaticResource ThemeChoiceStyle}">
                                 <StackPanel
                                     Orientation="Horizontal">
-                                    <TextBlock
+                                    <Path
                                         Width="28"
                                         VerticalAlignment="Center"
-                                        FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                        FontSize="19"
-                                        Foreground="{DynamicResource AccentTextBrush}"
-                                        Text="{x:Static icons:LauncherIcons.DayTheme}" />
+                                        Height="19"
+                                        Data="{x:Static icons:LauncherIcons.DayTheme}"
+                                        Stroke="{DynamicResource AccentTextBrush}"
+                                        StrokeThickness="1.5"
+                                        StrokeStartLineCap="Round"
+                                        StrokeEndLineCap="Round"
+                                        StrokeLineJoin="Round"
+                                        Stretch="Uniform" />
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         FontSize="12"
@@ -162,13 +166,17 @@
                                 Style="{StaticResource ThemeChoiceStyle}">
                                 <StackPanel
                                     Orientation="Horizontal">
-                                    <TextBlock
+                                    <Path
                                         Width="28"
                                         VerticalAlignment="Center"
-                                        FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                        FontSize="19"
-                                        Foreground="{DynamicResource AccentTextBrush}"
-                                        Text="{x:Static icons:LauncherIcons.NightTheme}" />
+                                        Height="19"
+                                        Data="{x:Static icons:LauncherIcons.NightTheme}"
+                                        Stroke="{DynamicResource AccentTextBrush}"
+                                        StrokeThickness="1.5"
+                                        StrokeStartLineCap="Round"
+                                        StrokeEndLineCap="Round"
+                                        StrokeLineJoin="Round"
+                                        Stretch="Uniform" />
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         FontSize="12"

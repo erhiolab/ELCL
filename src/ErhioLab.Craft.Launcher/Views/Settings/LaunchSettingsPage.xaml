@@ -158,10 +158,16 @@
                                                 Height="30"
                                                 Margin="3,0"
                                                 Click="Remove_Click"
-                                                Content="×"
                                                 Style="{StaticResource SecondaryActionStyle}"
                                                 Tag="{Binding}"
-                                                ToolTip="{DynamicResource I18n.common.removeFromList}" />
+                                                ToolTip="{DynamicResource I18n.common.removeFromList}">
+                                                <Path
+                                                    Width="12"
+                                                    Height="12"
+                                                    Data="{x:Static icons:LauncherIcons.Close}"
+                                                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                    StrokeThickness="1.5" />
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

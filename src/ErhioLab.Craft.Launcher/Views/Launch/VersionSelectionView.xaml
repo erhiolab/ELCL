@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionSelectionView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -138,10 +138,16 @@
                             <TranslateTransform
                                 X="5" />
                         </Button.RenderTransform>
-                        <TextBlock
-                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                            FontSize="14"
-                            Text="{x:Static icons:LauncherIcons.Settings}" />
+                        <Path
+                            Width="14"
+                            Height="14"
+                            Data="{x:Static icons:LauncherIcons.Settings}"
+                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                            StrokeThickness="1.5"
+                            StrokeStartLineCap="Round"
+                            StrokeEndLineCap="Round"
+                            StrokeLineJoin="Round"
+                            Stretch="Uniform" />
                     </Button>
                 </Grid>
             </Border>
@@ -267,11 +273,55 @@
                             FontSize="13"
                             FontWeight="Medium"
                             Text="{Binding Version.Id}" />
-                        <TextBlock
-                            Margin="0,2,0,0"
-                            FontSize="10"
-                            Foreground="{DynamicResource TextMutedBrush}"
-                            Text="{Binding Description}" />
+                        <StackPanel
+                            Margin="0,5,0,0"
+                            Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{Binding StatusText}" />
+                            <Border
+                                Margin="0,0,6,0"
+                                Padding="6,2"
+                                Background="{DynamicResource AccentMutedBrush}"
+                                CornerRadius="4">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasParsedVersion}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock
+                                    FontSize="10"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding GameBadge}" />
+                            </Border>
+                            <Border
+                                Padding="6,2"
+                                Background="{DynamicResource AccentMutedBrush}"
+                                CornerRadius="4">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasLoader}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock
+                                    FontSize="10"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding LoaderBadge}" />
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
                     <StackPanel
                         x:Name="VersionActions"
@@ -284,17 +334,31 @@
                             Style="{StaticResource VersionActionStyle}"
                             Tag="{Binding}"
                             ToolTip="{DynamicResource I18n.versionSelector.deleteVersion}">
-                            <TextBlock
-                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                Text="&#xE74D;" />
+                            <Path
+                                Width="15"
+                                Height="15"
+                                Data="{x:Static icons:LauncherIcons.Delete}"
+                                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                                StrokeThickness="1.5"
+                                StrokeStartLineCap="Round"
+                                StrokeEndLineCap="Round"
+                                StrokeLineJoin="Round"
+                                Stretch="Uniform" />
                         </Button>
                         <Button
                             IsEnabled="False"
                             Style="{StaticResource VersionActionStyle}"
                             ToolTip="{DynamicResource I18n.versionSelector.versionSettingsUnavailable}">
-                            <TextBlock
-                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                Text="{x:Static icons:LauncherIcons.Settings}" />
+                            <Path
+                                Width="15"
+                                Height="15"
+                                Data="{x:Static icons:LauncherIcons.Settings}"
+                                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                                StrokeThickness="1.5"
+                                StrokeStartLineCap="Round"
+                                StrokeEndLineCap="Round"
+                                StrokeLineJoin="Round"
+                                Stretch="Uniform" />
                         </Button>
                     </StackPanel>
                 </Grid>

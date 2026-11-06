@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Download.VanillaVersionsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -142,10 +142,16 @@
                                     MaxWidth="440"
                                     Content="{Binding TooltipText}" />
                             </Button.ToolTip>
-                            <TextBlock
-                                FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                                FontSize="15"
-                                Text="&#xE946;" />
+                            <Path
+                                Width="15"
+                                Height="15"
+                                Data="{x:Static icons:LauncherIcons.Info}"
+                                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                                StrokeThickness="1.5"
+                                StrokeStartLineCap="Round"
+                                StrokeEndLineCap="Round"
+                                StrokeLineJoin="Round"
+                                Stretch="Uniform" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -172,12 +178,17 @@
                         <ColumnDefinition
                             Width="28" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock
+                    <Path
                         VerticalAlignment="Center"
-                        FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                        FontSize="15"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{x:Static icons:LauncherIcons.Search}" />
+                        Width="15"
+                        Height="15"
+                        Data="{x:Static icons:LauncherIcons.Search}"
+                        Stroke="{DynamicResource TextMutedBrush}"
+                        StrokeThickness="1.5"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"
+                        Stretch="Uniform" />
                     <Grid
                         Grid.Column="1">
                         <TextBox
@@ -203,10 +214,16 @@
                         Style="{StaticResource VersionActionStyle}"
                         ToolTip="{DynamicResource I18n.versionCatalog.clearSearch}"
                         Visibility="Collapsed">
-                        <TextBlock
-                            FontFamily="{x:Static icons:LauncherIcons.GlyphFont}"
-                            FontSize="12"
-                            Text="{x:Static icons:LauncherIcons.Close}" />
+                        <Path
+                            Width="12"
+                            Height="12"
+                            Data="{x:Static icons:LauncherIcons.Close}"
+                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                            StrokeThickness="1.5"
+                            StrokeStartLineCap="Round"
+                            StrokeEndLineCap="Round"
+                            StrokeLineJoin="Round"
+                            Stretch="Uniform" />
                     </Button>
                 </Grid>
             </Border>
@@ -238,20 +255,20 @@
                                     Height="0"
                                     ClipToBounds="True"
                                     Loaded="GroupContent_Loaded">
-                                <ListBox
-                                    MaxHeight="430"
-                                    Margin="12,0,12,12"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Foreground="{DynamicResource TextBrush}"
-                                    ItemTemplate="{StaticResource VersionTemplate}"
-                                    ItemsSource="{Binding Versions}"
-                                    SelectionChanged="VersionList_SelectionChanged"
-                                    ScrollViewer.CanContentScroll="True"
-                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                    VirtualizingPanel.IsVirtualizing="True"
-                                    VirtualizingPanel.VirtualizationMode="Recycling"
-                                    ItemContainerStyle="{StaticResource PlainListBoxItemStyle}" />
+                                    <ListBox
+                                        MaxHeight="430"
+                                        Margin="12,0,12,12"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        ItemTemplate="{StaticResource VersionTemplate}"
+                                        ItemsSource="{Binding Versions}"
+                                        SelectionChanged="VersionList_SelectionChanged"
+                                        ScrollViewer.CanContentScroll="True"
+                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        VirtualizingPanel.IsVirtualizing="True"
+                                        VirtualizingPanel.VirtualizationMode="Recycling"
+                                        ItemContainerStyle="{StaticResource PlainListBoxItemStyle}" />
                                 </Border>
                             </StackPanel>
                         </Border>
