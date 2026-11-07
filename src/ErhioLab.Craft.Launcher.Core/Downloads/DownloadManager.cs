@@ -168,7 +168,7 @@ public sealed class DownloadManager : IAsyncDisposable
                 AttemptCounter attemptBytes = new();
                 try
                 {
-                    // 分段连接失败后改用普通 GET，避免持续触发同一站点的连接限制.
+                    // 分段连接失败后改用普通 GET, 避免持续触发同一站点的连接限制.
                     FileProbe probe = attempt == 0 && file.ExpectedSize is not <= MinimumSegmentSize
                         ? await ProbeWithConnectionAsync(source, connections, cancellationToken).ConfigureAwait(false)
                         : new FileProbe(file.ExpectedSize, false);

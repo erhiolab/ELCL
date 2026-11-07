@@ -11,7 +11,7 @@ public sealed record LauncherSettings
     /// <summary>当前明暗主题.</summary>
     public LauncherTheme Theme { get; init; } = LauncherTheme.Day;
 
-    /// <summary>界面语言代码，对应 Languages 下的 JSON 文件名.</summary>
+    /// <summary>界面语言代码, 对应 Languages 下的 JSON 文件名.</summary>
     public string Language { get; init; } = LocalizationManager.DefaultLanguage;
 
     /// <summary>六位 RGB 主题色, 默认值为 #80CEFF.</summary>
@@ -29,7 +29,7 @@ public sealed record LauncherSettings
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;
 
-    /// <summary>游戏文件下载的优先来源，另一来源在失败时回退.</summary>
+    /// <summary>游戏文件下载的优先来源, 另一来源在失败时回退.</summary>
     public VersionListSource FileDownloadSource { get; init; } = VersionListSource.OfficialFirst;
 
     /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
@@ -66,7 +66,7 @@ public sealed record LauncherSettings
         string? selectedFolderPath = NormalizePath(SelectedGameFolderPath);
         string? selectedVersionPath = NormalizePath(SelectedVersionPath);
         GameFolderSetting[] gameFolders = ValidGameFolders(GameFolders).DistinctBy(folder => folder.Path, StringComparer.OrdinalIgnoreCase).ToArray();
-        // 旧配置只在顶层保存当前版本；首次读取时把它归入对应文件夹.
+        // 旧配置只在顶层保存当前版本; 首次读取时把它归入对应文件夹.
         if (selectedFolderPath is not null && selectedVersionPath is not null)
         {
             gameFolders = gameFolders.Select(folder =>

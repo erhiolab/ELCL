@@ -1,0 +1,269 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.AccountAppearanceView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch">
+    <Border
+        Padding="16"
+        Style="{StaticResource PanelCardStyle}">
+        <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    FontSize="15"
+                    FontWeight="SemiBold"
+                    Foreground="{DynamicResource TextBrush}"
+                    Text="{DynamicResource I18n.account.skinsAndCapes}" />
+                <TextBlock
+                    x:Name="AccountAppearanceNameText"
+                    Grid.Column="1"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextTrimming="CharacterEllipsis" />
+            </Grid>
+
+            <Grid
+                Height="316"
+                Margin="0,15,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="2*"
+                        MinWidth="180" />
+                    <ColumnDefinition
+                        Width="12" />
+                    <ColumnDefinition
+                        Width="1.2*"
+                        MinWidth="120" />
+                    <ColumnDefinition
+                        Width="12" />
+                    <ColumnDefinition
+                        Width="2.2*"
+                        MinWidth="200" />
+                </Grid.ColumnDefinitions>
+
+                <Border
+                    Grid.Column="0"
+                    Background="{DynamicResource InkBrush}"
+                    BorderBrush="{DynamicResource LineSoftBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    ClipToBounds="True">
+                    <Grid>
+                        <local:SkinModelPreview
+                            x:Name="ModelPreview" />
+                        <TextBlock
+                            x:Name="ModelEmptyText"
+                            Margin="14"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{DynamicResource I18n.account.noSkinPreview}"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                        <Button
+                            x:Name="ResetModelPreviewButton"
+                            Margin="8"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="{DynamicResource InkRaisedBrush}"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            AutomationProperties.Name="{DynamicResource I18n.account.resetPreview}"
+                            Click="ResetModelPreview_Click"
+                            IsEnabled="False"
+                            Style="{StaticResource VersionActionStyle}"
+                            ToolTip="{DynamicResource I18n.account.resetPreview}">
+                            <Path
+                                Width="14"
+                                Height="14"
+                                Data="{x:Static icons:LauncherIcons.Reset}"
+                                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                StrokeThickness="1.6"
+                                StrokeStartLineCap="Round"
+                                StrokeEndLineCap="Round"
+                                StrokeLineJoin="Round"
+                                Stretch="Uniform" />
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Border
+                    Grid.Column="2"
+                    Background="{DynamicResource InkBrush}"
+                    BorderBrush="{DynamicResource LineSoftBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <Grid
+                        Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition
+                                Height="Auto" />
+                            <RowDefinition
+                                Height="*" />
+                            <RowDefinition
+                                Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{DynamicResource I18n.account.capePreview}" />
+                        <Grid
+                            Grid.Row="1">
+                            <Image
+                                x:Name="CapePreviewImage"
+                                Width="100"
+                                MaxHeight="238"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                SnapsToDevicePixels="True"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                x:Name="CapeEmptyText"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{DynamicResource I18n.account.noCapePreview}"
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                        </Grid>
+                        <TextBlock
+                            x:Name="CapeNameText"
+                            Grid.Row="2"
+                            HorizontalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </Border>
+
+                <StackPanel
+                    Grid.Column="4">
+                    <TextBlock
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource TextBrush}"
+                        Text="{DynamicResource I18n.account.skinSettings}" />
+                    <Button
+                        x:Name="UploadSkinButton"
+                        Margin="0,9,0,0"
+                        Content="{DynamicResource I18n.account.uploadSkin}"
+                        Click="UploadSkin_Click"
+                        IsEnabled="False"
+                        Style="{StaticResource AccountSmallActionStyle}" />
+                    <TextBlock
+                        Margin="0,17,0,7"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.account.skinModel}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="8" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <RadioButton
+                            x:Name="ClassicModelButton"
+                            Content="{DynamicResource I18n.account.classicModel}"
+                            GroupName="AccountSkinModel"
+                            Checked="ModelChoice_Changed"
+                            IsChecked="True"
+                            IsEnabled="False"
+                            Style="{StaticResource AccountModelChoiceStyle}" />
+                        <RadioButton
+                            x:Name="SlimModelButton"
+                            Grid.Column="2"
+                            Content="{DynamicResource I18n.account.slimModel}"
+                            GroupName="AccountSkinModel"
+                            Checked="ModelChoice_Changed"
+                            IsEnabled="False"
+                            Style="{StaticResource AccountModelChoiceStyle}" />
+                    </Grid>
+                    <Button
+                        x:Name="ApplyModelButton"
+                        Margin="0,8,0,0"
+                        Content="{DynamicResource I18n.account.applyModel}"
+                        Click="ApplyModel_Click"
+                        IsEnabled="False"
+                        Style="{StaticResource AccountSmallActionStyle}" />
+                    <Grid
+                        Margin="0,13,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{DynamicResource I18n.account.capeSelection}" />
+                        <CheckBox
+                            x:Name="ElytraPreviewCheckBox"
+                            Grid.Column="1"
+                            Height="24"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            Content="{DynamicResource I18n.account.previewElytra}"
+                            Checked="ElytraPreview_Changed"
+                            Unchecked="ElytraPreview_Changed"
+                            IsEnabled="False"
+                            Style="{StaticResource AccountPreviewToggleStyle}" />
+                    </Grid>
+                    <ComboBox
+                        x:Name="CapeComboBox"
+                        IsEnabled="False"
+                        MaxDropDownHeight="320"
+                        SelectionChanged="CapeComboBox_SelectionChanged">
+                        <ComboBox.Style>
+                            <Style
+                                TargetType="ComboBox"
+                                BasedOn="{StaticResource FormComboBoxStyle}">
+                                <Setter Property="Height" Value="56" />
+                            </Style>
+                        </ComboBox.Style>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="38" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        Width="30"
+                                        Height="44"
+                                        HorizontalAlignment="Left"
+                                        Background="{DynamicResource InkRaisedBrush}"
+                                        CornerRadius="3">
+                                        <Image
+                                            Source="{Binding Thumbnail}"
+                                            RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                            SnapsToDevicePixels="True"
+                                            Stretch="Uniform" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button
+                        x:Name="ApplyCapeButton"
+                        Margin="0,8,0,0"
+                        Content="{DynamicResource I18n.account.applyCape}"
+                        Click="ApplyCape_Click"
+                        IsEnabled="False"
+                        Style="{StaticResource AccountSmallActionStyle}" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

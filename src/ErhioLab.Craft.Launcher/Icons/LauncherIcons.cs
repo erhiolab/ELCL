@@ -52,6 +52,9 @@ public static class LauncherIcons
     /// <summary>提示信息.</summary>
     public static readonly Geometry Info = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 9,8 L 9,13 M 9,5 L 9,5.2");
 
+    /// <summary>已选中.</summary>
+    public static readonly Geometry Check = Parse("M 3,9 L 7,13 L 15,4");
+
     /// <summary>顶部导航的四宫格图标.</summary>
     public static readonly Geometry More = Parse("M 0,0 H 5 V 5 H 0 Z M 8,0 H 13 V 5 H 8 Z M 0,8 H 5 V 13 H 0 Z M 8,8 H 13 V 13 H 8 Z");
 

@@ -8,7 +8,7 @@
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <Grid
-            Margin="24">
+            MinHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition
                     Width="*"
@@ -19,13 +19,29 @@
                     Width="260" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel
-                Grid.Column="0">
+            <Grid
+                Grid.Column="0"
+                Margin="24,24,0,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition
+                        Height="*"
+                        MinHeight="180" />
+                    <RowDefinition
+                        Height="Auto" />
+                </Grid.RowDefinitions>
                 <Border
+                    Grid.Row="0"
                     Padding="16"
                     Style="{StaticResource PanelCardStyle}">
-                    <StackPanel>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition
+                                Height="Auto" />
+                            <RowDefinition
+                                Height="*" />
+                        </Grid.RowDefinitions>
                         <Grid
+                            Grid.Row="0"
                             Margin="0,0,0,13">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition
@@ -47,12 +63,14 @@
                         </Grid>
                         <TextBlock
                             x:Name="EmptyHint"
+                            Grid.Row="1"
                             Padding="12,24"
                             HorizontalAlignment="Center"
                             Foreground="{DynamicResource TextMutedBrush}"
                             Text="{DynamicResource I18n.account.noAccounts}" />
                         <ListBox
                             x:Name="AccountsList"
+                            Grid.Row="1"
                             BorderThickness="0"
                             Background="Transparent"
                             Foreground="{DynamicResource TextBrush}"
@@ -134,30 +152,26 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </StackPanel>
+                    </Grid>
                 </Border>
 
                 <Border
-                    Margin="0,16,0,0"
-                    Padding="16"
-                    Style="{StaticResource PanelCardStyle}">
-                    <StackPanel>
-                        <TextBlock
-                            FontSize="15"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextBrush}"
-                            Text="{DynamicResource I18n.account.skinsAndCapes}" />
-                        <TextBlock
-                            Margin="0,8,0,0"
-                            Foreground="{DynamicResource TextMutedBrush}"
-                            Text="{DynamicResource I18n.account.skinPreviewPlaceholder}"
-                            TextWrapping="Wrap" />
-                    </StackPanel>
+                    x:Name="AppearanceHost"
+                    Grid.Row="1"
+                    Height="0"
+                    ClipToBounds="True"
+                    Visibility="Collapsed">
+                    <local:AccountAppearanceView
+                        x:Name="AppearanceView"
+                        Margin="0,16,0,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top" />
                 </Border>
-            </StackPanel>
+            </Grid>
 
             <StackPanel
-                Grid.Column="2">
+                Grid.Column="2"
+                Margin="0,24,24,24">
                 <Border
                     Padding="16"
                     Style="{StaticResource PanelCardStyle}">

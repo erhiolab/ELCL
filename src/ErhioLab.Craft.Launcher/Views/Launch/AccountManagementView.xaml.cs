@@ -29,6 +29,9 @@ public partial class AccountManagementView
 {
     private bool _addFormOpen;
     private bool _microsoftPanelOpen;
+    private bool _refreshingAccounts;
+    private bool _appearanceVisible;
+    private int _appearanceTransition;
     private CancellationTokenSource? _loginCancellation;
     private MicrosoftDeviceAuthorization? _deviceAuthorization;
     private string? _microsoftStatusKey;
@@ -63,15 +66,27 @@ public partial class AccountManagementView
         AccountRow[] rows = App.Accounts.AllAccounts
             .Select(account => new AccountRow(account, account.Uuid == App.Accounts.SelectedUuid, account.IsMicrosoft ? App.Skins.GetAvatar(account.Uuid) : null))
             .ToArray();
-        AccountsList.ItemsSource = null;
-        AccountsList.ItemsSource = rows;
-        AccountCountText.Text = string.Format(LocalizationManager.Get("account.count"), rows.Length);
-        EmptyHint.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        AccountsList.SelectedItem = rows.FirstOrDefault(row => row.Uuid == focusedUuid);
+        _refreshingAccounts = true;
+        try
+        {
+            AccountsList.ItemsSource = null;
+            AccountsList.ItemsSource = rows;
+            AccountCountText.Text = string.Format(LocalizationManager.Get("account.count"), rows.Length);
+            EmptyHint.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            AccountsList.SelectedItem = rows.FirstOrDefault(row => row.Uuid == focusedUuid);
+        }
+        finally
+        {
+            _refreshingAccounts = false;
+        }
         RefreshSelection();
     }
 
-    internal void FocusCurrentAccount() => RefreshAccounts(App.Accounts.SelectedUuid);
+    internal void FocusCurrentAccount()
+    {
+        App.Logger.Information("Accounts", "已打开账户管理.");
+        RefreshAccounts(App.Accounts.SelectedUuid);
+    }
 
     private void SetMicrosoftStatus(string key, object? argument = null)
     {
@@ -91,6 +106,7 @@ public partial class AccountManagementView
     {
         if (AccountsList.SelectedItem is not AccountRow row)
         {
+            SetAppearanceVisible(false);
             SelectedNameText.Text = LocalizationManager.Get("account.noneSelected");
             SelectedInfoIcon.Visibility = Visibility.Collapsed;
             SelectedInfoIcon.ToolTip = null;
@@ -98,6 +114,12 @@ public partial class AccountManagementView
             return;
         }
 
+        if (row.Account.IsMicrosoft)
+        {
+            AppearanceView.ShowAccount(row.Account);
+            SetAppearanceVisible(true);
+        }
+        else SetAppearanceVisible(false);
         SelectedNameText.Text = row.UserName;
         SelectedInfoIcon.Visibility = Visibility.Visible;
         SelectedInfoIcon.ToolTip = row.Account.IsMicrosoft
@@ -107,7 +129,59 @@ public partial class AccountManagementView
         DeleteButton.IsEnabled = true;
     }
 
-    private void AccountsList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshSelection();
+    private void AccountsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingAccounts) return;
+        if (AccountsList.SelectedItem is AccountRow row)
+            App.Logger.Information("Accounts", $"已选中账户: {row.UserName} ({row.Uuid:N}), 类型={(row.Account.IsMicrosoft ? "Microsoft" : "离线")}.");
+        RefreshSelection();
+    }
+
+    private void SetAppearanceVisible(bool visible)
+    {
+        if (_appearanceVisible == visible) return;
+        _appearanceVisible = visible;
+        int transition = ++_appearanceTransition;
+        AppearanceView.IsHitTestVisible = visible;
+        if (visible) AppearanceHost.Visibility = Visibility.Visible;
+
+        if (!IsLoaded)
+        {
+            AppearanceHost.Height = visible ? double.NaN : 0;
+            AppearanceHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            if (!visible) AppearanceView.ShowAccount(null);
+            return;
+        }
+
+        if (visible)
+        {
+            double width = AppearanceHost.ActualWidth > 0 ? AppearanceHost.ActualWidth : Math.Max(540, AccountsList.ActualWidth + 32);
+            AppearanceView.Measure(new Size(width, double.PositiveInfinity));
+        }
+
+        // The second grid row stays at the bottom of the window. Growing its height
+        // moves the drawer's top edge upward and gives the account list less room.
+        double currentHeight = AppearanceHost.ActualHeight;
+        AppearanceHost.BeginAnimation(HeightProperty, null);
+        AppearanceHost.Height = currentHeight;
+        var drawer = new DoubleAnimation(currentHeight, visible ? AppearanceView.DesiredSize.Height : 0,
+            TimeSpan.FromMilliseconds(320))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        drawer.Completed += (_, _) =>
+        {
+            if (transition != _appearanceTransition) return;
+            AppearanceHost.BeginAnimation(HeightProperty, null);
+            AppearanceHost.Height = _appearanceVisible ? double.NaN : 0;
+            if (!_appearanceVisible)
+            {
+                AppearanceHost.Visibility = Visibility.Collapsed;
+                AppearanceView.ShowAccount(null);
+            }
+        };
+        AppearanceHost.BeginAnimation(HeightProperty, drawer);
+    }
 
     private void AccountsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
@@ -122,6 +196,7 @@ public partial class AccountManagementView
     private async void StartMicrosoftLogin_Click(object sender, RoutedEventArgs e)
     {
         if (_loginCancellation is not null) return;
+        App.Logger.Information("Accounts", "开始 Microsoft 设备码登录.");
         CancellationTokenSource cancellation = new();
         _loginCancellation = cancellation;
         _deviceAuthorization = null;
@@ -134,6 +209,7 @@ public partial class AccountManagementView
             string clientId = App.Services.MicrosoftClientId;
             MicrosoftDeviceAuthorization authorization = await _microsoftAuth.StartDeviceAuthorizationAsync(clientId, cancellation.Token);
             _deviceAuthorization = authorization;
+            App.Logger.Information("Accounts", "已获取 Microsoft 设备码, 等待用户授权.");
             MicrosoftCodeText.Text = authorization.UserCode;
             CopyMicrosoftCodeButton.IsEnabled = OpenMicrosoftPageButton.IsEnabled = true;
             bool copied = TryCopyCode();
@@ -149,6 +225,7 @@ public partial class AccountManagementView
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
+            App.Logger.Information("Accounts", "已取消 Microsoft 设备码登录.");
             HideMicrosoftPanel();
         }
         catch (Exception exception)
@@ -197,10 +274,13 @@ public partial class AccountManagementView
         try
         {
             Clipboard.SetText(MicrosoftCodeText.Text);
+            App.Logger.Information("Accounts", "Microsoft 设备码已复制到剪贴板.");
             return true;
         }
         catch (Exception exception) when (exception is System.Runtime.InteropServices.ExternalException or InvalidOperationException)
         {
+            App.Logger.Error("Accounts", "复制 Microsoft 设备码失败.", exception);
+            LauncherToasts.Error(LocalizationManager.Get("account.copyFailed"));
             return false;
         }
     }
@@ -213,10 +293,13 @@ public partial class AccountManagementView
         try
         {
             Process.Start(new ProcessStartInfo(_deviceAuthorization.VerificationUri.AbsoluteUri) { UseShellExecute = true });
+            App.Logger.Information("Accounts", "已打开 Microsoft 设备码登录页面.");
         }
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
+            App.Logger.Error("Accounts", "打开 Microsoft 设备码登录页面失败.", exception);
             SetMicrosoftStatus("account.openFailed", _deviceAuthorization.VerificationUri);
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("account.openFailed"), _deviceAuthorization.VerificationUri));
         }
     }
 
@@ -229,6 +312,7 @@ public partial class AccountManagementView
         }
 
         _addFormOpen = true;
+        App.Logger.Information("Accounts", "已打开添加离线账户表单.");
         ValidationText.Visibility = Visibility.Collapsed;
         AddForm.Measure(new Size(AddFormHost.ActualWidth, double.PositiveInfinity));
         AnimateFormHeight(AddForm.DesiredSize.Height);
@@ -240,6 +324,7 @@ public partial class AccountManagementView
     {
         if (!_addFormOpen) return;
         _addFormOpen = false;
+        App.Logger.Information("Accounts", "已关闭添加离线账户表单.");
         AnimateFormHeight(0);
         AnimateForm(0, -6);
         UserNameBox.Clear();
@@ -290,19 +375,22 @@ public partial class AccountManagementView
         {
             if (!App.Accounts.TryAdd(name, out string error))
             {
+                App.Logger.Warning("Accounts", $"添加离线账户未通过验证: {error}");
                 ValidationText.Text = error;
                 ValidationText.Visibility = Visibility.Visible;
+                LauncherToasts.Error(error);
                 return;
             }
 
             App.Logger.Information("Accounts", $"已添加离线账户: {name}.");
             CancelAdd_Click(sender, e);
             RefreshAccounts(App.Accounts.Accounts[^1].Uuid);
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("account.offlineAdded"), name));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Accounts", "保存离线账户失败.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("account.addFailed"), exception.Message);
+            LauncherToasts.Error($"{LocalizationManager.Get("account.addFailed")}: {exception.Message}");
         }
     }
 
@@ -319,11 +407,12 @@ public partial class AccountManagementView
             App.Accounts.Select(row.Uuid);
             App.Logger.Information("Accounts", $"已切换账户: {row.UserName}.");
             RefreshAccounts(row.Uuid);
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("account.accountSelected"), row.UserName));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Accounts", "切换账户失败.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("account.switchFailed"), exception.Message);
+            LauncherToasts.Error($"{LocalizationManager.Get("account.switchFailed")}: {exception.Message}");
         }
     }
 
@@ -335,13 +424,14 @@ public partial class AccountManagementView
             if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("account.deleteOfflineTitle"), string.Format(LocalizationManager.Get("account.confirmDelete"), row.UserName), confirmText: LocalizationManager.Get("common.delete"))) return;
             App.Accounts.Remove(row.Uuid);
             if (row.Account.IsMicrosoft) App.Skins.RemoveCache(row.Uuid);
-            App.Logger.Information("Accounts", $"已删除离线账户: {row.UserName}.");
+            App.Logger.Information("Accounts", $"已删除账户: {row.UserName}.");
             RefreshAccounts(App.Accounts.SelectedUuid);
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("account.accountDeleted"), row.UserName));
         }
         catch (Exception exception)
         {
             App.Logger.Error("Accounts", "删除账户失败.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("account.deleteFailed"), exception.Message);
+            LauncherToasts.Error($"{LocalizationManager.Get("account.deleteFailed")}: {exception.Message}");
         }
     }
 }

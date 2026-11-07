@@ -49,3 +49,23 @@ if (active is not null)
 ```
 
 `GetActiveSkinAsync` 只选择档案中状态为 `ACTIVE` 的皮肤；没有时返回 `null`。Minecraft 档案有时返回 `http://textures.minecraft.net` 地址，Core 会将这个官方纹理域名改用 HTTPS。读取档案或下载图片遇到短暂连接故障、HTTP 408、429、5xx 时会有限重试。`DownloadSkinAsync` 要求 HTTPS、限制文件大小为 2 MiB，并检查 PNG 文件签名。Core 返回原始图片字节，不指定缓存目录，也不生成界面头像；调用方可以自行缓存并按需要裁剪头部。
+
+## 皮肤和披风管理
+
+`GetAppearanceAsync` 一次读取当前皮肤及账户拥有的披风。每件披风包含 ID、名称、纹理地址和是否正在使用；没有启用披风时，所有 `IsActive` 都是 `false`。`DownloadCapeAsync` 返回披风 PNG 的原始字节。
+
+```csharp
+MinecraftPlayerAppearance appearance = await skins.GetAppearanceAsync(session.MinecraftAccessToken);
+foreach (MinecraftPlayerCape cape in appearance.Capes)
+    Console.WriteLine($"{cape.Alias}: {(cape.IsActive ? "使用中" : "未使用")}");
+
+byte[] png = await File.ReadAllBytesAsync("my-skin.png");
+await skins.UploadSkinAsync(session.MinecraftAccessToken, png, "SLIM");
+
+MinecraftPlayerCape? chosen = appearance.Capes.FirstOrDefault();
+await skins.SetActiveCapeAsync(session.MinecraftAccessToken, chosen?.Id);
+```
+
+上传皮肤使用 Minecraft 档案接口，`variant` 只能是 `CLASSIC` 或 `SLIM`。上传前应检查图片尺寸；ELCLC 只检查 PNG 签名和 2 MiB 大小限制，最终是否接受由服务端决定。修改现有皮肤的模型需要将皮肤 PNG 以新 `variant` 重新上传。调用 `SetActiveCapeAsync` 时应传入当前账户拥有的披风 ID，服务端会校验所有权；传入 `null` 会取消装备披风。操作成功后重新读取档案，才能拿到最新的启用状态。
+
+这些方法只发请求，不保存令牌、皮肤或披风，也不处理预览和文件选择。令牌刷新、图片缓存与界面由调用方负责。

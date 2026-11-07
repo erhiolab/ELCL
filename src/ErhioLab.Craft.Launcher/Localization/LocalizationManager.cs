@@ -7,7 +7,7 @@ using System.Windows.Markup;
 
 namespace ErhioLab.Craft.Launcher.Localization;
 
-/// <summary>从构建内的 JSON 文件加载界面语言，并更新 WPF 动态资源.</summary>
+/// <summary>从构建内的 JSON 文件加载界面语言, 并更新 WPF 动态资源.</summary>
 public static class LocalizationManager
 {
     public const string DefaultLanguage = "zh_cn";
