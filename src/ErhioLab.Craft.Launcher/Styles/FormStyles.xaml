@@ -1,7 +1,128 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls">
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
+    <Style
+        TargetType="ToolTip"
+        BasedOn="{StaticResource {x:Type ToolTip}}">
+        <Setter
+            Property="TextBlock.TextAlignment"
+            Value="Left" />
+    </Style>
+
+    <Style
+        x:Key="FormCheckBoxStyle"
+        TargetType="CheckBox"
+        BasedOn="{StaticResource {x:Type CheckBox}}">
+        <Setter
+            Property="Foreground"
+            Value="{DynamicResource TextBrush}" />
+        <Setter
+            Property="FontSize"
+            Value="12" />
+        <Setter
+            Property="Margin"
+            Value="0,6,0,0" />
+    </Style>
+    <Style
+        x:Key="CardExpanderHeaderStyle"
+        TargetType="ToggleButton">
+        <Setter
+            Property="Height"
+            Value="72" />
+        <Setter
+            Property="Padding"
+            Value="20,0" />
+        <Setter
+            Property="FocusVisualStyle"
+            Value="{x:Null}" />
+        <Setter
+            Property="Cursor"
+            Value="Hand" />
+        <Setter
+            Property="Foreground"
+            Value="{DynamicResource TextBrush}" />
+        <Setter
+            Property="FontSize"
+            Value="16" />
+        <Setter
+            Property="FontWeight"
+            Value="SemiBold" />
+        <Setter
+            Property="Template">
+            <Setter.Value>
+                <ControlTemplate
+                    TargetType="ToggleButton">
+                    <Border
+                        Background="Transparent"
+                        Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="*" />
+                                <ColumnDefinition
+                                    Width="28" />
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter
+                                VerticalAlignment="Center" />
+                            <Path
+                                Grid.Column="1"
+                                Width="14"
+                                Height="14"
+                                VerticalAlignment="Center"
+                                Data="{x:Static icons:LauncherIcons.ChevronDown}"
+                                RenderTransformOrigin="0.5,0.5"
+                                Stroke="{TemplateBinding Foreground}"
+                                StrokeThickness="1.6"
+                                StrokeStartLineCap="Round"
+                                StrokeEndLineCap="Round"
+                                StrokeLineJoin="Round"
+                                Stretch="Uniform">
+                                <Path.RenderTransform>
+                                    <RotateTransform
+                                        x:Name="ChevronRotation" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger
+                            Property="IsChecked"
+                            Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ChevronRotation"
+                                            Storyboard.TargetProperty="Angle"
+                                            To="180"
+                                            Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase
+                                                    EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ChevronRotation"
+                                            Storyboard.TargetProperty="Angle"
+                                            To="0"
+                                            Duration="0:0:0.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <Style
         TargetType="ContentControl">
         <Setter
@@ -87,6 +208,27 @@
         <Setter
             Property="Foreground"
             Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style
+        x:Key="FormMultilineTextBoxStyle"
+        TargetType="TextBox"
+        BasedOn="{StaticResource FormTextBoxStyle}">
+        <Setter
+            Property="TextAlignment"
+            Value="Left" />
+        <Setter
+            Property="VerticalContentAlignment"
+            Value="Top" />
+        <Setter
+            Property="AcceptsReturn"
+            Value="True" />
+        <Setter
+            Property="TextWrapping"
+            Value="Wrap" />
+        <Setter
+            Property="VerticalScrollBarVisibility"
+            Value="Auto" />
     </Style>
 
     <Style

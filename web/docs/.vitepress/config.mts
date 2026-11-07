@@ -22,10 +22,18 @@ export default defineConfig({
         logo: "/logo.svg",
         nav: [
             { text: "首页", link: "/" },
+            { text: "启动器文档", link: "/launcher/advanced-options", activeMatch: "/launcher/" },
             { text: "核心库文档", link: "/core/README", activeMatch: "/core/" },
             { text: "GitHub", link: "https://github.com/erhiolab/ELCL" }
         ],
         sidebar: {
+            "/launcher/": [
+                {
+                    text: "ELCL 启动器", items: [
+                        { text: "高级启动选项", link: "/launcher/advanced-options" }
+                    ]
+                }
+            ],
             "/core/": [
                 {
                     text: "入门", items: [
@@ -39,6 +47,7 @@ export default defineConfig({
                         { text: "游戏版本列表", link: "/core/versions" },
                         { text: "模组加载器版本", link: "/core/loaders" },
                         { text: "Minecraft Wiki", link: "/core/wiki" },
+                        { text: "启动模板替换标记", link: "/core/launch-placeholders" },
                         { text: "离线玩家 UUID", link: "/core/offline-accounts" },
                         { text: "Microsoft 账户登录", link: "/core/microsoft-auth" }
                     ]

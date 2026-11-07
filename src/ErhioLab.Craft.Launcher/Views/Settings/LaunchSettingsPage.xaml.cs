@@ -17,7 +17,7 @@ using Microsoft.Win32;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>保存游戏启动预设、预览内存分配并管理本机 Java 列表.</summary>
+/// <summary>保存游戏启动预设/预览内存分配并管理本机 Java 列表.</summary>
 public partial class LaunchSettingsPage
 {
     private const int PreviewCount = 3;
@@ -37,7 +37,12 @@ public partial class LaunchSettingsPage
     {
         InitializeComponent();
         MoreJavaList.ItemTemplate = JavaList.ItemTemplate;
-        App.JavaCatalog.Changed += RefreshControls;
+        App.JavaCatalog.Changed += () =>
+        {
+            RefreshControls();
+            UpdateLaunchPreviews();
+        };
+        InitializeAdvancedControls();
         LocalizationManager.Changed += (_, _) =>
         {
             RefreshControls();
@@ -61,6 +66,7 @@ public partial class LaunchSettingsPage
 
     internal async Task ResetToDefaultsAsync()
     {
+        _launchTextSaveTimer.Stop();
         LauncherSettings defaults = new();
         if (!App.UpdateSettings(App.Settings with
             {
@@ -69,10 +75,20 @@ public partial class LaunchSettingsPage
                 GameWindowWidth = defaults.GameWindowWidth,
                 GameWindowHeight = defaults.GameWindowHeight,
                 AutoAllocateMemory = defaults.AutoAllocateMemory,
-                CustomMemoryPercent = defaults.CustomMemoryPercent
+                CustomMemoryPercent = defaults.CustomMemoryPercent,
+                GameWindowTitle = defaults.GameWindowTitle,
+                JvmArguments = defaults.JvmArguments,
+                GameArguments = defaults.GameArguments,
+                PreLaunchCommand = defaults.PreLaunchCommand,
+                WaitForPreLaunchCommand = defaults.WaitForPreLaunchCommand,
+                GarbageCollector = defaults.GarbageCollector,
+                DisableJavaLaunchWrapper = defaults.DisableJavaLaunchWrapper,
+                DisableLwjglUnsafeAgent = defaults.DisableLwjglUnsafeAgent,
+                PreferHighPerformanceGpu = defaults.PreferHighPerformanceGpu,
+                VerifyMicrosoftCertificates = defaults.VerifyMicrosoftCertificates
             })) return;
 
-        App.Logger.Information("Settings", "启动选项和内存分配已重置，继续重置并重新获取 Java 列表.");
+        App.Logger.Information("Settings", "启动选项和内存分配已重置, 继续重置并重新获取 Java 列表.");
         RefreshLaunchOptions();
         await App.JavaCatalog.ResetAsync();
     }
@@ -98,6 +114,7 @@ public partial class LaunchSettingsPage
             CustomMemoryButton.IsChecked = !settings.AutoAllocateMemory;
             MemoryPercentSlider.Value = settings.CustomMemoryPercent;
             MemoryPercentText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryPercent"), settings.CustomMemoryPercent);
+            RefreshAdvancedControls(settings);
         }
         finally
         {
@@ -122,7 +139,7 @@ public partial class LaunchSettingsPage
         if (_initializingLaunchOptions || ProcessPriorityBox.SelectedIndex < 0) return;
         GameProcessPriority priority = PriorityChoices[ProcessPriorityBox.SelectedIndex];
         if (priority == App.Settings.GamePriority) return;
-        SaveLaunchOptions(App.Settings with { GamePriority = priority }, $"游戏进程优先级已保存（待启动功能接入）: {priority}.");
+        SaveLaunchOptions(App.Settings with { GamePriority = priority }, $"游戏进程优先级已保存(待启动功能接入): {priority}.");
     }
 
     private void WindowModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -130,7 +147,7 @@ public partial class LaunchSettingsPage
         if (_initializingLaunchOptions || WindowModeBox.SelectedIndex < 0) return;
         GameWindowMode mode = WindowChoices[WindowModeBox.SelectedIndex];
         if (mode == App.Settings.WindowMode) return;
-        if (SaveLaunchOptions(App.Settings with { WindowMode = mode }, $"游戏窗口模式已保存（待启动功能接入）: {mode}."))
+        if (SaveLaunchOptions(App.Settings with { WindowMode = mode }, $"游戏窗口模式已保存(待启动功能接入): {mode}."))
             CustomSizeReveal.IsExpanded = mode == GameWindowMode.Custom;
     }
 
@@ -155,7 +172,7 @@ public partial class LaunchSettingsPage
         }
         if (width == App.Settings.GameWindowWidth && height == App.Settings.GameWindowHeight) return;
         SaveLaunchOptions(App.Settings with { GameWindowWidth = width, GameWindowHeight = height },
-            $"自定义游戏窗口尺寸已保存（待启动功能接入）: {width} x {height}.");
+            $"自定义游戏窗口尺寸已保存(待启动功能接入): {width} x {height}.");
     }
 
     private void MemoryMode_Checked(object sender, RoutedEventArgs e)
@@ -165,7 +182,7 @@ public partial class LaunchSettingsPage
         int percent = (int)Math.Round(MemoryPercentSlider.Value);
         if (automatic == App.Settings.AutoAllocateMemory && percent == App.Settings.CustomMemoryPercent) return;
         SaveLaunchOptions(App.Settings with { AutoAllocateMemory = automatic, CustomMemoryPercent = percent },
-            $"游戏内存分配模式已保存（待启动功能接入）: 自动={automatic}, 自定义可用内存占比={percent}%.");
+            $"游戏内存分配模式已保存(待启动功能接入): 自动={automatic}, 自定义可用内存占比={percent}%.");
         UpdateMemoryDisplay();
     }
 
@@ -213,6 +230,7 @@ public partial class LaunchSettingsPage
             }
         }
         UpdateMemoryDisplay(animate ? _memoryRefreshTimer.Interval : TimeSpan.Zero);
+        UpdateLaunchPreviews();
     }
 
     private void UpdateMemoryDisplay(TimeSpan? transition = null)

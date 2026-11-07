@@ -111,6 +111,33 @@
                             </StackPanel>
                         </Grid>
                     </controls:AnimatedReveal>
+                    <Grid
+                        Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.launchSettings.gameWindowTitle}" />
+                        <TextBox
+                            x:Name="GameWindowTitleBox"
+                            Grid.Column="1"
+                            MaxLength="512"
+                            KeyDown="LaunchTitle_KeyDown"
+                            LostFocus="LaunchText_LostFocus"
+                            TextChanged="LaunchText_TextChanged"
+                            Style="{StaticResource FormTextBoxStyle}"
+                            ToolTip="{DynamicResource I18n.launchSettings.gameWindowTitleHint}" />
+                    </Grid>
+                    <TextBlock
+                        x:Name="GameWindowTitlePreview"
+                        Margin="155,5,0,0"
+                        FontSize="11"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        TextWrapping="Wrap" />
                     <TextBlock
                         Margin="0,14,0,0"
                         FontSize="12"
@@ -399,6 +426,196 @@
                         Visibility="Collapsed" />
                 </StackPanel>
             </controls:LauncherCard>
+            <Border
+                Margin="0,14,0,0"
+                Padding="0"
+                Style="{StaticResource PanelCardStyle}">
+                <StackPanel>
+                    <ToggleButton
+                        x:Name="AdvancedOptionsToggle"
+                        Content="{DynamicResource I18n.launchSettings.advancedOptions}"
+                        Style="{StaticResource CardExpanderHeaderStyle}" />
+                    <controls:AnimatedReveal
+                        x:Name="AdvancedOptionsReveal"
+                        IsExpanded="{Binding IsChecked, ElementName=AdvancedOptionsToggle}">
+                        <StackPanel
+                            Margin="20,0,20,20">
+                            <Border
+                                Height="1"
+                                Margin="0,0,0,12"
+                                Background="{DynamicResource LineSoftBrush}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal">
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Text="{DynamicResource I18n.launchSettings.jvmArguments}" />
+                                    <Button
+                                        Click="ResetJvmArguments_Click"
+                                        Style="{StaticResource VersionActionStyle}"
+                                        ToolTip="{DynamicResource I18n.launchSettings.resetJvmArguments}">
+                                        <Path
+                                            Width="14"
+                                            Height="14"
+                                            Data="{x:Static icons:LauncherIcons.Reset}"
+                                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                            StrokeThickness="1.5"
+                                            StrokeStartLineCap="Round"
+                                            StrokeEndLineCap="Round"
+                                            StrokeLineJoin="Round"
+                                            Stretch="Uniform" />
+                                    </Button>
+                                </StackPanel>
+                                <TextBox
+                                    x:Name="JvmArgumentsBox"
+                                    Grid.Column="1"
+                                    Height="96"
+                                    MaxLength="16384"
+                                    GotKeyboardFocus="LaunchText_GotKeyboardFocus"
+                                    LostFocus="LaunchText_LostFocus"
+                                    TextChanged="LaunchText_TextChanged"
+                                    Style="{StaticResource FormMultilineTextBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.jvmArgumentsHint}" />
+                            </Grid>
+                            <Grid
+                                Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.launchSettings.gameArguments}" />
+                                <TextBox
+                                    x:Name="GameArgumentsBox"
+                                    Grid.Column="1"
+                                    MaxLength="16384"
+                                    GotKeyboardFocus="LaunchText_GotKeyboardFocus"
+                                    KeyDown="LaunchTitle_KeyDown"
+                                    LostFocus="LaunchText_LostFocus"
+                                    TextChanged="LaunchText_TextChanged"
+                                    Style="{StaticResource FormTextBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.gameArgumentsHint}" />
+                            </Grid>
+                            <Grid
+                                Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.launchSettings.preLaunchCommand}" />
+                                <TextBox
+                                    x:Name="PreLaunchCommandBox"
+                                    Grid.Column="1"
+                                    Height="72"
+                                    MaxLength="8192"
+                                    GotKeyboardFocus="LaunchText_GotKeyboardFocus"
+                                    LostFocus="LaunchText_LostFocus"
+                                    TextChanged="LaunchText_TextChanged"
+                                    Style="{StaticResource FormMultilineTextBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.preLaunchCommandHint}" />
+                            </Grid>
+                            <controls:AnimatedReveal
+                                x:Name="WaitForCommandReveal">
+                                <CheckBox
+                                    x:Name="WaitForCommandBox"
+                                    Margin="155,8,0,0"
+                                    Content="{DynamicResource I18n.launchSettings.waitForCommand}"
+                                    Checked="AdvancedChoice_Changed"
+                                    Unchecked="AdvancedChoice_Changed"
+                                    Style="{StaticResource FormCheckBoxStyle}" />
+                            </controls:AnimatedReveal>
+                            <Grid
+                                Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.launchSettings.garbageCollector}" />
+                                <ComboBox
+                                    x:Name="GarbageCollectorBox"
+                                    Grid.Column="1"
+                                    SelectionChanged="GarbageCollectorBox_SelectionChanged"
+                                    Style="{StaticResource FormComboBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.garbageCollectorHint}" />
+                            </Grid>
+                            <StackPanel
+                                Margin="0,8,0,0">
+                                <CheckBox
+                                    x:Name="DisableJavaWrapperBox"
+                                    Content="{DynamicResource I18n.launchSettings.disableJavaWrapper}"
+                                    Checked="AdvancedChoice_Changed"
+                                    Unchecked="AdvancedChoice_Changed"
+                                    Style="{StaticResource FormCheckBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.disableJavaWrapperHint}" />
+                                <CheckBox
+                                    x:Name="DisableLwjglAgentBox"
+                                    Content="{DynamicResource I18n.launchSettings.disableLwjglAgent}"
+                                    Checked="AdvancedChoice_Changed"
+                                    Unchecked="AdvancedChoice_Changed"
+                                    Style="{StaticResource FormCheckBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.disableLwjglAgentHint}" />
+                                <CheckBox
+                                    x:Name="HighPerformanceGpuBox"
+                                    Content="{DynamicResource I18n.launchSettings.highPerformanceGpu}"
+                                    Checked="AdvancedChoice_Changed"
+                                    Unchecked="AdvancedChoice_Changed"
+                                    Style="{StaticResource FormCheckBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.highPerformanceGpuHint}" />
+                                <CheckBox
+                                    x:Name="VerifyCertificatesBox"
+                                    Content="{DynamicResource I18n.launchSettings.verifyCertificates}"
+                                    Checked="AdvancedChoice_Changed"
+                                    Unchecked="AdvancedChoice_Changed"
+                                    Style="{StaticResource FormCheckBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.verifyCertificatesHint}" />
+                            </StackPanel>
+                            <controls:AnimatedReveal
+                                x:Name="PlaceholderPreviewReveal">
+                                <StackPanel
+                                    Margin="0,14,0,0">
+                                    <TextBlock
+                                        Margin="0,0,0,6"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        Text="{DynamicResource I18n.launchSettings.placeholderPreview}" />
+                                    <TextBox
+                                        x:Name="PlaceholderPreviewBox"
+                                        Height="Auto"
+                                        MinHeight="36"
+                                        MaxHeight="120"
+                                        IsReadOnly="True"
+                                        IsTabStop="False"
+                                        Style="{StaticResource FormMultilineTextBoxStyle}" />
+                                    <TextBlock
+                                        x:Name="UnknownPlaceholdersText"
+                                        Margin="0,5,0,0"
+                                        FontSize="11"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </controls:AnimatedReveal>
+                        </StackPanel>
+                    </controls:AnimatedReveal>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

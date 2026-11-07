@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
+using System.Windows.Media;
 
 using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Downloads;
@@ -21,6 +22,16 @@ namespace ErhioLab.Craft.Launcher;
 /// <summary>启动器的 WPF 应用程序入口.</summary>
 public partial class App
 {
+    static App()
+    {
+        // 全局使用屏幕像素排版; 同时覆盖独立 Popup/ToolTip 和文档文本,
+        // 避免只设置主窗口时, 弹出层仍使用 Ideal 模式并在换行处拉宽空格.
+        TextOptions.TextFormattingModeProperty.OverrideMetadata(typeof(FrameworkElement),
+            new FrameworkPropertyMetadata(TextFormattingMode.Display, FrameworkPropertyMetadataOptions.Inherits));
+        TextOptions.TextFormattingModeProperty.OverrideMetadata(typeof(FrameworkContentElement),
+            new FrameworkPropertyMetadata(TextFormattingMode.Display, FrameworkPropertyMetadataOptions.Inherits));
+    }
+
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
         WriteIndented = true,
@@ -28,7 +39,7 @@ public partial class App
         {
             new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(),
             new JsonStringEnumConverter<VersionListSource>(), new JsonStringEnumConverter<GameProcessPriority>(),
-            new JsonStringEnumConverter<GameWindowMode>()
+            new JsonStringEnumConverter<GameWindowMode>(), new JsonStringEnumConverter<GameGarbageCollector>()
         }
     };
 

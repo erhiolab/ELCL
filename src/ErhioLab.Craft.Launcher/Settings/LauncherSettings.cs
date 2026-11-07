@@ -8,6 +8,7 @@ namespace ErhioLab.Craft.Launcher.Settings;
 /// <summary>启动器的启动/外观和下载配置, 由客户端定义和校验.</summary>
 public sealed record LauncherSettings
 {
+    public const string DefaultJvmArguments = "-XX:-OmitStackTraceInFastThrow -Djdk.lang.Process.allowAmbiguousCommands=True -Dfml.ignoreInvalidMinecraftCertificates=True -Dfml.ignorePatchDiscrepancies=True";
     /// <summary>当前明暗主题.</summary>
     public LauncherTheme Theme { get; init; } = LauncherTheme.Day;
 
@@ -38,22 +39,42 @@ public sealed record LauncherSettings
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
 
-    /// <summary>游戏进程优先级；当前仅保存，待游戏启动功能接入.</summary>
+    /// <summary>游戏进程优先级; 当前仅保存, 待游戏启动功能接入.</summary>
     public GameProcessPriority GamePriority { get; init; } = GameProcessPriority.Normal;
 
-    /// <summary>游戏窗口显示方式；当前仅保存，待游戏启动功能接入.</summary>
+    /// <summary>游戏窗口显示方式; 当前仅保存, 待游戏启动功能接入.</summary>
     public GameWindowMode WindowMode { get; init; } = GameWindowMode.Default;
 
-    /// <summary>自定义游戏窗口宽度，单位为像素.</summary>
+    /// <summary>自定义游戏窗口宽度, 单位为像素.</summary>
     public int GameWindowWidth { get; init; } = 854;
 
-    /// <summary>自定义游戏窗口高度，单位为像素.</summary>
+    /// <summary>自定义游戏窗口高度, 单位为像素.</summary>
     public int GameWindowHeight { get; init; } = 480;
+
+    /// <summary>游戏窗口标题模板; 空字符串使用游戏自己的标题.</summary>
+    public string GameWindowTitle { get; init; } = "";
+
+    /// <summary>附加 JVM 参数, 可包含换行和替换标记.</summary>
+    public string JvmArguments { get; init; } = DefaultJvmArguments;
+
+    /// <summary>附加游戏参数模板.</summary>
+    public string GameArguments { get; init; } = "";
+
+    /// <summary>游戏启动前执行的 Windows 命令模板; 当前仅保存, 不执行.</summary>
+    public string PreLaunchCommand { get; init; } = "";
+
+    public bool WaitForPreLaunchCommand { get; init; } = true;
+    public GameGarbageCollector GarbageCollector { get; init; } = GameGarbageCollector.StandardG1;
+    public bool DisableJavaLaunchWrapper { get; init; }
+    public bool DisableLwjglUnsafeAgent { get; init; }
+    public bool PreferHighPerformanceGpu { get; init; } = true;
+    /// <summary>证书验证偏好; 仅作为启动预设保存, 现有登录请求仍使用证书验证.</summary>
+    public bool VerifyMicrosoftCertificates { get; init; } = true;
 
     /// <summary>是否根据可用物理内存自动估算游戏内存.</summary>
     public bool AutoAllocateMemory { get; init; } = true;
 
-    /// <summary>自定义模式使用当前可用物理内存的百分比，范围 0 到 100.</summary>
+    /// <summary>自定义模式使用当前可用物理内存的百分比, 范围 0 到 100.</summary>
     public int CustomMemoryPercent { get; init; } = 50;
 
     /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
@@ -107,6 +128,11 @@ public sealed record LauncherSettings
             WindowMode = Enum.IsDefined(WindowMode) ? WindowMode : GameWindowMode.Default,
             GameWindowWidth = Math.Clamp(GameWindowWidth, 1, 16384),
             GameWindowHeight = Math.Clamp(GameWindowHeight, 1, 16384),
+            GameWindowTitle = NormalizeLaunchText(GameWindowTitle, 512).Replace('\r', ' ').Replace('\n', ' '),
+            JvmArguments = NormalizeLaunchText(JvmArguments ?? DefaultJvmArguments, 16384),
+            GameArguments = NormalizeLaunchText(GameArguments, 16384),
+            PreLaunchCommand = NormalizeLaunchText(PreLaunchCommand, 8192),
+            GarbageCollector = Enum.IsDefined(GarbageCollector) ? GarbageCollector : GameGarbageCollector.StandardG1,
             CustomMemoryPercent = Math.Clamp(CustomMemoryPercent, 0, 100),
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
@@ -120,6 +146,12 @@ public sealed record LauncherSettings
     }
 
     private static IEnumerable<T> OrEmpty<T>(IEnumerable<T>? values) => values ?? [];
+
+    private static string NormalizeLaunchText(string? value, int limit)
+    {
+        string text = (value ?? "").Replace("\0", "", StringComparison.Ordinal);
+        return text[..Math.Min(text.Length, limit)];
+    }
 
     private static string NormalizeAccent(string? color) => color?.Trim() ?? string.Empty;
 

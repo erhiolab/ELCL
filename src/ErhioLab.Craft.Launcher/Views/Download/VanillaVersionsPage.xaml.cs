@@ -312,9 +312,14 @@ public partial class VanillaVersionsPage
 
         try
         {
-            MinecraftWikiClient wikiClient = new(HttpClient, language: LocalizationManager.Get("wiki.lang"));
+            string language = LocalizationManager.Get("wiki.lang");
+            MinecraftWikiClient wikiClient = new(HttpClient, language: language);
             MinecraftWikiPage? page = await wikiClient.GetSummaryAsync(row.Version.Id, _pageCancellation.Token);
+            row.WikiPageUrl = page?.Url;
+            row.WikiLanguage = language;
             row.TooltipText = page is null ? LocalizationManager.Get("versionCatalog.noWikiSummary") : page.Text.Length > 700 ? page.Text[..700] + "..." : page.Text;
+            if (page is not null && UsesEnglishFallback(page.Url, language))
+                row.TooltipText = LocalizationManager.Get("versionCatalog.wikiSummaryEnglishFallback") + "\n\n" + row.TooltipText;
         }
         catch (OperationCanceledException)
         {
@@ -328,25 +333,57 @@ public partial class VanillaVersionsPage
         }
     }
 
-    private void ChangelogButton_Click(object sender, RoutedEventArgs e)
+    private async void ChangelogButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: VersionRow row })
+        if (sender is not Button { Tag: VersionRow row } button || _pageCancellation.IsCancellationRequested)
         {
             return;
         }
 
         try
         {
-            Uri pageUrl = MinecraftWikiClient.GetPageUrl(row.Version.Id, LocalizationManager.Get("wiki.lang"));
+            button.IsEnabled = false;
+            string language = LocalizationManager.Get("wiki.lang");
+            App.Logger.Information("Wiki", $"开始解析 {row.Version.Id} 的 Wiki 页面, 优先语言: {language}.");
+            Uri? pageUrl = row.WikiLanguage == language ? row.WikiPageUrl : null;
+            if (pageUrl is null)
+            {
+                LauncherToasts.Information(LocalizationManager.Get("versionCatalog.openingWiki"));
+                MinecraftWikiClient wikiClient = new(HttpClient, language: language);
+                pageUrl = await wikiClient.GetPageUrlAsync(row.Version.Id, _pageCancellation.Token);
+            }
+            if (_pageCancellation.IsCancellationRequested) return;
+            if (pageUrl is null)
+            {
+                App.Logger.Warning("Wiki", $"未找到 {row.Version.Id} 的 Wiki 页面.");
+                LauncherToasts.Error(LocalizationManager.Get("versionCatalog.noWikiPage"));
+                return;
+            }
+            row.WikiPageUrl = pageUrl;
+            row.WikiLanguage = language;
             Process.Start(new ProcessStartInfo(pageUrl.AbsoluteUri) { UseShellExecute = true });
-            App.Logger.Information("Wiki", $"在浏览器打开 {row.Version.Id} 的更新日志.");
+            App.Logger.Information("Wiki", $"在浏览器打开 {row.Version.Id} 的更新日志: {pageUrl}.");
+            LauncherToasts.Success(LocalizationManager.Get(UsesEnglishFallback(pageUrl, language)
+                ? "versionCatalog.wikiOpenedEnglishFallback" : "versionCatalog.wikiOpened"));
         }
-        catch (Exception error) when (error is Win32Exception or InvalidOperationException)
+        catch (OperationCanceledException) when (_pageCancellation.IsCancellationRequested)
+        {
+            // 页面已关闭, 不再打开浏览器或显示通知.
+        }
+        catch (Exception error) when (error is Win32Exception or InvalidOperationException or HttpRequestException or JsonException or ArgumentException or OperationCanceledException)
         {
             App.Logger.Error("Wiki", $"无法在浏览器打开 {row.Version.Id} 的更新日志.", error);
             LauncherToasts.Error(LocalizationManager.Get("versionCatalog.openWikiFailed"));
         }
+        finally
+        {
+            button.IsEnabled = true;
+        }
     }
+
+    private static bool UsesEnglishFallback(Uri pageUrl, string language) =>
+        pageUrl.Host.Equals("minecraft.wiki", StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(language) && !language.Trim().Equals("en", StringComparison.OrdinalIgnoreCase);
 
     private static HttpClient CreateHttpClient()
     {
@@ -371,6 +408,10 @@ public partial class VanillaVersionsPage
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public MinecraftVersion Version { get; }
+
+        internal Uri? WikiPageUrl { get; set; }
+
+        internal string? WikiLanguage { get; set; }
 
         public Geometry Icon => LauncherIcons.ForVersion(Version.Kind);
 
