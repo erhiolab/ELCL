@@ -3,6 +3,19 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls">
     <Style
+        TargetType="ContentControl">
+        <Setter
+            Property="FocusVisualStyle"
+            Value="{x:Null}" />
+    </Style>
+    <Style
+        TargetType="ScrollViewer"
+        BasedOn="{StaticResource {x:Type ScrollViewer}}">
+        <Setter
+            Property="FocusVisualStyle"
+            Value="{x:Null}" />
+    </Style>
+    <Style
         x:Key="PanelCardStyle"
         TargetType="Border">
         <Setter

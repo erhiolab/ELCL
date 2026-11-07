@@ -38,6 +38,24 @@ public sealed record LauncherSettings
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
 
+    /// <summary>游戏进程优先级；当前仅保存，待游戏启动功能接入.</summary>
+    public GameProcessPriority GamePriority { get; init; } = GameProcessPriority.Normal;
+
+    /// <summary>游戏窗口显示方式；当前仅保存，待游戏启动功能接入.</summary>
+    public GameWindowMode WindowMode { get; init; } = GameWindowMode.Default;
+
+    /// <summary>自定义游戏窗口宽度，单位为像素.</summary>
+    public int GameWindowWidth { get; init; } = 854;
+
+    /// <summary>自定义游戏窗口高度，单位为像素.</summary>
+    public int GameWindowHeight { get; init; } = 480;
+
+    /// <summary>是否根据可用物理内存自动估算游戏内存.</summary>
+    public bool AutoAllocateMemory { get; init; } = true;
+
+    /// <summary>自定义模式使用当前可用物理内存的百分比，范围 0 到 100.</summary>
+    public int CustomMemoryPercent { get; init; } = 50;
+
     /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
     public IReadOnlyList<JavaInstallation> JavaInstallations { get; init; } = [];
 
@@ -85,6 +103,11 @@ public sealed record LauncherSettings
             FileDownloadSource = Enum.IsDefined(FileDownloadSource) ? FileDownloadSource : VersionListSource.OfficialFirst,
             DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
             DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
+            GamePriority = Enum.IsDefined(GamePriority) ? GamePriority : GameProcessPriority.Normal,
+            WindowMode = Enum.IsDefined(WindowMode) ? WindowMode : GameWindowMode.Default,
+            GameWindowWidth = Math.Clamp(GameWindowWidth, 1, 16384),
+            GameWindowHeight = Math.Clamp(GameWindowHeight, 1, 16384),
+            CustomMemoryPercent = Math.Clamp(CustomMemoryPercent, 0, 100),
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
             JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),

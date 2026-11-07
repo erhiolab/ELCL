@@ -32,6 +32,17 @@ internal static class LauncherThemeManager
         Set("AccentMutedBrush", Blend(surface, accent, day ? 0.17 : 0.09));
         Set("AccentHoverBrush", Blend(surface, accent, day ? 0.25 : 0.18));
         Set("AccentTextBrush", day ? Blend(Parse("#FF112739"), accent, 0.44) : accent);
+
+        Color memoryAccent = accentBrightness < 0.2 ? Blend(accent, Colors.White, 0.35) : accentBrightness > 0.8 ? Blend(accent, Colors.Black, 0.2) : accent;
+        byte minimum = Math.Min(memoryAccent.R, Math.Min(memoryAccent.G, memoryAccent.B));
+        int chroma = Math.Max(memoryAccent.R, Math.Max(memoryAccent.G, memoryAccent.B)) - minimum;
+        Color saturatedAccent = chroma < 32 ? memoryAccent : Color.FromRgb(
+            (byte)((memoryAccent.R - minimum) * 255 / chroma),
+            (byte)((memoryAccent.G - minimum) * 255 / chroma),
+            (byte)((memoryAccent.B - minimum) * 255 / chroma));
+        Set("MemoryUsedBrush", Blend(Colors.Black, saturatedAccent, day ? 0.72 : 0.8));
+        Set("MemoryAllocatedBrush", memoryAccent);
+        Set("MemoryFreeBrush", Blend(Colors.White, memoryAccent, day ? 0.24 : 0.4));
     }
 
     private static void SwitchLibraryTheme(LauncherTheme theme)

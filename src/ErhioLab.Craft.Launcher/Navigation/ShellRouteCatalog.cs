@@ -83,7 +83,7 @@ internal static class ShellRouteCatalog
         {
             if (ReferenceEquals(item, launchSettingsItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.launchTitle"), LocalizationManager.Get("reset.launchPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {
-                await App.JavaCatalog.ResetAsync();
+                await launchSettingsPage.ResetToDefaultsAsync();
             }
             else if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.personalizationTitle"), LocalizationManager.Get("reset.personalizationPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {

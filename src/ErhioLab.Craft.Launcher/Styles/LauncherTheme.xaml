@@ -53,10 +53,19 @@
     <SolidColorBrush
         x:Key="AccentHoverBrush"
         Color="#FF1A3445" />
+    <!-- 内存条由深到浅区分系统已用、游戏分配和剩余内存. -->
+    <SolidColorBrush
+        x:Key="MemoryUsedBrush"
+        Color="#FF007DCC" />
+    <SolidColorBrush
+        x:Key="MemoryAllocatedBrush"
+        Color="#FF80CEFF" />
+    <SolidColorBrush
+        x:Key="MemoryFreeBrush"
+        Color="#FFCCEBFF" />
 
-    <!-- 全局隐藏 Tab 导航产生的默认焦点装饰框, 保留键盘焦点和操作. -->
     <Style
-        x:Key="{x:Static SystemParameters.FocusVisualStyleKey}"
+        x:Key="LauncherKeyboardFocusStyle"
         TargetType="Control">
         <Setter
             Property="Template">
@@ -64,11 +73,51 @@
                 <ControlTemplate
                     TargetType="Control">
                     <Grid
-                        IsHitTestVisible="False" />
+                        x:Name="FocusHighlight"
+                        Margin="-3"
+                        IsHitTestVisible="False"
+                        Opacity="0">
+                        <Border
+                            Background="{DynamicResource AccentBrush}"
+                            CornerRadius="7"
+                            Opacity="0.12" />
+                        <Border
+                            BorderBrush="{DynamicResource AccentBrush}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Opacity="0.6" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <EventTrigger
+                            RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FocusHighlight"
+                                        Storyboard.TargetProperty="Opacity"
+                                        To="1"
+                                        Duration="0:0:0.14">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase
+                                                EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
+    <Style
+        x:Key="DefaultControlFocusVisualStyle"
+        TargetType="Control"
+        BasedOn="{StaticResource LauncherKeyboardFocusStyle}" />
+    <Style
+        x:Key="{x:Static SystemParameters.FocusVisualStyleKey}"
+        TargetType="Control"
+        BasedOn="{StaticResource LauncherKeyboardFocusStyle}" />
 
     <!-- 页面标题和品牌文字使用的展示字体. -->
     <FontFamily

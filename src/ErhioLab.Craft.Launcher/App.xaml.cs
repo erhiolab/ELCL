@@ -24,7 +24,12 @@ public partial class App
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(), new JsonStringEnumConverter<VersionListSource>() }
+        Converters =
+        {
+            new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(),
+            new JsonStringEnumConverter<VersionListSource>(), new JsonStringEnumConverter<GameProcessPriority>(),
+            new JsonStringEnumConverter<GameWindowMode>()
+        }
     };
 
     private static SessionFileLogger? _logger;

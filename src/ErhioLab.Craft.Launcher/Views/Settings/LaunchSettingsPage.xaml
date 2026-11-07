@@ -10,7 +10,213 @@
         VerticalScrollBarVisibility="Auto">
         <StackPanel
             Margin="32,28,32,36">
-            <controls:LauncherCard>
+            <controls:LauncherCard
+                Header="{DynamicResource I18n.launchSettings.launchOptions}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.launchSettings.processPriority}" />
+                        <ComboBox
+                            x:Name="ProcessPriorityBox"
+                            Grid.Column="1"
+                            Height="Auto"
+                            MinHeight="36"
+                            HorizontalContentAlignment="Stretch"
+                            SelectionChanged="ProcessPriorityBox_SelectionChanged"
+                            Style="{StaticResource FormComboBoxStyle}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock
+                                        MaxWidth="530"
+                                        HorizontalAlignment="Left"
+                                        Text="{Binding}"
+                                        TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <Grid
+                        Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.launchSettings.windowSize}" />
+                        <ComboBox
+                            x:Name="WindowModeBox"
+                            Grid.Column="1"
+                            SelectionChanged="WindowModeBox_SelectionChanged"
+                            Style="{StaticResource FormComboBoxStyle}">
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.launchSettings.windowFullscreen}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.launchSettings.windowDefault}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.launchSettings.windowMatchLauncher}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.launchSettings.windowCustom}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.launchSettings.windowMaximized}" />
+                        </ComboBox>
+                    </Grid>
+                    <controls:AnimatedReveal
+                        x:Name="CustomSizeReveal">
+                        <Grid
+                            Margin="155,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="*" />
+                                <ColumnDefinition
+                                    Width="12" />
+                                <ColumnDefinition
+                                    Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock
+                                    Margin="0,0,0,6"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    Text="{DynamicResource I18n.launchSettings.windowWidth}" />
+                                <TextBox
+                                    x:Name="GameWindowWidthBox"
+                                    MaxLength="5"
+                                    KeyDown="WindowSizeBox_KeyDown"
+                                    LostFocus="WindowSizeBox_LostFocus"
+                                    Style="{StaticResource FormTextBoxStyle}" />
+                            </StackPanel>
+                            <StackPanel
+                                Grid.Column="2">
+                                <TextBlock
+                                    Margin="0,0,0,6"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    Text="{DynamicResource I18n.launchSettings.windowHeight}" />
+                                <TextBox
+                                    x:Name="GameWindowHeightBox"
+                                    MaxLength="5"
+                                    KeyDown="WindowSizeBox_KeyDown"
+                                    LostFocus="WindowSizeBox_LostFocus"
+                                    Style="{StaticResource FormTextBoxStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </controls:AnimatedReveal>
+                    <TextBlock
+                        Margin="0,14,0,0"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.launchSettings.gameOptionsPending}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="0,14,0,0"
+                Header="{DynamicResource I18n.launchSettings.memoryAllocation}">
+                <StackPanel>
+                    <RadioButton
+                        x:Name="AutoMemoryButton"
+                        GroupName="GameMemoryMode"
+                        Content="{DynamicResource I18n.launchSettings.memoryAutomatic}"
+                        Checked="MemoryMode_Checked" />
+                    <Grid
+                        Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="52" />
+                        </Grid.ColumnDefinitions>
+                        <RadioButton
+                            x:Name="CustomMemoryButton"
+                            VerticalAlignment="Center"
+                            GroupName="GameMemoryMode"
+                            Content="{DynamicResource I18n.launchSettings.memoryCustom}"
+                            Checked="MemoryMode_Checked" />
+                        <Slider
+                            x:Name="MemoryPercentSlider"
+                            Grid.Column="1"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Minimum="0"
+                            Maximum="100"
+                            TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            IsEnabled="{Binding IsChecked, ElementName=CustomMemoryButton}"
+                            ValueChanged="MemoryPercentSlider_ValueChanged"
+                            PreviewMouseLeftButtonUp="MemoryPercentSlider_Commit"
+                            LostMouseCapture="MemoryPercentSlider_Commit"
+                            LostKeyboardFocus="MemoryPercentSlider_Commit"
+                            KeyUp="MemoryPercentSlider_KeyUp" />
+                        <TextBlock
+                            x:Name="MemoryPercentText"
+                            Grid.Column="2"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource AccentTextBrush}" />
+                    </Grid>
+                    <TextBlock
+                        x:Name="MemoryModeHintText"
+                        Margin="0,10,0,0"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        TextWrapping="Wrap" />
+                    <Grid
+                        Margin="0,18,0,0">
+                        <TextBlock
+                            x:Name="UsedMemoryTitle"
+                            HorizontalAlignment="Left"
+                            FontSize="11"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            SizeChanged="MemoryLabel_SizeChanged"
+                            Text="{DynamicResource I18n.launchSettings.memoryUsed}" />
+                        <Canvas
+                            IsHitTestVisible="False">
+                            <TextBlock
+                                x:Name="GameMemoryTitle"
+                                FontSize="11"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                SizeChanged="MemoryLabel_SizeChanged"
+                                Text="{DynamicResource I18n.launchSettings.memoryGame}" />
+                        </Canvas>
+                    </Grid>
+                    <controls:AnimatedSegmentBar
+                        x:Name="MemoryUsageBar"
+                        Height="6"
+                        Margin="0,6,0,6"
+                        FirstBrush="{DynamicResource MemoryUsedBrush}"
+                        SecondBrush="{DynamicResource MemoryAllocatedBrush}"
+                        ThirdBrush="{DynamicResource MemoryFreeBrush}"
+                        FirstBoundaryChanged="MemoryUsageBar_FirstBoundaryChanged"
+                        ToolTip="{DynamicResource I18n.launchSettings.memoryBarHint}" />
+                    <Grid>
+                        <TextBlock
+                            x:Name="UsedMemoryText"
+                            HorizontalAlignment="Left"
+                            SizeChanged="MemoryLabel_SizeChanged" />
+                        <Canvas
+                            IsHitTestVisible="False">
+                            <TextBlock
+                                x:Name="GameMemoryText"
+                                Foreground="{DynamicResource AccentTextBrush}"
+                                SizeChanged="MemoryLabel_SizeChanged" />
+                        </Canvas>
+                    </Grid>
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="0,14,0,0">
                 <controls:LauncherCard.Header>
                     <Grid>
                         <Grid.ColumnDefinitions>
