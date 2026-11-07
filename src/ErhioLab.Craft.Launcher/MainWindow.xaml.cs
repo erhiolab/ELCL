@@ -535,7 +535,7 @@ public partial class MainWindow
         _ = DwmSetWindowAttribute(handle, DwmwaBorderColor, ref borderColor, sizeof(int));
     }
 
-    private static IntPtr WindowMessageHook(
+    private IntPtr WindowMessageHook(
         IntPtr windowHandle,
         int message,
         IntPtr wParam,
@@ -563,6 +563,11 @@ public partial class MainWindow
         MinMaxInfo bounds = Marshal.PtrToStructure<MinMaxInfo>(lParam);
         bounds.MaxPosition = new NativePoint(monitor.WorkArea.Left - monitor.MonitorArea.Left, monitor.WorkArea.Top - monitor.MonitorArea.Top);
         bounds.MaxSize = new NativePoint(monitor.WorkArea.Right - monitor.WorkArea.Left, monitor.WorkArea.Bottom - monitor.WorkArea.Top);
+        Matrix scale = HwndSource.FromHwnd(windowHandle)?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
+        bounds.MinTrackSize = new NativePoint(
+            Math.Max(bounds.MinTrackSize.X, (int)Math.Ceiling(MinWidth * scale.M11)),
+            Math.Max(bounds.MinTrackSize.Y, (int)Math.Ceiling(MinHeight * scale.M22))
+        );
         Marshal.StructureToPtr(bounds, lParam, false);
         handled = true;
         return IntPtr.Zero;
