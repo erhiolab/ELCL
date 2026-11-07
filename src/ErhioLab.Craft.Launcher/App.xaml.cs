@@ -30,6 +30,7 @@ public partial class App
     private static SessionFileLogger? _logger;
     private static JsonFileStore<LauncherSettings>? _settingsStore;
     private static LauncherAccountStore? _accountStore;
+    private static LauncherSkinService? _skinService;
     private static ServiceCredentials? _serviceCredentials;
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
@@ -52,6 +53,7 @@ public partial class App
     internal static JavaCatalogManager JavaCatalog => JavaEngine;
 
     internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化. ");
+    internal static LauncherSkinService Skins => _skinService ?? throw new InvalidOperationException("皮肤缓存尚未初始化.");
     internal static ServiceCredentials Services => _serviceCredentials ?? throw new InvalidOperationException("服务配置尚未初始化.");
 
     protected override void OnStartup(StartupEventArgs e)
@@ -119,11 +121,13 @@ public partial class App
         LauncherThemeManager.Apply(Settings);
         _serviceCredentials = ServiceCredentials.Load(Path.Combine(dataDirectory, "services.json"));
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
+        _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
         if (Current.MainWindow is { } mainWindow)
             mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
         _ = JavaCatalog.InitializeIfEmptyAsync();
+        Skins.RefreshAll();
     }
 
     /// <summary>保存并立即应用新设置.</summary>

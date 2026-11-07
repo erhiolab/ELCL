@@ -60,25 +60,62 @@
             Style="{StaticResource AccountEntryStyle}"
             ToolTip="{DynamicResource I18n.launchSidebar.openAccountManager}">
             <StackPanel>
-                <Border
+                <Grid
                     Width="78"
                     Height="78"
                     HorizontalAlignment="Center"
-                    CornerRadius="12"
-                    Style="{StaticResource PanelCardStyle}">
-                    <Path
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Width="31"
-                        Height="31"
-                        Data="{x:Static icons:LauncherIcons.User}"
-                        Stroke="{DynamicResource TextMutedBrush}"
-                        StrokeThickness="1.5"
-                        StrokeStartLineCap="Round"
-                        StrokeEndLineCap="Round"
-                        StrokeLineJoin="Round"
-                        Stretch="Uniform" />
-                </Border>
+                    UseLayoutRounding="True">
+                    <Ellipse
+                        Width="54"
+                        Height="54"
+                        Fill="{DynamicResource AccentBrush}"
+                        IsHitTestVisible="False"
+                        Opacity="0.28">
+                        <Ellipse.Effect>
+                            <BlurEffect
+                                Radius="17" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <Grid>
+                        <Grid.Effect>
+                            <DropShadowEffect
+                                BlurRadius="8"
+                                Direction="270"
+                                Opacity="0.65"
+                                ShadowDepth="4" />
+                        </Grid.Effect>
+                        <Path
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Width="31"
+                            Height="31"
+                            Data="{x:Static icons:LauncherIcons.User}"
+                            Stroke="{DynamicResource TextMutedBrush}"
+                            StrokeThickness="1.5"
+                            StrokeStartLineCap="Round"
+                            StrokeEndLineCap="Round"
+                            StrokeLineJoin="Round"
+                            Stretch="Uniform" />
+                        <Image
+                            x:Name="AccountAvatarFaceImage"
+                            Width="48"
+                            Height="48"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RenderOptions.BitmapScalingMode="NearestNeighbor"
+                            SnapsToDevicePixels="True"
+                            Stretch="Fill" />
+                        <Image
+                            x:Name="AccountAvatarHatImage"
+                            Width="56"
+                            Height="56"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RenderOptions.BitmapScalingMode="NearestNeighbor"
+                            SnapsToDevicePixels="True"
+                            Stretch="Fill" />
+                    </Grid>
+                </Grid>
                 <TextBlock
                     x:Name="AccountNameText"
                     Margin="0,16,0,0"

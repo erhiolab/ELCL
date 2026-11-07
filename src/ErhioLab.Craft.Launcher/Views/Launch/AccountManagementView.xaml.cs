@@ -15,11 +15,13 @@ using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
 
-internal sealed record AccountRow(AccountEntry Account, bool IsActive)
+internal sealed record AccountRow(AccountEntry Account, bool IsActive, SkinAvatar? Avatar)
 {
     public string UserName => Account.UserName;
     public Guid Uuid => Account.Uuid;
     public string KindText => Account.IsMicrosoft ? "Microsoft" : LocalizationManager.Get("account.offlineShort");
+    public ImageSource? AvatarFace => Avatar?.Face;
+    public ImageSource? AvatarHat => Avatar?.Hat;
 }
 
 /// <summary>管理离线账户, 同时为在线登录与皮肤功能保留界面位置.</summary>
@@ -48,13 +50,18 @@ public partial class AccountManagementView
             RefreshAccounts(AccountsList.SelectedItem is AccountRow row ? row.Uuid : App.Accounts.SelectedUuid);
             RefreshMicrosoftStatus();
         };
+        App.Skins.AvatarChanged += uuid =>
+        {
+            if (App.Accounts.AllAccounts.Any(account => account.Uuid == uuid))
+                RefreshAccounts(AccountsList.SelectedItem is AccountRow row ? row.Uuid : App.Accounts.SelectedUuid);
+        };
         RefreshAccounts(App.Accounts.SelectedUuid);
     }
 
     private void RefreshAccounts(Guid? focusedUuid)
     {
         AccountRow[] rows = App.Accounts.AllAccounts
-            .Select(account => new AccountRow(account, account.Uuid == App.Accounts.SelectedUuid))
+            .Select(account => new AccountRow(account, account.Uuid == App.Accounts.SelectedUuid, account.IsMicrosoft ? App.Skins.GetAvatar(account.Uuid) : null))
             .ToArray();
         AccountsList.ItemsSource = null;
         AccountsList.ItemsSource = rows;
@@ -102,6 +109,16 @@ public partial class AccountManagementView
 
     private void AccountsList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshSelection();
 
+    private void AccountsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left || e.OriginalSource is not DependencyObject source) return;
+        if (ItemsControl.ContainerFromElement(AccountsList, source) is not ListBoxItem { DataContext: AccountRow row }) return;
+        if (row.IsActive) return;
+
+        SelectAccount(row);
+        e.Handled = true;
+    }
+
     private async void StartMicrosoftLogin_Click(object sender, RoutedEventArgs e)
     {
         if (_loginCancellation is not null) return;
@@ -124,6 +141,7 @@ public partial class AccountManagementView
             OpenMicrosoftPage();
             MicrosoftMinecraftSession session = await _microsoftAuth.CompleteDeviceAuthorizationAsync(clientId, authorization, cancellation.Token);
             App.Accounts.AddOrUpdateMicrosoft(session);
+            App.Skins.RequestRefresh(session.Uuid, force: true);
             App.Logger.Information("Accounts", $"已添加 Microsoft 账户: {session.UserName}.");
             HideMicrosoftPanel();
             RefreshAccounts(session.Uuid);
@@ -291,10 +309,15 @@ public partial class AccountManagementView
     private void UseSelected_Click(object sender, RoutedEventArgs e)
     {
         if (AccountsList.SelectedItem is not AccountRow row) return;
+        SelectAccount(row);
+    }
+
+    private void SelectAccount(AccountRow row)
+    {
         try
         {
             App.Accounts.Select(row.Uuid);
-            App.Logger.Information("Accounts", $"已切换为离线账户: {row.UserName}.");
+            App.Logger.Information("Accounts", $"已切换账户: {row.UserName}.");
             RefreshAccounts(row.Uuid);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -311,6 +334,7 @@ public partial class AccountManagementView
         {
             if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("account.deleteOfflineTitle"), string.Format(LocalizationManager.Get("account.confirmDelete"), row.UserName), confirmText: LocalizationManager.Get("common.delete"))) return;
             App.Accounts.Remove(row.Uuid);
+            if (row.Account.IsMicrosoft) App.Skins.RemoveCache(row.Uuid);
             App.Logger.Information("Accounts", $"已删除离线账户: {row.UserName}.");
             RefreshAccounts(App.Accounts.SelectedUuid);
         }

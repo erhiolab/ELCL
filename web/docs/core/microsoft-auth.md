@@ -33,3 +33,19 @@ Client ID 不是密码，但必须属于你自己的应用注册。访问令牌�
 如果请求设备代码时出现 `AADSTS70002` 或 `invalid_client`，请检查应用注册的“身份验证”：添加“移动和桌面应用程序”平台，并启用“允许公共客户端流”。修改注册后重新开始登录。
 
 如果没有 Minecraft Java 版授权或档案，登录会失败并抛出 `MicrosoftMinecraftAuthException`。它的 `Stage` 和 `Code` 可用于显示错误；调用方取消时会抛出取消异常。
+
+## 读取当前皮肤
+
+登录后可用 Minecraft 访问令牌读取玩家档案中的当前皮肤，再下载原始 PNG：
+
+```csharp
+var skins = new MinecraftSkinClient(http);
+MinecraftPlayerSkin? active = await skins.GetActiveSkinAsync(session.MinecraftAccessToken);
+if (active is not null)
+{
+    byte[] png = await skins.DownloadSkinAsync(active);
+    await File.WriteAllBytesAsync("skin.png", png);
+}
+```
+
+`GetActiveSkinAsync` 只选择档案中状态为 `ACTIVE` 的皮肤；没有时返回 `null`。Minecraft 档案有时返回 `http://textures.minecraft.net` 地址，Core 会将这个官方纹理域名改用 HTTPS。读取档案或下载图片遇到短暂连接故障、HTTP 408、429、5xx 时会有限重试。`DownloadSkinAsync` 要求 HTTPS、限制文件大小为 2 MiB，并检查 PNG 文件签名。Core 返回原始图片字节，不指定缓存目录，也不生成界面头像；调用方可以自行缓存并按需要裁剪头部。

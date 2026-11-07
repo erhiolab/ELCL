@@ -12,6 +12,10 @@ public partial class LaunchSidebarView
     {
         InitializeComponent();
         App.Accounts.Changed += (_, _) => RefreshAccount();
+        App.Skins.AvatarChanged += uuid =>
+        {
+            if (App.Accounts.SelectedUuid == uuid) RefreshAccount();
+        };
         LocalizationManager.Changed += (_, _) =>
         {
             RefreshAccount();
@@ -28,6 +32,9 @@ public partial class LaunchSidebarView
     private void RefreshAccount()
     {
         var account = App.Accounts.SelectedAccount;
+        var avatar = account?.IsMicrosoft == true ? App.Skins.GetAvatar(account.Uuid) : null;
+        AccountAvatarFaceImage.Source = avatar?.Face;
+        AccountAvatarHatImage.Source = avatar?.Hat;
         AccountNameText.Text = account?.UserName ?? LocalizationManager.Get("launch.notSignedIn");
         AccountDescriptionText.Text = account is null ? LocalizationManager.Get("launch.manageAccounts")
             : account.IsMicrosoft ? LocalizationManager.Get("launch.microsoftAccount") : LocalizationManager.Get("launch.offlineAccount");
