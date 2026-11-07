@@ -1,6 +1,7 @@
 {
     "Name": "简体中文",
     "Strings": {
+        "wiki.lang": "zh",
         "downloadSettings.fileDownloadSource": "文件下载源",
         "install.title": "{0} 安装",
         "install.versionJson": "下载版本 JSON 文件",

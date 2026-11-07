@@ -26,7 +26,6 @@ public partial class VanillaVersionsPage
 
     private readonly MinecraftVersionCatalogClient _catalogClient = new(HttpClient);
     private readonly JsonFileStore<MinecraftVersionCatalog> _catalogCache = new(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version_catalog.json"));
-    private readonly MinecraftWikiClient _wikiClient = new(HttpClient);
     private readonly Dictionary<FrameworkElement, int> _groupAnimationVersions = [];
     private readonly CancellationTokenSource _pageCancellation = new();
     private MinecraftVersionCatalog? _catalog;
@@ -313,7 +312,8 @@ public partial class VanillaVersionsPage
 
         try
         {
-            MinecraftWikiPage? page = await _wikiClient.GetSummaryAsync(row.Version.Id, _pageCancellation.Token);
+            MinecraftWikiClient wikiClient = new(HttpClient, language: LocalizationManager.Get("wiki.lang"));
+            MinecraftWikiPage? page = await wikiClient.GetSummaryAsync(row.Version.Id, _pageCancellation.Token);
             row.TooltipText = page is null ? LocalizationManager.Get("versionCatalog.noWikiSummary") : page.Text.Length > 700 ? page.Text[..700] + "..." : page.Text;
         }
         catch (OperationCanceledException)
@@ -337,7 +337,7 @@ public partial class VanillaVersionsPage
 
         try
         {
-            Uri pageUrl = MinecraftWikiClient.GetPageUrl(row.Version.Id);
+            Uri pageUrl = MinecraftWikiClient.GetPageUrl(row.Version.Id, LocalizationManager.Get("wiki.lang"));
             Process.Start(new ProcessStartInfo(pageUrl.AbsoluteUri) { UseShellExecute = true });
             App.Logger.Information("Wiki", $"在浏览器打开 {row.Version.Id} 的更新日志.");
         }

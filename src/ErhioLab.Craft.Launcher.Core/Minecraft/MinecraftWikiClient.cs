@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
-/// <summary>中文 Minecraft Wiki 版本页面的纯文本内容.</summary>
+/// <summary>Minecraft Wiki 版本页面的纯文本内容.</summary>
 /// <param name="Title">Wiki 页面标题.</param>
 /// <param name="Url">可在浏览器打开的页面地址.</param>
 /// <param name="Text">页面摘要或完整文字.</param>
@@ -13,12 +13,16 @@ public sealed class MinecraftWikiClient
 {
     private readonly HttpClient _httpClient;
     private readonly Uri _apiUrl;
+    private readonly string _language;
+    private readonly Uri _baseUrl;
 
     /// <summary>接收调用方共享的 HTTP 客户端.</summary>
-    public MinecraftWikiClient(HttpClient httpClient, Uri? apiUrl = null)
+    public MinecraftWikiClient(HttpClient httpClient, Uri? apiUrl = null, string? language = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _apiUrl = apiUrl ?? new Uri("https://zh.minecraft.wiki/api.php");
+        _language = NormalizeLanguage(language);
+        _baseUrl = BaseUrl(_language);
+        _apiUrl = apiUrl ?? new Uri(_baseUrl, "api.php");
     }
 
     /// <summary>获取版本页面的开头摘要; 页面不存在时返回 null.</summary>
@@ -28,14 +32,15 @@ public sealed class MinecraftWikiClient
     public Task<MinecraftWikiPage?> GetChangelogAsync(string versionId, CancellationToken cancellationToken = default) => GetPageAsync(versionId, false, cancellationToken);
 
     /// <summary>构造版本页面地址, 供调用方在浏览器中打开完整内容.</summary>
-    public static Uri GetPageUrl(string versionId)
+    public static Uri GetPageUrl(string versionId, string? language = null)
     {
         if (string.IsNullOrWhiteSpace(versionId))
         {
             throw new ArgumentException("版本标识不能为空.", nameof(versionId));
         }
 
-        return new Uri("https://zh.minecraft.wiki/w/" + Uri.EscapeDataString("Java版" + versionId));
+        string code = NormalizeLanguage(language);
+        return new Uri(BaseUrl(code), "w/" + Uri.EscapeDataString(PageTitle(versionId, code)));
     }
 
     private async Task<MinecraftWikiPage?> GetPageAsync(string versionId, bool introductionOnly,
@@ -46,7 +51,7 @@ public sealed class MinecraftWikiClient
             throw new ArgumentException("版本标识不能为空.", nameof(versionId));
         }
 
-        string title = "Java版" + versionId;
+        string title = PageTitle(versionId, _language);
         string query = "action=query&format=json&formatversion=2&redirects=1&prop=extracts&explaintext=1&titles=" + Uri.EscapeDataString(title) + (introductionOnly ? "&exintro=1" : "");
         Uri requestUrl = new(_apiUrl + "?" + query);
         using HttpResponseMessage response = await _httpClient.GetAsync(requestUrl, cancellationToken).ConfigureAwait(false);
@@ -86,6 +91,29 @@ public sealed class MinecraftWikiClient
             return null;
         }
 
-        return new MinecraftWikiPage(pageTitle, new Uri("https://zh.minecraft.wiki/w/" + Uri.EscapeDataString(pageTitle)), text);
+        return new MinecraftWikiPage(pageTitle, new Uri(_baseUrl, "w/" + Uri.EscapeDataString(pageTitle)), text);
     }
+
+    private static string NormalizeLanguage(string? language)
+    {
+        string code = language?.Trim().ToLowerInvariant() ?? "en";
+        return code switch
+        {
+            "" or "en" => "en",
+            "zh" or "de" or "he" or "ja" or "lzh" or "pt" or "ru" => code,
+            _ => throw new ArgumentOutOfRangeException(nameof(language), language, "不支持该 Minecraft Wiki 语言.")
+        };
+    }
+
+    private static Uri BaseUrl(string language) => new(language == "en"
+        ? "https://minecraft.wiki/"
+        : $"https://{language}.minecraft.wiki/");
+
+    private static string PageTitle(string versionId, string language) => language switch
+    {
+        "zh" or "lzh" => "Java版" + versionId,
+        "de" => versionId,
+        "pt" => "Edição Java " + versionId,
+        _ => "Java Edition " + versionId
+    };
 }

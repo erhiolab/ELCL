@@ -108,11 +108,18 @@ internal sealed class LauncherAccountStore
         Save(new AccountFile(accounts, _data.SelectedUuid == uuid ? null : _data.SelectedUuid, microsoft));
     }
 
-    internal void AddOrUpdateMicrosoft(MicrosoftMinecraftSession session)
+    internal void AddOrUpdateMicrosoft(MicrosoftMinecraftSession session, bool selectAccount = true)
     {
         List<MicrosoftAccount> microsoft = MicrosoftAccounts.Where(account => account.Uuid != session.Uuid).ToList();
         microsoft.Add(new MicrosoftAccount(session.UserName, session.Uuid, Protect(session.MicrosoftRefreshToken), Protect(session.MinecraftAccessToken), session.MinecraftAccessTokenExpiresAt));
-        Save(_data with { MicrosoftAccounts = microsoft, SelectedUuid = session.Uuid });
+        Save(_data with { MicrosoftAccounts = microsoft, SelectedUuid = selectAccount ? session.Uuid : _data.SelectedUuid });
+    }
+
+    internal string GetMinecraftAccessToken(Guid uuid)
+    {
+        MicrosoftAccount account = MicrosoftAccounts.FirstOrDefault(item => item.Uuid == uuid)
+            ?? throw new ArgumentException(LocalizationManager.Get("account.microsoftNotFound"), nameof(uuid));
+        return Unprotect(account.ProtectedMinecraftAccessToken);
     }
 
     internal string GetMicrosoftRefreshToken(Guid uuid)
