@@ -3,6 +3,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
+    <!-- 表单页保留左右 32 的留白，顶部与下载页、关于页统一为 24。 -->
+    <Thickness
+        x:Key="FormPageContentMargin">
+        32,24,32,36
+    </Thickness>
+
     <Style
         TargetType="ToolTip"
         BasedOn="{StaticResource {x:Type ToolTip}}">

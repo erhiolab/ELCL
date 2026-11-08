@@ -7,7 +7,7 @@
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <StackPanel
-            Margin="32,28,32,36">
+            Margin="{StaticResource FormPageContentMargin}">
             <controls:LauncherCard
                 Header="{DynamicResource I18n.settings.configuration}">
                 <StackPanel>
