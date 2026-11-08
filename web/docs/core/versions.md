@@ -26,4 +26,6 @@ Console.WriteLine($"实际来源：{catalog.Source}");
 
 返回的 `LocalMinecraftVersion` 除 `Id`、`Type` 和 `ReleaseTime` 外，还提供可为空的 `GameVersion`、`Loader`、`LoaderVersion`。扫描器优先读取 `clientVersion`、Forge/NeoForge 的 `arguments.game` 参数、`inheritsFrom`（必要时追溯本地父版本 JSON）以及 `libraries` 中的加载器坐标。仅当元数据不足时，才识别完整且明确的“游戏版本-加载器-加载器版本”命名格式；任意自定义名称中的数字不会被当作版本号。无法确认的字段保持为空，调用方可据此显示解析失败。
 
+原版 JSON 的 `id` 和 `inheritsFrom` 除现代数字版本号、周快照外，也支持历史版本格式：例如 Pre-Classic 的 `rd-132211`、Classic 的 `c0.0.13a_03`、Indev/Infdev 的 `in-20100125` / `inf-20100618`、Alpha 的 `a1.2.6` 和 Beta 的 `b1.8.1`。这些 ID 会完整保留为 `GameVersion`，版本类别仍取自 JSON 的 `type`。只匹配完整格式，不从自定义名称中截取这类片段。
+
 这个 API 提供的是**版本信息**，并不下载或安装游戏。

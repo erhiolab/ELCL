@@ -104,7 +104,9 @@ public static class LocalMinecraftVersionScanner
 
     private static bool LooksLikeGameVersion(string value) =>
         System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d+\.\d+(?:\.\d+)?(?:-(?:pre|rc)\d+)?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
-        || System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{2}w\d{2}[a-z]$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        || System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{2}w\d{2}[a-z]$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+        || System.Text.RegularExpressions.Regex.IsMatch(value, @"^(?:rd-\d{6}(?:\d{2})?|(?:in|inf)-\d{8})$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+        || System.Text.RegularExpressions.Regex.IsMatch(value, @"^[abc]\d+(?:\.\d+)+[a-z]?(?:_\d+[a-z]?)?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private static (string? Loader, string? Version) ReadLoader(JsonElement root, string id)
     {
