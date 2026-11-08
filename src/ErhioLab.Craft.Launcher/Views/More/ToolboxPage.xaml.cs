@@ -45,8 +45,16 @@ public partial class ToolboxPage
         }
         var date = DateOnly.FromDateTime(DateTime.Now);
         int score = ToolboxTools.DailyLuck(date);
-        string message = LocalizationManager.Get(ToolboxTools.DailyLuckMessageKey(score));
-        App.Logger.Information("Toolbox", $"查看今日人品: date={date:yyyy-MM-dd}, score={score}.");
+        string messageKey = ToolboxTools.DailyLuckMessageKey(score,
+            App.Settings.DailyLuckDate == date ? App.Settings.DailyLuckMessageKey : null);
+        if (App.Settings.DailyLuckDate != date || App.Settings.DailyLuckMessageKey != messageKey)
+        {
+            App.Logger.Information("Toolbox", $"开始保存今日人品文案: date={date:yyyy-MM-dd}, message={messageKey}.");
+            if (!App.UpdateSettings(App.Settings with { DailyLuckDate = date, DailyLuckMessageKey = messageKey })) return;
+            App.Logger.Information("Toolbox", $"今日人品文案已保存: date={date:yyyy-MM-dd}, message={messageKey}.");
+        }
+        string message = LocalizationManager.Get(messageKey);
+        App.Logger.Information("Toolbox", $"查看今日人品: date={date:yyyy-MM-dd}, score={score}, message={messageKey}.");
         LauncherDialogs.Information(string.Format(LocalizationManager.Get("toolbox.luckTitle"), date),
             string.Format(LocalizationManager.Get("toolbox.luckResult"), score, message));
     }

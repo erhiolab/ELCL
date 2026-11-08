@@ -9,18 +9,21 @@ internal sealed record CleanupResult(long Bytes, int Files, int Skipped, int Fai
 
 internal static class ToolboxTools
 {
-    // 只依赖本地日期, 不保存随机结果; 同一天重复点击结果相同.
+    // 分数只依赖本地日期; 文案在当天首次抽取后由调用方保存在配置中.
     internal static int DailyLuck(DateOnly date) => (int)(BitConverter.ToUInt32(
         SHA256.HashData(Encoding.UTF8.GetBytes("ELCL.daily-luck/" + date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))), 0) % 101);
 
-    internal static string DailyLuckMessageKey(int score)
+    internal static string DailyLuckMessageKey(int score, string? savedKey = null)
     {
         string range = Math.Clamp(score, 0, 100) switch
         {
             0 => "zero", <= 19 => "gentle", <= 39 => "warmup", <= 59 => "steady",
             <= 79 => "sunny", < 100 => "sparkly", _ => "perfect"
         };
-        return $"toolbox.luck.{range}.{Random.Shared.Next(1, 7)}";
+        string prefix = $"toolbox.luck.{range}.";
+        if (savedKey is not null && Enumerable.Range(1, 6).Any(index => savedKey == prefix + index))
+            return savedKey;
+        return prefix + Random.Shared.Next(1, 7);
     }
 
     internal static CleanupResult Clean(IReadOnlyList<string> gameDirectories, string launcherDataDirectory,

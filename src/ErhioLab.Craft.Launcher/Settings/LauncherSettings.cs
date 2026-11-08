@@ -102,6 +102,9 @@ public sealed record LauncherSettings
     public string? SelectedVersionId { get; init; }
 
     public bool DailyLuckDisclaimerAccepted { get; init; }
+    /// <summary>最近一次抽取人品文案的本地日期与语言键, 保存在配置中.</summary>
+    public DateOnly? DailyLuckDate { get; init; }
+    public string? DailyLuckMessageKey { get; init; }
     public int PerformanceRefreshMilliseconds { get; init; } = 1000;
 
     /// <summary>将外部配置值限制在启动器支持的范围内.</summary>
