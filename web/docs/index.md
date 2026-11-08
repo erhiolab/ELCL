@@ -28,12 +28,12 @@ description: 认识 ELCL 启动器，查阅 ELCLC 核心库文档。
     <div class="home-feature-grid">
       <article class="home-feature"><span class="feature-number">01 / 版本</span><div class="feature-icon">◇</div><h3>找版本更快</h3><p>正式版、预览版、远古版和愚人节版分开显示；搜索版本号，点开就能继续配置。</p></article>
       <article class="home-feature"><span class="feature-number">02 / 环境</span><div class="feature-icon">☕</div><h3>整理本机 Java</h3><p>自动发现已安装的 Java，也能手动添加、排序和移除。需要哪个版本，由你决定优先级。</p></article>
-      <article class="home-feature"><span class="feature-number">03 / 下载</span><div class="feature-icon">↓</div><h3>看得见的下载任务</h3><p>多连接下载、来源回退和任务进度已经接入。百宝箱还可以下载自定义文件。</p></article>
+      <article class="home-feature"><span class="feature-number">03 / 下载</span><div class="feature-icon">↓</div><h3>看得见的下载任务</h3><p>原版与模组加载器安装共用任务列表，支持多连接下载和来源回退。百宝箱还可以下载自定义文件。</p></article>
     </div>
   </section>
 
   <section class="home-core"><div><span class="home-kicker">FOR DEVELOPERS</span><h2>ELCLC，给启动器写的通用核心。</h2><p>版本清单、模组加载器版本、Java 发现、文件下载、日志与 JSON 存储。核心库不依赖 ELCL 的窗口或设置，你可以在自己的 .NET 10 项目里使用。</p><a class="home-text-link" href="./core/quick-start">从第一个版本查询开始 <span aria-hidden="true">↗</span></a></div><div class="home-code"><div class="code-top"><span></span><span></span><span></span><small>Program.cs</small></div><pre><code>using var http = new HttpClient();&#10;var client = new MinecraftVersionCatalogClient(http);&#10;var catalog = await client.GetCatalogAsync(&#10;    MinecraftManifestSource.Official);&#10;&#10;Console.WriteLine(catalog.LatestReleaseId);</code></pre></div></section>
 
-  <section class="home-status"><span class="home-kicker">PROJECT STATUS</span><h2>项目还在路上。</h2><p>目前已接入原版游戏下载、账户管理与游戏启动，启动前会检查 Java 和游戏文件，各版本使用独立的游戏目录。加载器安装与版本专属设置仍在完善。欢迎在仓库里了解进度或参与讨论。</p><a class="home-text-link" href="https://github.com/erhiolab/ELCL">前往 GitHub <span aria-hidden="true">↗</span></a></section>
+  <section class="home-status"><span class="home-kicker">PROJECT STATUS</span><h2>项目还在路上。</h2><p>目前已接入游戏与加载器安装、账户管理和游戏启动，启动前会检查 Java 和游戏文件，各版本使用独立的游戏目录。更多页提供性能概览、内存优化和缓存清理，版本专属设置仍在完善。欢迎在仓库里了解进度或参与讨论。</p><a class="home-text-link" href="https://github.com/erhiolab/ELCL">前往 GitHub <span aria-hidden="true">↗</span></a></section>
   <footer class="home-footer"><span>ELCL <span class="footer-divider">/</span> ErhioLab Craft Launcher</span><span>为 Minecraft Java 版而做 · 开源开发中</span></footer>
 </div>

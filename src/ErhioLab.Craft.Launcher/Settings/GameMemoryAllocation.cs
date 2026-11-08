@@ -5,15 +5,21 @@ namespace ErhioLab.Craft.Launcher.Settings;
 
 internal readonly record struct PhysicalMemorySnapshot(ulong TotalBytes, ulong AvailableBytes)
 {
-    private const double BytesPerGiB = 1024d * 1024 * 1024;
-    internal double TotalGiB => TotalBytes / BytesPerGiB;
-    internal double AvailableGiB => Math.Min(AvailableBytes, TotalBytes) / BytesPerGiB;
-    internal double UsedGiB => TotalGiB - AvailableGiB;
+    internal ulong ClampedAvailableBytes => Math.Min(AvailableBytes, TotalBytes);
+    internal ulong UsedBytes => TotalBytes - ClampedAvailableBytes;
+
+    internal double Total(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(TotalBytes, unit);
+    internal double Available(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(ClampedAvailableBytes, unit);
+    internal double Used(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(UsedBytes, unit);
 }
 
 /// <summary>读取当前物理内存并估算设置页中的游戏内存分配, 不预占或清理系统内存.</summary>
 internal static class GameMemoryAllocation
 {
+    private const double BytesPerGiB = 1024d * 1024 * 1024;
+    private const double BytesPerGb = 1000d * 1000 * 1000;
+    internal const ulong BytesPerMiB = 1024UL * 1024;
+
     internal static PhysicalMemorySnapshot ReadPhysicalMemory()
     {
         MemoryStatus status = new() { Length = (uint)Marshal.SizeOf<MemoryStatus>() };
@@ -22,14 +28,35 @@ internal static class GameMemoryAllocation
         return new PhysicalMemorySnapshot(status.TotalPhysical, status.AvailablePhysical);
     }
 
-    internal static double CalculateGiB(double availableGiB, bool automatic, int customPercent)
+    internal static ulong CalculateBytes(ulong availableBytes, bool automatic, int customPercent, MemoryUnitSystem unit)
     {
-        if (!double.IsFinite(availableGiB) || availableGiB <= 0) return 0;
-        if (!automatic) return availableGiB * Math.Clamp(customPercent, 0, 100) / 100;
+        if (availableBytes == 0) return 0;
+        if (!automatic)
+        {
+            // 直接按字节计算比例, 避免切换显示单位带来的浮点取整差异和乘法溢出.
+            var percent = (ulong)Math.Clamp(customPercent, 0, 100);
+            return availableBytes / 100 * percent + availableBytes % 100 * percent / 100;
+        }
 
-        // 分段预算: 1.5 / 2.5 / 4 / 8 GiB.
+        var bytesPerUnit = BytesPerLargeUnit(unit);
+        var allocationBytes = CalculateAutomatic(availableBytes / bytesPerUnit) * bytesPerUnit;
+        // 在转换回整数之前封顶, 保证预览和启动值都不超过实际可用内存.
+        return allocationBytes >= availableBytes ? availableBytes : (ulong)Math.Floor(allocationBytes);
+    }
+
+    internal static double ToLargeUnits(double bytes, MemoryUnitSystem unit) => bytes / BytesPerLargeUnit(unit);
+
+    internal static string LargeUnitSymbol(MemoryUnitSystem unit) => unit == MemoryUnitSystem.Decimal ? "GB" : "GiB";
+
+    private static double BytesPerLargeUnit(MemoryUnitSystem unit) => unit == MemoryUnitSystem.Decimal ? BytesPerGb : BytesPerGiB;
+
+    private static double CalculateAutomatic(double available)
+    {
+        if (!double.IsFinite(available) || available <= 0) return 0;
+
+        // 分段预算: 1.5 / 2.5 / 4 / 8 个当前大单位(GiB 或 GB).
         // 越过各档位后, 新增可用内存中分别只取 70%/40%/15%.
-        double remaining = availableGiB;
+        double remaining = available;
         double allocation = 0;
         (double Budget, double Ratio)[] stages = [(1.5, 1), (1, 0.7), (1.5, 0.4), (4, 0.15)];
         foreach ((double budget, double ratio) in stages)
@@ -41,7 +68,7 @@ internal static class GameMemoryAllocation
         }
 
         // 内存极少时也不让预览超过实际可用量.
-        return Math.Min(availableGiB, Math.Round(Math.Max(allocation, 0.5), 1));
+        return Math.Min(available, Math.Round(Math.Max(allocation, 0.5), 1));
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -236,6 +236,28 @@
             </controls:LauncherCard>
             <controls:LauncherCard
                 Margin="0,14,0,0"
+                Header="{DynamicResource I18n.personalization.memoryUnit}">
+                <StackPanel>
+                    <ComboBox
+                        x:Name="MemoryUnitBox"
+                        HorizontalAlignment="Stretch"
+                        SelectionChanged="MemoryUnitBox_SelectionChanged"
+                        Style="{StaticResource FormComboBoxStyle}">
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.personalization.memoryUnitBinary}" />
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.personalization.memoryUnitDecimal}" />
+                    </ComboBox>
+                    <TextBlock
+                        Margin="0,8,0,0"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.personalization.memoryUnitHint}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="0,14,0,0"
                 Header="{DynamicResource I18n.personalization.titleBar}">
                 <StackPanel>
                     <Grid

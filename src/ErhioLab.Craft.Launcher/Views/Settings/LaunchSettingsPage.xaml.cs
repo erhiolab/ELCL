@@ -252,11 +252,13 @@ public partial class LaunchSettingsPage
             return;
         }
 
-        double game = GameMemoryAllocation.CalculateGiB(memory.AvailableGiB, automatic, percent);
-        double free = Math.Max(0, memory.AvailableGiB - game);
-        MemoryUsageBar.SetValues(memory.UsedGiB, game, free, transition ?? TimeSpan.FromMilliseconds(140));
-        UsedMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryUsedValue"), memory.UsedGiB, memory.TotalGiB);
-        GameMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryGameValue"), game);
+        MemoryUnitSystem unit = App.Settings.MemoryUnit;
+        ulong gameBytes = GameMemoryAllocation.CalculateBytes(memory.ClampedAvailableBytes, automatic, percent, unit);
+        ulong freeBytes = memory.ClampedAvailableBytes - gameBytes;
+        MemoryUsageBar.SetValues(memory.UsedBytes, gameBytes, freeBytes, transition ?? TimeSpan.FromMilliseconds(140));
+        string symbol = GameMemoryAllocation.LargeUnitSymbol(unit);
+        UsedMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryUsedValue"), memory.Used(unit), memory.Total(unit), symbol);
+        GameMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryGameValue"), GameMemoryAllocation.ToLargeUnits(gameBytes, unit), symbol);
     }
 
     private void MemoryUsageBar_FirstBoundaryChanged(object? sender, EventArgs e) => PositionGameMemoryLabels();

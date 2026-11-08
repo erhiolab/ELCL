@@ -17,7 +17,7 @@ internal sealed record MemoryOptimizationResult(
     int FailedProcesses,
     TimeSpan Duration)
 {
-    internal double AvailableIncreaseGiB => After.AvailableGiB - Before.AvailableGiB;
+    internal double AvailableIncreaseBytes => (double)After.ClampedAvailableBytes - Before.ClampedAvailableBytes;
 }
 
 /// <summary>使用 Windows 工作集接口整理允许访问的同会话进程, 不结束进程或改变其虚拟内存分配.</summary>

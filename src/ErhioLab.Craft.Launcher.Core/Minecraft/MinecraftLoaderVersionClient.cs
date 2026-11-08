@@ -442,7 +442,8 @@ public sealed class MinecraftLoaderVersionClient
     {
         using JsonDocument document = JsonDocument.Parse(json);
         List<MinecraftLoaderVersion> versions = [];
-        foreach (JsonElement entry in RequireArray(document.RootElement).EnumerateArray())
+        IEnumerable<JsonElement> entries = document.RootElement.ValueKind == JsonValueKind.Array ? document.RootElement.EnumerateArray() : [document.RootElement];
+        foreach (JsonElement entry in entries)
         {
             if (GetString(entry, "mcversion") != gameVersion || GetString(entry, "version") is not { } version)
             {

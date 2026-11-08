@@ -98,7 +98,8 @@ internal static class ShellRouteCatalog
         // 更多
         SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.Info);
         SectionSidebarItem toolboxItem = new("sidebar.toolbox", LauncherIcons.Toolbox);
-        SectionSidebarView moreSidebar = new(aboutItem, toolboxItem);
+        SectionSidebarItem performanceItem = new("sidebar.performance", LauncherIcons.Performance);
+        SectionSidebarView moreSidebar = new(aboutItem, toolboxItem, performanceItem);
         AboutPage aboutPage = new();
         ContentControl moreContent = new()
         {
@@ -107,7 +108,9 @@ internal static class ShellRouteCatalog
             VerticalContentAlignment = VerticalAlignment.Stretch
         };
         ToolboxPage toolboxPage = new();
-        moreSidebar.SelectionChanged += item => moreContent.Content = ReferenceEquals(item, toolboxItem) ? toolboxPage : aboutPage;
+        PerformancePage performancePage = new();
+        moreSidebar.SelectionChanged += item => moreContent.Content = ReferenceEquals(item, toolboxItem) ? toolboxPage
+            : ReferenceEquals(item, performanceItem) ? performancePage : aboutPage;
 
         return new Dictionary<ShellSection, ShellRoute>
         {

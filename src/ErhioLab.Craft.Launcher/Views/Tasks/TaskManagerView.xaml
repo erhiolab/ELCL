@@ -49,7 +49,7 @@
                     x:Name="SpeedText"
                     HorizontalAlignment="Center"
                     FontSize="19"
-                    Text="0 KiB/s" />
+                    Text="" />
 
                 <TextBlock
                     Margin="0,82,0,0"

@@ -167,8 +167,9 @@ internal sealed class GameLaunchService
 
                     if (java is null) throw new InvalidOperationException(string.Format(L("gameLaunch.noJava"), version!.JavaMajorVersion));
                     var snapshot = GameMemoryAllocation.ReadPhysicalMemory();
-                    double gib = GameMemoryAllocation.CalculateGiB(snapshot.AvailableGiB, settings.AutoAllocateMemory, settings.CustomMemoryPercent);
-                    memory = (int)Math.Floor(Math.Min(gib * 1024, 1024 * 1024));
+                    ulong allocatedBytes = GameMemoryAllocation.CalculateBytes(snapshot.ClampedAvailableBytes, settings.AutoAllocateMemory,
+                        settings.CustomMemoryPercent, settings.MemoryUnit);
+                    memory = (int)Math.Min(allocatedBytes / GameMemoryAllocation.BytesPerMiB, 1024UL * 1024);
                     if (java.Architecture.Contains("32", StringComparison.Ordinal) || java.Architecture is "x86" or "i386") memory = Math.Min(memory, 1024);
                     if (memory < 128) throw new InvalidOperationException(L("gameLaunch.lowMemory"));
                     App.Logger.Information("Launch", $"选用 Java: {java.Path}, 版本={java.Version}, 架构={java.Architecture}, 游戏内存={memory} MiB.");

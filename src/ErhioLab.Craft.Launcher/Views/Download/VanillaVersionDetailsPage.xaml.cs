@@ -29,6 +29,7 @@ public partial class VanillaVersionDetailsPage
     private Window? _ownerWindow;
     private bool _started;
     private bool _updatingSelections;
+    private string _automaticVersionName;
 
     /// <summary>页面上的加载器分组及其获取状态.</summary>
     public IReadOnlyList<LoaderSection> LoaderSections { get; } =
@@ -48,6 +49,7 @@ public partial class VanillaVersionDetailsPage
     internal VanillaVersionDetailsPage(MinecraftVersion version)
     {
         _version = version;
+        _automaticVersionName = version.Id;
         InitializeComponent();
         LocalizationManager.Changed += LocalizationChanged;
         VersionIcon.Data = LauncherIcons.ForVersion(version.Kind);
@@ -285,6 +287,9 @@ public partial class VanillaVersionDetailsPage
 
         section.Select(selected);
         RefreshCompatibility();
+        string suggested = MinecraftLoaderInstaller.DefaultVersionName(_version.Id, SelectedLoaders());
+        if (VersionNameBox.Text == _automaticVersionName) VersionNameBox.Text = suggested;
+        _automaticVersionName = suggested;
         App.Logger.Information("Download", $"{section.Kind} 版本选择: {choice.Label}.");
         if (_sectionControls.TryGetValue(section, out var controls))
         {
@@ -388,12 +393,6 @@ public partial class VanillaVersionDetailsPage
 
     private void StartDownloadButton_Click(object sender, RoutedEventArgs e)
     {
-        if (LoaderSections.Any(section => section.SelectedVersion is not null))
-        {
-            LauncherToasts.Information(LocalizationManager.Get("install.loadersUnavailable"));
-            return;
-        }
-
         string name = VersionNameBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 128 || name is "." or ".." ||
             name.EndsWith('.') || name.EndsWith(' ') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
@@ -421,8 +420,9 @@ public partial class VanillaVersionDetailsPage
                 ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
             DownloadOptions options = new(App.Settings.DownloadMaxConnections,
                 (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
-            App.Tasks.StartVanillaInstall(_version, name, gameDirectory, preferred, options);
-            App.Logger.Information("Download", $"已创建原版安装任务: {_version.Id} -> {name}, 游戏目录: {gameDirectory}.");
+            var loaders = SelectedLoaders();
+            App.Tasks.StartMinecraftInstall(_version, name, gameDirectory, preferred, options, loaders);
+            App.Logger.Information("Download", $"已创建游戏安装任务: {_version.Id} -> {name}, 加载器={string.Join(",", loaders.Select(loader => loader.Kind + ":" + loader.Version.Version))}, 游戏目录: {gameDirectory}.");
             LauncherToasts.Information(string.Format(LocalizationManager.Get("install.queued"), name));
             BackButton_Click(sender, e);
         }
@@ -439,6 +439,9 @@ public partial class VanillaVersionDetailsPage
         client.DefaultRequestHeaders.UserAgent.ParseAdd("ELCL/0.0.1");
         return client;
     }
+
+    private MinecraftLoaderSelection[] SelectedLoaders() => LoaderSections.Where(section => section.SelectedVersion is not null)
+        .Select(section => new MinecraftLoaderSelection(section.Kind, section.SelectedVersion!)).ToArray();
 
     /// <summary>一个加载器下拉分组的状态和可选版本.</summary>
     public sealed class LoaderSection : INotifyPropertyChanged

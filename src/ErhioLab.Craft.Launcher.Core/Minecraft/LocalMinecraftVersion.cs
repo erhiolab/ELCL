@@ -1,6 +1,15 @@
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
-/// <summary>从游戏目录中的版本 JSON 读取到的本地版本.</summary>
+/// <summary>本地版本元数据的读取错误, 不表示游戏资源已完成完整性校验.</summary>
+public enum LocalMinecraftVersionError
+{
+    None,
+    MissingMetadata,
+    InvalidMetadata,
+    UnreadableMetadata
+}
+
+/// <summary>本地版本目录及其元数据; 错误条目的 Id 使用目录名称.</summary>
 public sealed record LocalMinecraftVersion(
     string Id,
     string FolderPath,
@@ -10,4 +19,8 @@ public sealed record LocalMinecraftVersion(
     string? GameVersion = null,
     string? Loader = null,
     string? LoaderVersion = null
-);
+)
+{
+    public LocalMinecraftVersionError Error { get; init; }
+    public bool IsValid => Error == LocalMinecraftVersionError.None;
+}

@@ -31,6 +31,8 @@ export default defineConfig({
                 {
                     text: "ELCL 启动器", items: [
                         { text: "启动游戏", link: "/launcher/launch" },
+                        { text: "下载与安装", link: "/launcher/download" },
+                        { text: "百宝箱与性能", link: "/launcher/toolbox" },
                         { text: "高级启动选项", link: "/launcher/advanced-options" }
                     ]
                 }
@@ -47,6 +49,7 @@ export default defineConfig({
                     text: "Minecraft", items: [
                         { text: "游戏版本列表", link: "/core/versions" },
                         { text: "模组加载器版本", link: "/core/loaders" },
+                        { text: "安装模组加载器", link: "/core/loader-installation" },
                         { text: "Minecraft Wiki", link: "/core/wiki" },
                         { text: "启动模板替换标记", link: "/core/launch-placeholders" },
                         { text: "准备启动 Minecraft", link: "/core/launch" },

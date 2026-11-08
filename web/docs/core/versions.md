@@ -22,7 +22,20 @@ Console.WriteLine($"实际来源：{catalog.Source}");
 
 ## 扫描已有游戏目录
 
-`LocalMinecraftVersionScanner.Scan(gameDirectory)` 会查看指定目录下的 `versions` 文件夹，读取每个版本的 JSON。损坏的单个文件会跳过；想记录原因，可传入 `onFileError` 回调。扫描不会改动游戏文件，也不会替你决定哪个目录是“默认”目录。
+`LocalMinecraftVersionScanner.Scan(gameDirectory)` 会查看指定目录下的 `versions` 文件夹，优先读取与目录同名的 JSON；没有同名文件时，尝试目录下的第一个 JSON。默认只返回能读取的版本。想记录缺失、损坏或无法访问的元数据，可传入 `onFileError` 回调，参数包含文件路径和原始异常。扫描不会改动游戏文件，也不会替你决定哪个目录是“默认”目录。
+
+如果要做版本目录管理界面，可以传入 `includeInvalidVersions: true`，把无效目录也列出来：
+
+```csharp
+var entries = LocalMinecraftVersionScanner.Scan(gameDirectory,
+    onFileError: (path, error) => Console.Error.WriteLine($"{path}: {error}"),
+    includeInvalidVersions: true);
+
+foreach (var entry in entries)
+    Console.WriteLine(entry.IsValid ? entry.Id : $"{entry.Id}: {entry.Error}");
+```
+
+错误条目的 `Id` 使用目录名称，`FolderPath` 保留实际路径，`JsonPath` 是尝试读取的路径（可能不存在），其他版本字段为空。`Error` 区分 `MissingMetadata`、`InvalidMetadata` 和 `UnreadableMetadata`；正常条目为 `None`。正常版本按发布时间排序，错误目录排在其后。调用方可用这些信息显示错误图标、打开目录或提供删除操作，但不要把错误条目当成可启动版本，也不要登记为有效安装档案。`IsValid` 只表示这次元数据读取是否成功，不代表客户端 JAR、依赖及资源完整，启动前仍需检查。
 
 返回的 `LocalMinecraftVersion` 除 `Id`、`Type` 和 `ReleaseTime` 外，还提供可为空的 `GameVersion`、`Loader`、`LoaderVersion`。扫描器优先读取 `clientVersion`、Forge/NeoForge 的 `arguments.game` 参数、`inheritsFrom`（必要时追溯本地父版本 JSON）以及 `libraries` 中的加载器坐标。仅当元数据不足时，才识别完整且明确的“游戏版本-加载器-加载器版本”命名格式；任意自定义名称中的数字不会被当作版本号。无法确认的字段保持为空，调用方可据此显示解析失败。
 

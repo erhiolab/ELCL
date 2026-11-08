@@ -114,6 +114,13 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
     private long _alreadyCompleteBytes;
     internal CancellationToken CancellationToken => task.Cancellation.Token;
 
+    internal void ReportProgress(double value)
+    {
+        if (task.Status != LauncherTaskStatus.Running || stage.Status != LauncherTaskStatus.Running) return;
+        stage.Progress = Math.Clamp(value, 0, 99.9);
+        task.RefreshProgress();
+    }
+
     internal void ConfigureStageWeights(IReadOnlyList<long> weights)
     {
         if (weights.Count != task.Stages.Count) throw new ArgumentException("阶段数量不匹配.", nameof(weights));

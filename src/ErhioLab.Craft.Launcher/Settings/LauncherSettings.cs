@@ -77,6 +77,9 @@ public sealed record LauncherSettings
     /// <summary>自定义模式使用当前可用物理内存的百分比, 范围 0 到 100.</summary>
     public int CustomMemoryPercent { get; init; } = 50;
 
+    /// <summary>内存容量的显示与自动分配换算标准.</summary>
+    public MemoryUnitSystem MemoryUnit { get; init; } = MemoryUnitSystem.Binary;
+
     /// <summary>在选择 Java 与计算游戏内存前整理 Windows 工作集; 默认关闭.</summary>
     public bool OptimizeMemoryBeforeLaunch { get; init; }
 
@@ -97,6 +100,9 @@ public sealed record LauncherSettings
 
     /// <summary>当前选中版本的 JSON 标识符, 用于启动页展示.</summary>
     public string? SelectedVersionId { get; init; }
+
+    public bool DailyLuckDisclaimerAccepted { get; init; }
+    public int PerformanceRefreshMilliseconds { get; init; } = 1000;
 
     /// <summary>将外部配置值限制在启动器支持的范围内.</summary>
     /// <returns>规范化后的设置.</returns>
@@ -120,6 +126,7 @@ public sealed record LauncherSettings
         return this with
         {
             Theme = Enum.IsDefined(Theme) ? Theme : LauncherTheme.Day,
+            PerformanceRefreshMilliseconds = PerformanceRefreshMilliseconds is 500 or 1000 or 2000 or 5000 or 10000 ? PerformanceRefreshMilliseconds : 1000,
             Language = LocalizationManager.IsAvailable(Language) ? Language : LocalizationManager.DefaultLanguage,
             TitleBarMode = Enum.IsDefined(TitleBarMode) ? TitleBarMode : TitleBarMode.Default,
             TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
@@ -137,6 +144,7 @@ public sealed record LauncherSettings
             PreLaunchCommand = NormalizeLaunchText(PreLaunchCommand, 8192),
             GarbageCollector = Enum.IsDefined(GarbageCollector) ? GarbageCollector : GameGarbageCollector.StandardG1,
             CustomMemoryPercent = Math.Clamp(CustomMemoryPercent, 0, 100),
+            MemoryUnit = Enum.IsDefined(MemoryUnit) ? MemoryUnit : MemoryUnitSystem.Binary,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
             JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),

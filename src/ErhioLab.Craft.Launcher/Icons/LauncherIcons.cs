@@ -7,6 +7,8 @@ namespace ErhioLab.Craft.Launcher.Icons;
 /// <summary>集中保存启动器界面使用的线框图标.</summary>
 public static class LauncherIcons
 {
+    /// <summary>系统性能.</summary>
+    public static readonly Geometry Performance = Parse("M 2,15 V 9 H 5 V 15 Z M 8,15 V 5 H 11 V 15 Z M 14,15 V 1 H 17 V 15 Z M 1,18 H 18");
     /// <summary>启动.</summary>
     public static readonly Geometry Launch = Parse("M 4,2 L 11,6.3 Q 11.8,7 11,7.7 L 4,12 Q 3,12.5 3,11.5 L 3,2.5 Q 3,1.5 4,2 Z");
 
@@ -54,6 +56,9 @@ public static class LauncherIcons
 
     /// <summary>提示信息.</summary>
     public static readonly Geometry Info = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 9,8 L 9,13 M 9,5 L 9,5.2");
+
+    /// <summary>错误.</summary>
+    public static readonly Geometry Error = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 6.5,6.5 L 11.5,11.5 M 11.5,6.5 L 6.5,11.5");
 
     /// <summary>已选中.</summary>
     public static readonly Geometry Check = Parse("M 3,9 L 7,13 L 15,4");

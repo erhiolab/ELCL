@@ -208,7 +208,9 @@ public partial class VersionSelectionView
 
         try
         {
-            IReadOnlyList<LocalMinecraftVersion> found = await Task.Run(() => LocalMinecraftVersionScanner.Scan(selected.Path, (path, error) => App.Logger.Warning("Versions", $"跳过无法读取的版本文件: {path}. {error.Message}")));
+            App.Logger.Information("Versions", $"开始扫描游戏目录: {selected.Path}.");
+            IReadOnlyList<LocalMinecraftVersion> found = await Task.Run(() => LocalMinecraftVersionScanner.Scan(selected.Path,
+                (path, error) => App.Logger.Error("Versions", $"版本元数据读取失败, 保留错误条目: {path}.", error), includeInvalidVersions: true));
             if (version != _scanVersion)
             {
                 return;
@@ -216,7 +218,8 @@ public partial class VersionSelectionView
 
             string? rememberedPath = App.Settings.GameFolders.FirstOrDefault(folder => SamePath(folder.Path, selected.Path))?.LastSelectedVersionPath;
             string? preferredPath = rememberedPath ?? App.Settings.SelectedVersionPath;
-            LocalMinecraftVersion? selectedVersion = found.FirstOrDefault(item => SamePath(item.FolderPath, preferredPath)) ?? found.FirstOrDefault();
+            LocalMinecraftVersion[] validVersions = found.Where(item => item.IsValid).ToArray();
+            LocalMinecraftVersion? selectedVersion = validVersions.FirstOrDefault(item => SamePath(item.FolderPath, preferredPath)) ?? validVersions.FirstOrDefault();
             UpdateSelectedVersion(selectedVersion);
             VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath))).ToArray();
             SetEmptyVersionsText("versionSelector.noVersions");
@@ -232,8 +235,8 @@ public partial class VersionSelectionView
                 AnimateEmptyText();
             }
 
-            App.Logger.Information("Versions", $"扫描游戏目录 {selected.Path}, 找到 {found.Count} 个版本.");
-            await LauncherProfileCompatibility.SynchronizeVersionsAsync(selected.Path, found);
+            App.Logger.Information("Versions", $"扫描游戏目录 {selected.Path}, 找到 {validVersions.Length} 个正常版本, {found.Count - validVersions.Length} 个错误目录.");
+            await LauncherProfileCompatibility.SynchronizeVersionsAsync(selected.Path, validVersions);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -252,6 +255,7 @@ public partial class VersionSelectionView
 
     private bool UpdateSelectedVersion(LocalMinecraftVersion? selectedVersion, bool clearFolderMemory = true)
     {
+        if (selectedVersion is { IsValid: false }) return false;
         string? path = selectedVersion?.FolderPath;
         string? id = selectedVersion?.Id;
         string? selectedFolderPath = App.Settings.SelectedGameFolderPath;
@@ -506,8 +510,13 @@ public partial class VersionSelectionView
 
     private void Version_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: VersionRow row } ||
-            !UpdateSelectedVersion(row.Version))
+        if (sender is not FrameworkElement { DataContext: VersionRow row }) return;
+        if (!row.Version.IsValid)
+        {
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("versionSelector.invalidSelection"), row.StatusText));
+            return;
+        }
+        if (!UpdateSelectedVersion(row.Version))
         {
             return;
         }
@@ -540,6 +549,7 @@ public partial class VersionSelectionView
 
         try
         {
+            App.Logger.Information("Versions", $"开始删除本地版本目录: {versionFolder}");
             Directory.Delete(versionFolder, true);
             await LauncherProfileCompatibility.RemoveVersionAsync(folder.Path, versionFolder);
             if (SamePath(App.Settings.SelectedVersionPath, versionFolder) ||
@@ -640,7 +650,8 @@ public partial class VersionSelectionView
     /// <summary>本地版本与显示描述.</summary>
     public sealed record VersionRow(LocalMinecraftVersion Version, bool IsSelected)
     {
-        public Geometry Icon => Version.Loader is { } loader && Enum.TryParse(loader, true, out MinecraftLoaderKind kind)
+        public Geometry Icon => !Version.IsValid ? LauncherIcons.Error
+            : Version.Loader is { } loader && Enum.TryParse(loader, true, out MinecraftLoaderKind kind)
             ? LauncherIcons.ForLoader(kind)
             : Version.Type switch
         {
@@ -649,7 +660,7 @@ public partial class VersionSelectionView
             _ => LauncherIcons.VersionRelease
         };
 
-        public bool HasParsedVersion => !string.IsNullOrWhiteSpace(Version.GameVersion)
+        public bool HasParsedVersion => Version.IsValid && !string.IsNullOrWhiteSpace(Version.GameVersion)
             && (Version.Loader is null || !string.IsNullOrWhiteSpace(Version.LoaderVersion));
 
         public bool HasLoader => HasParsedVersion && Version.Loader is not null;
@@ -662,6 +673,12 @@ public partial class VersionSelectionView
         {
             get
             {
+                if (!Version.IsValid) return LocalizationManager.Get(Version.Error switch
+                {
+                    LocalMinecraftVersionError.MissingMetadata => "versionSelector.missingMetadata",
+                    LocalMinecraftVersionError.InvalidMetadata => "versionSelector.invalidMetadata",
+                    _ => "versionSelector.unreadableMetadata"
+                });
                 if (!HasParsedVersion) return LocalizationManager.Get("versionSelector.parseFailed");
                 return Version.Type switch
                 {

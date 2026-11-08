@@ -20,4 +20,4 @@ foreach (var loader in result.Versions)
 
 `MinecraftLoaderCompatibility.CanCombine(...)` 用来检查当前已确认的加载器组合。目前只确认部分 Forge + OptiFine 组合；返回 `false` 意味着 Core 暂未确认支持，不代表社区里绝对没有可行方法。
 
-这里查询的是**可用版本**，不执行加载器安装。
+这里查询的是**可用版本**。要把所选版本安装到游戏目录，请接着看[安装模组加载器](loader-installation.md)。LiteLoader 镜像返回单个构建对象或构建数组时都可以读取。

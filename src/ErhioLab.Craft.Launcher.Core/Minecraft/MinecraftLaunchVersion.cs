@@ -73,7 +73,7 @@ public sealed record MinecraftLaunchVersion(
         return 8;
     }
 
-    private static JsonObject Merge(JsonObject parent, JsonObject child)
+    internal static JsonObject Merge(JsonObject parent, JsonObject child)
     {
         JsonObject result = (JsonObject)parent.DeepClone();
         foreach (var (key, value) in child)
@@ -100,6 +100,10 @@ public sealed record MinecraftLaunchVersion(
             else if (key == "arguments" && value is JsonObject arguments)
             {
                 JsonObject combined = result[key] as JsonObject ?? new();
+                // LiteLoader/旧版 OptiFine 可以用新参数格式继承旧版原版清单.
+                // 先保留父版本的认证/路径等完整参数, 再追加加载器参数.
+                if (combined["game"] is null && result["minecraftArguments"]?.GetValue<string>() is { } legacy)
+                    combined["game"] = new JsonArray(MinecraftLaunchBuilder.SplitArguments(legacy).Select(argument => (JsonNode?)JsonValue.Create(argument)).ToArray());
                 foreach (var (kind, values) in arguments)
                     combined[kind] = new JsonArray((combined[kind] as JsonArray ?? []).Concat(values as JsonArray ?? []).Select(node => node?.DeepClone()).ToArray());
                 if (result[key] is null) result[key] = combined;

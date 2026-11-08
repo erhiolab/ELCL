@@ -15,6 +15,8 @@ MinecraftLaunchVersion version = await MinecraftLaunchVersion.LoadAsync(
 
 `LoadAsync` 会读取 `inheritsFrom` 指向的父版本，合并支持库和 JVM、游戏参数。子版本覆盖同一 Maven 组件的父版本依赖；参数按父版本在前、子版本在后的顺序合并。重复的游戏参数通常由后者覆盖，`--tweakClass` 可以保留多项。循环继承、超过 32 层的继承和越界路径会被拒绝。读取过程不会改写原有 JSON。
 
+旧版父清单使用 `minecraftArguments`、子清单使用 `arguments.game` 时，会先保留父版本的完整游戏参数，再追加加载器参数，避免丢失用户名、令牌和游戏路径等必需参数。
+
 父版本缺失时，可以提供获取方法。这个方法只需返回 JSON 文本，如何缓存或下载由调用方决定：
 
 ```csharp

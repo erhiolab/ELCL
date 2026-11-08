@@ -8,6 +8,32 @@
         VerticalScrollBarVisibility="Auto">
         <StackPanel
             Margin="{StaticResource FormPageContentMargin}">
+            <controls:LauncherCard
+                Margin="0,0,0,14"
+                Header="{DynamicResource I18n.sidebar.toolbox}">
+                <WrapPanel>
+                    <Button
+                        Width="132"
+                        Margin="0,0,10,8"
+                        Content="{DynamicResource I18n.toolbox.dailyLuck}"
+                        Click="DailyLuck_Click"
+                        Style="{StaticResource SecondaryActionStyle}" />
+                    <Button
+                        x:Name="OptimizeMemoryButton"
+                        Width="132"
+                        Margin="0,0,10,8"
+                        Content="{DynamicResource I18n.memoryOptimization.button}"
+                        Click="OptimizeMemory_Click"
+                        Style="{StaticResource SecondaryActionStyle}" />
+                    <Button
+                        x:Name="CleanupButton"
+                        Width="132"
+                        Margin="0,0,10,8"
+                        Content="{DynamicResource I18n.toolbox.cleanup}"
+                        Click="Cleanup_Click"
+                        Style="{StaticResource SecondaryActionStyle}" />
+                </WrapPanel>
+            </controls:LauncherCard>
             <controls:LauncherCard>
                 <controls:LauncherCard.Header>
                     <StackPanel>

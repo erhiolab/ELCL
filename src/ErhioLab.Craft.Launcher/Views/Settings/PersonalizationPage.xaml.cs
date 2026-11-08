@@ -8,9 +8,10 @@ using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>提供窗口不透明度/明暗模式/主题色和标题栏设置.</summary>
+/// <summary>提供窗口外观/语言/内存单位和标题栏设置.</summary>
 public partial class PersonalizationPage
 {
+    private static readonly MemoryUnitSystem[] MemoryUnitChoices = [MemoryUnitSystem.Binary, MemoryUnitSystem.Decimal];
     private readonly DispatcherTimer _opacitySaveTimer = new()
     {
         Interval = TimeSpan.FromMilliseconds(350)
@@ -48,6 +49,7 @@ public partial class PersonalizationPage
             {
                 Theme = LauncherTheme.Day,
                 Language = LocalizationManager.DefaultLanguage,
+                MemoryUnit = MemoryUnitSystem.Binary,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
                 TitleBarMode = TitleBarMode.Default,
@@ -72,6 +74,7 @@ public partial class PersonalizationPage
         NightThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Night;
         AccentPicker.SetColor(App.Settings.AccentColor);
         LanguageComboBox.SelectedValue = App.Settings.Language;
+        MemoryUnitBox.SelectedIndex = Array.IndexOf(MemoryUnitChoices, App.Settings.MemoryUnit);
         NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
         DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
@@ -152,6 +155,21 @@ public partial class PersonalizationPage
         if (_initializing || LanguageComboBox.SelectedValue is not string language || language == App.Settings.Language)
             return;
         if (!App.UpdateSettings(App.Settings with { Language = language })) RefreshControls();
+    }
+
+    private void MemoryUnitBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || MemoryUnitBox.SelectedIndex < 0) return;
+        var unit = MemoryUnitChoices[MemoryUnitBox.SelectedIndex];
+        if (unit == App.Settings.MemoryUnit) return;
+        App.Logger.Information("Settings", $"开始切换内存单位: {App.Settings.MemoryUnit} -> {unit}.");
+        if (!App.UpdateSettings(App.Settings with { MemoryUnit = unit }))
+        {
+            RefreshControls();
+            return;
+        }
+
+        App.Logger.Information("Settings", $"内存单位已保存: {unit}.");
     }
 
     private void AccentPicker_ColorSelected(string color)

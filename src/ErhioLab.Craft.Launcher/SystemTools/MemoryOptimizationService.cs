@@ -1,5 +1,6 @@
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.SystemTools;
 
@@ -43,12 +44,17 @@ internal sealed class MemoryOptimizationService
             App.Logger.Information("Memory", $"开始内存优化: 工作集整理, 排除本启动器/前台进程及 {excluded.Length} 个运行中的游戏进程.");
             if (showNotifications) LauncherToasts.Information(LocalizationManager.Get("memoryOptimization.started"));
             MemoryOptimizationResult result = await Task.Run(() => _optimize(excluded, cancellationToken), cancellationToken);
-            App.Logger.Information("Memory", $"内存优化完成: 检查={result.InspectedProcesses}, 成功={result.TrimmedProcesses}, 跳过={result.SkippedProcesses}, 失败={result.FailedProcesses}, " + $"可用内存={result.Before.AvailableGiB:0.00}→{result.After.AvailableGiB:0.00} GiB, 用时={result.Duration.TotalMilliseconds:0} ms.");
+            MemoryUnitSystem unit = App.Settings.MemoryUnit;
+            string symbol = GameMemoryAllocation.LargeUnitSymbol(unit);
+            double increase = GameMemoryAllocation.ToLargeUnits(result.AvailableIncreaseBytes, unit);
+            double before = result.Before.Available(unit);
+            double after = result.After.Available(unit);
+            App.Logger.Information("Memory", $"内存优化完成: 检查={result.InspectedProcesses}, 成功={result.TrimmedProcesses}, 跳过={result.SkippedProcesses}, 失败={result.FailedProcesses}, " + $"可用内存={before:0.00}→{after:0.00} {symbol}, 用时={result.Duration.TotalMilliseconds:0} ms.");
             if (showNotifications)
             {
-                string message = result.AvailableIncreaseGiB > 0.01
-                    ? string.Format(LocalizationManager.Get("memoryOptimization.completed"), result.AvailableIncreaseGiB, result.After.AvailableGiB)
-                    : string.Format(LocalizationManager.Get("memoryOptimization.noIncrease"), result.After.AvailableGiB);
+                string message = result.AvailableIncreaseBytes > 0.01 * 1024 * 1024 * 1024
+                    ? string.Format(LocalizationManager.Get("memoryOptimization.completed"), increase, after, symbol)
+                    : string.Format(LocalizationManager.Get("memoryOptimization.noIncrease"), after, symbol);
                 LauncherToasts.Success(message);
             }
 

@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.SystemTools;
 
 using Microsoft.Win32;
 
@@ -23,6 +24,68 @@ public partial class ToolboxPage
     {
         InitializeComponent();
         SaveFolderBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        App.MemoryOptimizer.Changed += RefreshMemoryButton;
+        RefreshMemoryButton();
+    }
+
+    private void RefreshMemoryButton() => OptimizeMemoryButton.IsEnabled = !App.MemoryOptimizer.IsOptimizing;
+
+    private async void OptimizeMemory_Click(object sender, RoutedEventArgs e)
+    {
+        try { await App.MemoryOptimizer.OptimizeAsync(showNotifications: true); }
+        catch (Exception) { /* 共用服务已记录异常并通知.  */ }
+    }
+
+    private async void DailyLuck_Click(object sender, RoutedEventArgs e)
+    {
+        if (!App.Settings.DailyLuckDisclaimerAccepted)
+        {
+            if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("toolbox.dailyLuck"), LocalizationManager.Get("toolbox.luckDisclaimer"))) return;
+            if (!App.UpdateSettings(App.Settings with { DailyLuckDisclaimerAccepted = true })) return;
+        }
+        var date = DateOnly.FromDateTime(DateTime.Now);
+        int score = ToolboxTools.DailyLuck(date);
+        string message = LocalizationManager.Get(ToolboxTools.DailyLuckMessageKey(score));
+        App.Logger.Information("Toolbox", $"查看今日人品: date={date:yyyy-MM-dd}, score={score}.");
+        LauncherDialogs.Information(string.Format(LocalizationManager.Get("toolbox.luckTitle"), date),
+            string.Format(LocalizationManager.Get("toolbox.luckResult"), score, message));
+    }
+
+    private async void Cleanup_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Tasks.Tasks.Any(task => task.IsActive))
+        {
+            LauncherToasts.Information(LocalizationManager.Get("toolbox.cleanupBusy"));
+            return;
+        }
+        Window? owner = Window.GetWindow(this);
+        if (owner is not null) owner.IsEnabled = false;
+        CleanupButton.IsEnabled = false;
+        string[] games = App.Settings.GameFolders.Select(folder => folder.Path).ToArray();
+        string[] active = App.Tasks.Tasks.Where(task => task.IsActive && task.TargetPath is not null).Select(task => task.TargetPath!).ToArray();
+        App.Logger.Information("Toolbox", $"开始清理游戏垃圾: 游戏目录数={games.Length}.");
+        LauncherToasts.Information(LocalizationManager.Get("toolbox.cleanupStarted"));
+        bool cleaned = false;
+        try
+        {
+            var result = await Task.Run(() => ToolboxTools.Clean(games, Path.Combine(AppContext.BaseDirectory, "ELCL"), active,
+                (path, error) => App.Logger.Error("Toolbox", $"无法清理文件: {path}.", error)));
+            App.Logger.Information("Toolbox", $"清理完成: bytes={result.Bytes}, files={result.Files}, skipped={result.Skipped}, failed={result.Failed}.");
+            cleaned = true;
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupRestarting"), result.Files, result.Bytes / 1048576d));
+            await Task.Delay(600);
+            App.Restart(result);
+        }
+        catch (Exception error)
+        {
+            App.Logger.Error("Toolbox", cleaned ? "清理后自动重启失败." : "清理游戏垃圾失败.", error);
+            LauncherToasts.Error(LocalizationManager.Get(cleaned ? "toolbox.cleanupRestartFailed" : "toolbox.cleanupFailed"));
+        }
+        finally
+        {
+            CleanupButton.IsEnabled = true;
+            if (owner is not null) owner.IsEnabled = true;
+        }
     }
 
     private void DownloadUrlBox_TextChanged(object sender, TextChangedEventArgs e)

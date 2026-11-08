@@ -261,6 +261,12 @@
         x:Key="BareTextBoxStyle"
         TargetType="TextBox">
         <Setter
+            Property="CaretBrush"
+            Value="{DynamicResource TextBrush}" />
+        <Setter
+            Property="Cursor"
+            Value="IBeam" />
+        <Setter
             Property="Background"
             Value="Transparent" />
         <Setter

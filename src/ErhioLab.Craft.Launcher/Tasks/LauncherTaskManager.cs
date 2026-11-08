@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows;
 
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
@@ -14,23 +17,40 @@ namespace ErhioLab.Craft.Launcher.Tasks;
 /// <summary>统一管理启动器操作的阶段、进度和取消, 下载器由任务阶段调用.</summary>
 internal sealed class LauncherTaskManager
 {
+    private static readonly HttpClient InstallerHttp = new(new HttpClientHandler
+    {
+        SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+    }) { Timeout = TimeSpan.FromSeconds(35) };
+    static LauncherTaskManager() => InstallerHttp.DefaultRequestHeaders.UserAgent.ParseAdd("ELCL/" + Core.CoreInfo.Version);
+
     public ObservableCollection<LauncherTask> Tasks { get; } = [];
 
-    internal LauncherTask StartVanillaInstall(MinecraftVersion version, string installedName, string gameDirectory,
-        MinecraftManifestSource preferredSource, DownloadOptions options)
+    internal LauncherTask StartMinecraftInstall(MinecraftVersion version, string installedName, string gameDirectory,
+        MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null)
     {
+        MinecraftLoaderSelection[] selections = loaders?.ToArray() ?? [];
+        MinecraftVanillaDownloadPlanner.ValidateVersionName(installedName);
+        MinecraftLoaderInstaller.ValidateSelections(version.Id, selections);
         gameDirectory = Path.GetFullPath(gameDirectory);
+        string baseName = installedName;
         string versionFolder = Path.Combine(gameDirectory, "versions", installedName);
         string clientPath = Path.Combine(versionFolder, installedName + ".jar");
         string versionJsonPath = Path.Combine(versionFolder, installedName + ".json");
         bool clientExisted = File.Exists(clientPath);
         bool versionJsonExisted = File.Exists(versionJsonPath);
+        if (versionJsonExisted) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
+        if (selections.Length > 0 && Directory.Exists(versionFolder) && Directory.EnumerateFileSystemEntries(versionFolder).Any())
+            throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
         if (Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, versionFolder, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException(LocalizationManager.Get("install.alreadyRunning"));
 
         string cacheName = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(version.MetadataUrl.AbsoluteUri)));
         string metadataPath = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version-json", cacheName + ".json");
         MinecraftVanillaDownloadPlan? plan = null;
+        MinecraftLoaderInstallPlan? loaderPlan = null;
+        bool loaderVersionWritten = false;
+        var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp);
+        string workDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install", Guid.NewGuid().ToString("N"));
         DownloadOptions downloadOptions = options;
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> execute) =>
             new(LocalizationManager.Get(key), execute) { LocalizedName = () => LocalizationManager.Get(key) };
@@ -43,7 +63,7 @@ internal sealed class LauncherTaskManager
                 if (version.Sha1 is null || (await MinecraftVanillaDownloadPlanner.MissingFilesAsync([metadata], context.CancellationToken)).Count > 0)
                     await context.DownloadAsync(new DownloadTaskRequest(version.Id, [metadata]), downloadOptions);
                 string json = await File.ReadAllTextAsync(metadataPath, context.CancellationToken);
-                plan = MinecraftVanillaDownloadPlanner.ParseVersion(json, version.Id, gameDirectory, installedName, preferredSource);
+                plan = MinecraftVanillaDownloadPlanner.ParseVersion(json, version.Id, gameDirectory, baseName, preferredSource);
                 long supportBytes = plan.Libraries.Sum(LauncherTaskContext.EstimatedSize);
                 if (plan.LoggingConfiguration is { } logFile) supportBytes += LauncherTaskContext.EstimatedSize(logFile);
                 context.ConfigureStageWeights([
@@ -51,7 +71,8 @@ internal sealed class LauncherTaskManager
                     supportBytes,
                     LauncherTaskContext.EstimatedSize(plan.Client),
                     LauncherTaskContext.EstimatedSize(plan.AssetIndex),
-                    plan.AssetTotalSize ?? 64L * 1024 * 1024
+                    plan.AssetTotalSize ?? 64L * 1024 * 1024,
+                    .. (selections.Length == 0 ? Array.Empty<long>() : new[] { 1024 * 1024, 64L * 1024 * 1024, 1024 * 1024, 1024 * 1024 })
                 ]);
             }),
             Stage("install.libraries", async context =>
@@ -84,21 +105,91 @@ internal sealed class LauncherTaskManager
                 context.ConfigureDownloadPlan(assets, files);
                 if (files.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions);
                 context.CancellationToken.ThrowIfCancellationRequested();
-                await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, installedName, context.CancellationToken);
-                await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
-                    installedName, cancellationToken: context.CancellationToken);
+                if (selections.Length == 0)
+                    await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, baseName, context.CancellationToken);
+                if (selections.Length == 0)
+                    await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
+                        installedName, cancellationToken: context.CancellationToken);
+            }),
+            .. (selections.Length == 0 ? Array.Empty<LauncherTaskStage>() : new[]
+            {
+                Stage("install.loaderMetadata", async context =>
+                {
+                    loaderPlan = await loaderInstaller.PrepareAsync(version.Id, installedName, selections, gameDirectory, workDirectory, preferredSource,
+                        async (files, token) =>
+                        {
+                            token.ThrowIfCancellationRequested();
+                            await Application.Current.Dispatcher.InvokeAsync(() => context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions)).Task.Unwrap();
+                        }, message => App.Logger.Information("Installer", message), context.CancellationToken,
+                        baseVersionJsonPath: metadataPath, baseClientJarPath: plan!.Client.DestinationPath);
+                }),
+                Stage("install.loaderFiles", async context =>
+                {
+                    var files = loaderPlan!.Files.DistinctBy(file => file.DestinationPath, StringComparer.OrdinalIgnoreCase).ToArray();
+                    var missing = await MinecraftVanillaDownloadPlanner.MissingFilesAsync(files, context.CancellationToken);
+                    context.ConfigureDownloadPlan(files, missing);
+                    if (missing.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, missing), downloadOptions);
+                }),
+                Stage("install.loaderProcessors", async context =>
+                {
+                    string? javaPath = null;
+                    if (loaderPlan!.NeedsJava)
+                    {
+                        if (App.Settings.JavaInstallations.Count == 0) await App.JavaCatalog.InitializeIfEmptyAsync();
+                        var baseVersion = await MinecraftLaunchVersion.LoadAsync(gameDirectory, metadataPath, cancellationToken: context.CancellationToken);
+                        foreach (var java in App.Settings.JavaInstallations.OrderBy(candidate => candidate.MajorVersion == baseVersion.JavaMajorVersion ? 0 : 1))
+                        {
+                            if (java.MajorVersion < baseVersion.JavaMajorVersion) continue;
+                            if (await JavaDiscovery.ProbeAsync(java.Path, context.CancellationToken) is { } found) { javaPath = found.Path; break; }
+                        }
+                        if (javaPath is null) throw new InvalidOperationException(LocalizationManager.Get("install.noInstallerJava"));
+                    }
+                    await loaderInstaller.RunProcessorsAsync(loaderPlan, javaPath, InstallerProcessRunner.RunAsync,
+                        new Progress<double>(context.ReportProgress), context.CancellationToken);
+                }),
+                Stage("install.finalize", async context =>
+                {
+                    await MinecraftLoaderInstaller.WriteVersionAsync(loaderPlan!, context.CancellationToken);
+                    loaderVersionWritten = true;
+                    await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName, installedName, cancellationToken: context.CancellationToken);
+                    CleanupLoaderWorkDirectory(workDirectory);
+                })
             })
         ];
 
         LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), stages, versionFolder,
             async () =>
             {
-                CleanupVanillaVersionDirectory(versionFolder, clientPath, versionJsonPath, clientExisted, versionJsonExisted);
+                if (selections.Length == 0)
+                    CleanupVanillaVersionDirectory(versionFolder, clientPath, versionJsonPath, clientExisted, versionJsonExisted);
+                else
+                {
+                    if (loaderVersionWritten) File.Delete(versionJsonPath);
+                    if (!clientExisted && File.Exists(clientPath)) File.Delete(clientPath);
+                }
+                CleanupLoaderWorkDirectory(workDirectory);
+                if (loaderPlan is not null)
+                {
+                    string mods = Path.Combine(versionFolder, "mods");
+                    foreach (string file in loaderPlan.VersionFiles)
+                        if (File.Exists(file)) File.Delete(file);
+                    if (Directory.Exists(mods) && !Directory.EnumerateFileSystemEntries(mods).Any()) Directory.Delete(mods);
+                    if (Directory.Exists(versionFolder) && !Directory.EnumerateFileSystemEntries(versionFolder).Any()) Directory.Delete(versionFolder);
+                }
+                if (Directory.Exists(versionFolder) && !Directory.EnumerateFileSystemEntries(versionFolder).Any()) Directory.Delete(versionFolder);
                 if (!versionJsonExisted)
                     await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, versionFolder);
             });
         task.LocalizedTitle = () => string.Format(LocalizationManager.Get("install.title"), installedName);
         return task;
+    }
+
+    private static void CleanupLoaderWorkDirectory(string path)
+    {
+        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install")) + Path.DirectorySeparatorChar;
+        string full = Path.GetFullPath(path);
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new IOException("安装工作目录超出预期范围。");
+        if (Directory.Exists(full)) Directory.Delete(full, true);
     }
 
     /// <summary>创建一个可显示在任务管理页的自定义文件下载任务.</summary>

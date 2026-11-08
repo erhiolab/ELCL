@@ -41,7 +41,8 @@ public partial class App
         {
             new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(),
             new JsonStringEnumConverter<VersionListSource>(), new JsonStringEnumConverter<GameProcessPriority>(),
-            new JsonStringEnumConverter<GameWindowMode>(), new JsonStringEnumConverter<GameGarbageCollector>()
+            new JsonStringEnumConverter<GameWindowMode>(), new JsonStringEnumConverter<GameGarbageCollector>(),
+            new JsonStringEnumConverter<MemoryUnitSystem>()
         }
     };
 
@@ -84,6 +85,7 @@ public partial class App
         string localGameDirectory = Path.Combine(AppContext.BaseDirectory, ".minecraft");
         try
         {
+            WaitForRestartParent(e.Args);
             Directory.CreateDirectory(dataDirectory);
             Directory.CreateDirectory(localGameDirectory);
             _logger = new SessionFileLogger(Path.Combine(dataDirectory, "logs"));
@@ -128,7 +130,7 @@ public partial class App
                 _settingsStore.Save(Settings);
             }
 
-            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
+            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -136,6 +138,25 @@ public partial class App
             Logger.Error("Settings", "读取配置失败, 本次使用默认设置.", exception);
             Settings = new LauncherSettings();
             LocalizationManager.Apply(Settings.Language);
+        }
+
+        CleanupResult? cleanupResult = ReadCleanupResult(e.Args);
+        if (cleanupResult is not null)
+        {
+            Logger.Information("Toolbox", "旧进程已退出, 清扫重启前可能重新写入的缓存及旧日志.");
+            try
+            {
+                var remaining = ToolboxTools.Clean(Settings.GameFolders.Select(folder => folder.Path).ToArray(), dataDirectory, [],
+                    (path, error) => Logger.Error("Toolbox", $"重启清扫无法删除: {path}.", error));
+                cleanupResult = new CleanupResult(cleanupResult.Bytes + remaining.Bytes, cleanupResult.Files + remaining.Files,
+                    remaining.Skipped, remaining.Failed);
+                Logger.Information("Toolbox", $"完整清理完成: bytes={cleanupResult.Bytes}, files={cleanupResult.Files}, skipped={cleanupResult.Skipped}, failed={cleanupResult.Failed}.");
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                Logger.Error("Toolbox", "重启后的缓存清扫未能全部完成.", error);
+                cleanupResult = cleanupResult with { Failed = cleanupResult.Failed + 1 };
+            }
         }
 
         LauncherThemeManager.Apply(Settings);
@@ -149,6 +170,9 @@ public partial class App
             mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
         _ = JavaCatalog.InitializeIfEmptyAsync();
         Skins.RefreshAll();
+        if (cleanupResult is { } cleaned)
+            Dispatcher.BeginInvoke(() => Notifications.LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupCompleted"),
+                cleaned.Files, cleaned.Bytes / 1048576d, cleaned.Skipped, cleaned.Failed)), System.Windows.Threading.DispatcherPriority.ContextIdle);
     }
 
     /// <summary>保存并立即应用新设置.</summary>
@@ -202,7 +226,7 @@ public partial class App
             }
         }
 
-        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
+        Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         return true;
     }
 
@@ -226,15 +250,55 @@ public partial class App
     }
 
     /// <summary>先启动新进程, 成功后退出当前进程.</summary>
-    internal static void Restart()
+    internal static void Restart(CleanupResult? cleanup = null)
     {
         string executable = Environment.ProcessPath ?? throw new InvalidOperationException("无法确定启动器程序路径.");
-        using Process process = Process.Start(new ProcessStartInfo(executable)
+        var start = new ProcessStartInfo(executable)
         {
-            UseShellExecute = true,
-            WorkingDirectory = AppContext.BaseDirectory
-        }) ?? throw new InvalidOperationException("无法启动新的启动器进程.");
+            UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = AppContext.BaseDirectory
+        };
+        if (Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+            start.ArgumentList.Add(typeof(App).Assembly.Location);
+        using var current = Process.GetCurrentProcess();
+        start.ArgumentList.Add("--restart-parent");
+        start.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        start.ArgumentList.Add(current.StartTime.ToUniversalTime().Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (cleanup is not null)
+        {
+            start.ArgumentList.Add("--finish-cleanup");
+            foreach (long value in new[] { cleanup.Bytes, cleanup.Files, cleanup.Skipped, cleanup.Failed })
+                start.ArgumentList.Add(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动新的启动器进程.");
         Current.Shutdown();
+    }
+
+    private static void WaitForRestartParent(string[] args)
+    {
+        int index = Array.IndexOf(args, "--restart-parent");
+        if (index < 0 || index + 2 >= args.Length || !int.TryParse(args[index + 1], out int pid)
+            || !long.TryParse(args[index + 2], out long ticks) || pid == Environment.ProcessId) return;
+        try
+        {
+            using var parent = Process.GetProcessById(pid);
+            if (!parent.HasExited && parent.StartTime.ToUniversalTime().Ticks == ticks && !parent.WaitForExit(15000))
+                throw new IOException("等待旧启动器退出超时, 已取消本次重启以保护缓存和日志.");
+        }
+        catch (ArgumentException) { /* 旧进程已经退出.  */ }
+        catch (InvalidOperationException) { /* 查询时旧进程恰好退出.  */ }
+        catch (System.ComponentModel.Win32Exception error) { throw new IOException("无法等待旧启动器退出.", error); }
+    }
+
+    private static CleanupResult? ReadCleanupResult(string[] args)
+    {
+        int index = Array.IndexOf(args, "--finish-cleanup");
+        if (index < 0 || index + 4 >= args.Length) return null;
+        var values = new long[4];
+        for (int offset = 0; offset < values.Length; offset++)
+            if (!long.TryParse(args[index + offset + 1], System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out values[offset]) || values[offset] < 0) return null;
+        if (values.Skip(1).Any(value => value > int.MaxValue)) return null;
+        return new CleanupResult(values[0], (int)values[1], (int)values[2], (int)values[3]);
     }
 
     /// <summary>只预览窗口透明度, 不在拖动滑块时反复写入配置.</summary>

@@ -262,10 +262,11 @@ public static class MinecraftVanillaDownloadPlanner
         return destination;
     }
 
-    private static void ValidateVersionName(string name)
+    /// <summary>在创建任务或计算目标目录前验证安装名称; 不允许路径分隔符和目录跳转.</summary>
+    public static void ValidateVersionName(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > 128 || name is "." or ".." ||
-            name.EndsWith('.') || name.EndsWith(' ') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            name.EndsWith('.') || name.EndsWith(' ') || name.Contains('/') || name.Contains('\\') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new ArgumentException("版本名称无效.", nameof(name));
     }
 }
