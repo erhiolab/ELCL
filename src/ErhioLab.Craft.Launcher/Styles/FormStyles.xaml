@@ -16,6 +16,9 @@
         TargetType="CheckBox"
         BasedOn="{StaticResource {x:Type CheckBox}}">
         <Setter
+            Property="Padding"
+            Value="0,6" />
+        <Setter
             Property="Foreground"
             Value="{DynamicResource TextBrush}" />
         <Setter

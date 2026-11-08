@@ -43,6 +43,7 @@ public partial class LaunchSettingsPage
             UpdateLaunchPreviews();
         };
         InitializeAdvancedControls();
+        App.MemoryOptimizer.Changed += RefreshMemoryOptimizationControls;
         LocalizationManager.Changed += (_, _) =>
         {
             RefreshControls();
@@ -76,6 +77,7 @@ public partial class LaunchSettingsPage
                 GameWindowHeight = defaults.GameWindowHeight,
                 AutoAllocateMemory = defaults.AutoAllocateMemory,
                 CustomMemoryPercent = defaults.CustomMemoryPercent,
+                OptimizeMemoryBeforeLaunch = defaults.OptimizeMemoryBeforeLaunch,
                 GameWindowTitle = defaults.GameWindowTitle,
                 JvmArguments = defaults.JvmArguments,
                 GameArguments = defaults.GameArguments,
@@ -114,6 +116,8 @@ public partial class LaunchSettingsPage
             CustomMemoryButton.IsChecked = !settings.AutoAllocateMemory;
             MemoryPercentSlider.Value = settings.CustomMemoryPercent;
             MemoryPercentText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryPercent"), settings.CustomMemoryPercent);
+            OptimizeMemoryBeforeLaunchBox.IsChecked = settings.OptimizeMemoryBeforeLaunch;
+            RefreshMemoryOptimizationControls();
             RefreshAdvancedControls(settings);
         }
         finally

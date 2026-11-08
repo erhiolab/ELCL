@@ -77,6 +77,9 @@ public sealed record LauncherSettings
     /// <summary>自定义模式使用当前可用物理内存的百分比, 范围 0 到 100.</summary>
     public int CustomMemoryPercent { get; init; } = 50;
 
+    /// <summary>在选择 Java 与计算游戏内存前整理 Windows 工作集; 默认关闭.</summary>
+    public bool OptimizeMemoryBeforeLaunch { get; init; }
+
     /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
     public IReadOnlyList<JavaInstallation> JavaInstallations { get; init; } = [];
 

@@ -120,7 +120,7 @@ internal sealed class GameLaunchService
                 {
                     // 启动还包括登录/命令和窗口等待; 固定阶段权重避免下载完后整体提前显示 100%.
                     // 下载阶段内部仍按实际文件字节计算进度.
-                    task.ConfigureStageWeights([5, 5, 5, 30, 40, 5, 5, 5]);
+                    task.ConfigureStageWeights(settings.OptimizeMemoryBeforeLaunch ? [5, 5, 5, 5, 30, 40, 5, 5, 5] : [5, 5, 5, 30, 40, 5, 5, 5]);
                     if (!account.IsMicrosoft) return;
                     using var handler = new HttpClientHandler();
                     if (!settings.VerifyMicrosoftCertificates)
@@ -140,6 +140,16 @@ internal sealed class GameLaunchService
                         (id, token) => Application.Current.Dispatcher.InvokeAsync(() => FetchParentAsync(id, source, downloads, task, token)).Task.Unwrap(), task.CancellationToken);
                     App.Logger.Information("Launch", $"版本元数据已解析: 基础版本={version.GameVersion}, Java 要求={version.JavaMajorVersion}.");
                 }),
+                .. (settings.OptimizeMemoryBeforeLaunch ? new[] { Stage("memoryOptimization.launchStage", async task =>
+                {
+                    try { await App.MemoryOptimizer.OptimizeAsync(showNotifications: false, task.CancellationToken); }
+                    catch (OperationCanceledException) when (task.CancellationToken.IsCancellationRequested) { throw; }
+                    catch (Exception)
+                    {
+                        // 可选优化失败不阻止启动, 服务已记录完整异常.
+                        LauncherToasts.Information(L("memoryOptimization.launchFailed"));
+                    }
+                }) } : Array.Empty<LauncherTaskStage>()),
                 Stage("gameLaunch.java", async task =>
                 {
                     if (App.Settings.JavaInstallations.Count == 0) await App.JavaCatalog.InitializeIfEmptyAsync();

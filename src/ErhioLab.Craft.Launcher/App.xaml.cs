@@ -17,6 +17,7 @@ using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
 using ErhioLab.Craft.Launcher.Tasks;
 using ErhioLab.Craft.Launcher.Launching;
+using ErhioLab.Craft.Launcher.SystemTools;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -54,6 +55,7 @@ public partial class App
     private static readonly LauncherTaskManager TaskEngine = new();
     private static readonly JavaCatalogManager JavaEngine = new();
     internal static GameLaunchService GameLauncher { get; } = new();
+    internal static MemoryOptimizationService MemoryOptimizer { get; } = new();
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();

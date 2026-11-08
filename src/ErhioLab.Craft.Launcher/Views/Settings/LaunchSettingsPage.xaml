@@ -147,8 +147,31 @@
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
-                Margin="0,14,0,0"
-                Header="{DynamicResource I18n.launchSettings.memoryAllocation}">
+                Margin="0,14,0,0">
+                <controls:LauncherCard.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            FontWeight="SemiBold"
+                            Text="{DynamicResource I18n.launchSettings.memoryAllocation}" />
+                        <Button
+                            x:Name="OptimizeMemoryButton"
+                            Grid.Column="1"
+                            Width="112"
+                            Height="34"
+                            Click="OptimizeMemoryButton_Click"
+                            Content="{DynamicResource I18n.memoryOptimization.button}"
+                            Style="{StaticResource SecondaryActionStyle}"
+                            ToolTip="{DynamicResource I18n.memoryOptimization.hint}" />
+                    </Grid>
+                </controls:LauncherCard.Header>
                 <StackPanel>
                     <RadioButton
                         x:Name="AutoMemoryButton"
@@ -193,6 +216,14 @@
                             VerticalAlignment="Center"
                             Foreground="{DynamicResource AccentTextBrush}" />
                     </Grid>
+                    <CheckBox
+                        x:Name="OptimizeMemoryBeforeLaunchBox"
+                        Margin="0,8,0,0"
+                        Content="{DynamicResource I18n.memoryOptimization.beforeLaunch}"
+                        Checked="OptimizeMemoryBeforeLaunch_Changed"
+                        Unchecked="OptimizeMemoryBeforeLaunch_Changed"
+                        Style="{StaticResource FormCheckBoxStyle}"
+                        ToolTip="{DynamicResource I18n.memoryOptimization.hint}" />
                     <TextBlock
                         x:Name="MemoryModeHintText"
                         Margin="0,10,0,0"
