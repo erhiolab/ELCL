@@ -21,6 +21,8 @@ ErhioLab Craft Launcher (ELCL) 是一个重新设计的 Minecraft 启动器.
 
 核心库的独立使用方法见 [ELCLC 文档](web/docs/core/README.md); 项目约定见 [AGENTS.md](AGENTS.md).
 
+游戏启动已接入账户验证、Java 选择、文件校验与补全、参数生成和进程日志。启动器使用方法见[启动游戏](web/docs/launcher/launch.md)，核心 API 见[准备启动 Minecraft](web/docs/core/launch.md)。兼容补丁的来源与许可见[启动补丁说明](src/ErhioLab.Craft.Launcher/Assets/Launch/README.md)。
+
 ### 构建
 
 需要安装 .NET 10 SDK:

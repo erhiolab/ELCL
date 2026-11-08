@@ -135,10 +135,11 @@
             </StackPanel>
         </Button>
 
-        <!-- 当前无可启动版本, 主操作暂以下载入口占位. -->
+        <!-- 有选择版本时启动游戏, 否则进入下载页面.  -->
         <StackPanel
             Grid.Row="1">
             <Button
+                x:Name="MainActionButton"
                 Click="DownloadVersion_Click"
                 Style="{StaticResource PrimaryActionStyle}">
                 <StackPanel>

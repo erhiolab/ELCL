@@ -116,7 +116,7 @@ internal sealed class LauncherTaskManager
 
     /// <summary>创建由多个阶段组成的任务, 后续安装与模组操作可复用.</summary>
     internal LauncherTask Start(string title, IReadOnlyList<LauncherTaskStage> stages, string? targetPath = null,
-        Action? cleanupOnRemove = null)
+        Action? cleanupOnRemove = null, Action? onCompleted = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         if (stages.Count == 0)
@@ -124,14 +124,80 @@ internal sealed class LauncherTaskManager
             throw new ArgumentException(LocalizationManager.Get("task.stageRequired"), nameof(stages));
         }
 
-        LauncherTask task = new(title, stages, targetPath) { CleanupOnRemove = cleanupOnRemove };
+        LauncherTask task = new(title, stages, targetPath) { CleanupOnRemove = cleanupOnRemove, OnCompleted = onCompleted };
         Tasks.Insert(0, task);
         task.Completion = RunAsync(task);
         return task;
     }
 
+    /// <summary>跟踪一次已启动的游戏; 终止回调绑定具体进程实例, 不按进程名查杀.</summary>
+    internal LauncherTask TrackRunningGame(string name, string versionDirectory, int processId,
+        Func<LauncherTask, Task<int>> observe, Func<Task> stop)
+    {
+        LauncherTask task = new(name, [], versionDirectory)
+        {
+            IsRunningGame = true, ProcessId = processId, StopAsync = stop, Status = LauncherTaskStatus.Running
+        };
+        Tasks.Insert(0, task);
+        App.Logger.Information("Tasks", $"开始跟踪运行中的游戏: {name}, PID={processId}.");
+        task.Completion = ObserveRunningGameAsync(task, observe);
+        return task;
+    }
+
+    private async Task ObserveRunningGameAsync(LauncherTask task, Func<LauncherTask, Task<int>> observe)
+    {
+        try
+        {
+            int code = await observe(task);
+            if (task.IsStopping || code == 0)
+            {
+                task.Status = task.IsStopping ? LauncherTaskStatus.Canceled : LauncherTaskStatus.Completed;
+                App.Logger.Information("Tasks", $"游戏运行任务结束: {task.Title}, PID={task.ProcessId}, 主动终止={task.IsStopping}, 退出码={code}.");
+                if (task.IsStopping) LauncherToasts.Information(string.Format(LocalizationManager.Get("gameTask.terminated"), task.Title));
+                Tasks.Remove(task);
+            }
+            else
+            {
+                task.Error ??= string.Format(LocalizationManager.Get("gameTask.exitError"), code);
+                task.Status = LauncherTaskStatus.Failed;
+            }
+        }
+        catch (Exception error)
+        {
+            task.Error = error.GetBaseException().Message;
+            task.Status = LauncherTaskStatus.Failed;
+            App.Logger.Error("Tasks", $"跟踪游戏进程失败: {task.Title}, PID={task.ProcessId}.", error);
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("task.failedToast"), task.Error));
+        }
+        finally
+        {
+            task.IsStopping = false;
+            task.Cancellation.Dispose();
+        }
+    }
+
     internal async Task CancelOrRemoveAsync(LauncherTask task)
     {
+        if (task.IsRunningGame && task.IsActive)
+        {
+            if (task.IsStopping || task.StopAsync is null) return;
+            task.IsStopping = true;
+            task.Error = null;
+            App.Logger.Information("Tasks", $"用户终止游戏: {task.Title}, PID={task.ProcessId}.");
+            try
+            {
+                await task.StopAsync();
+                await task.Completion;
+            }
+            catch (Exception error)
+            {
+                task.IsStopping = false;
+                task.Error = string.Format(LocalizationManager.Get("gameTask.terminateFailed"), error.Message);
+                App.Logger.Error("Tasks", $"无法终止游戏: {task.Title}, PID={task.ProcessId}.", error);
+                LauncherToasts.Error(task.Error);
+            }
+            return;
+        }
         if (task.IsActive)
         {
             task.Cancellation.Cancel();
@@ -175,14 +241,18 @@ internal sealed class LauncherTaskManager
             {
                 task.Cancellation.Token.ThrowIfCancellationRequested();
                 stage.Status = LauncherTaskStatus.Running;
+                App.Logger.Information("Tasks", $"阶段开始: {task.Title} / {stage.Name}.");
                 await stage.Execute(new LauncherTaskContext(task, stage));
                 task.Cancellation.Token.ThrowIfCancellationRequested();
                 stage.Progress = 100;
                 stage.Status = LauncherTaskStatus.Completed;
                 task.RefreshProgress();
+                App.Logger.Information("Tasks", $"阶段完成: {task.Title} / {stage.Name}.");
             }
 
             task.Status = LauncherTaskStatus.Completed;
+            // 先移交到常驻任务，再移除准备任务，避免任务页在交接时因空队列而关闭。
+            task.OnCompleted?.Invoke();
             LauncherToasts.Success(string.Format(LocalizationManager.Get("task.completedToast"), task.Title));
             App.Logger.Information("Tasks", $"任务完成: {task.Title}.");
             App.Tasks.Tasks.Remove(task);

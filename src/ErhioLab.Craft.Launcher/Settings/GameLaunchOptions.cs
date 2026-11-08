@@ -1,6 +1,6 @@
 namespace ErhioLab.Craft.Launcher.Settings;
 
-/// <summary>游戏进程的调度优先级, 待游戏启动时应用.</summary>
+/// <summary>游戏进程的调度优先级, 在创建游戏进程时应用.</summary>
 public enum GameProcessPriority
 {
     High,
@@ -8,7 +8,7 @@ public enum GameProcessPriority
     Low
 }
 
-/// <summary>游戏窗口的初始显示方式, 待游戏启动时应用.</summary>
+/// <summary>游戏窗口的初始显示方式, 在创建游戏进程时应用.</summary>
 public enum GameWindowMode
 {
     Fullscreen,
@@ -18,7 +18,7 @@ public enum GameWindowMode
     Maximized
 }
 
-/// <summary>游戏 JVM 的垃圾回收预设, 实际参数待启动流程根据 Java 版本生成.</summary>
+/// <summary>游戏 JVM 的垃圾回收预设, 启动时根据 Java 版本生成实际参数.</summary>
 public enum GameGarbageCollector
 {
     PreferZgc,

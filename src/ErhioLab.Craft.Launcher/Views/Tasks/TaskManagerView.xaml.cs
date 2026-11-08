@@ -18,6 +18,7 @@ public partial class TaskManagerView
         LocalizationManager.Changed += (_, _) =>
         {
             foreach (LauncherTask task in App.Tasks.Tasks) task.RefreshLocalization();
+            UpdateSummary();
         };
         foreach (LauncherTask task in App.Tasks.Tasks)
         {
@@ -50,11 +51,17 @@ public partial class TaskManagerView
 
     private void UpdateSummary()
     {
-        LauncherTask[] active = App.Tasks.Tasks.Where(task => task.IsActive).ToArray();
+        LauncherTask[] operations = App.Tasks.Tasks.Where(task => !task.IsRunningGame).ToArray();
+        LauncherTask[] active = operations.Where(task => task.IsActive).ToArray();
+        int runningGames = App.Tasks.Tasks.Count(task => task.IsRunningGame && task.IsActive);
+        bool gamesOnly = operations.Length == 0 && runningGames > 0;
         double progress = active.Length > 0 ? active.Average(task => task.Progress)
-            : App.Tasks.Tasks.Count > 0 ? App.Tasks.Tasks.Average(task => task.Progress) : 0;
+            : operations.Length > 0 ? operations.Average(task => task.Progress) : 0;
         OverallProgressBar.Value = progress;
-        OverallProgressText.Text = $"{progress:0.0}%";
+        OverallProgressBar.Visibility = gamesOnly ? Visibility.Collapsed : Visibility.Visible;
+        OverallProgressLabel.SetResourceReference(System.Windows.Controls.TextBlock.TextProperty,
+            gamesOnly ? "I18n.gameTask.runningSummary" : "I18n.taskManager.overallProgress");
+        OverallProgressText.Text = gamesOnly ? runningGames.ToString() : $"{progress:0.0}%";
         long speed = active.Sum(task => task.SpeedBytesPerSecond);
         SpeedText.Text = speed >= 1024 * 1024 ? $"{speed / (1024.0 * 1024):0.##} MiB/s" : $"{speed / 1024.0:0.##} KiB/s";
         RemainingFilesText.Text = active.Sum(task => task.RemainingFiles).ToString();

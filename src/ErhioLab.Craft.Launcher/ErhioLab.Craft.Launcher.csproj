@@ -13,6 +13,8 @@
     <PackageReference Include="WPF-UI" Version="4.3.0" />
     <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
     <EmbeddedResource Include="Languages/**/*.json" />
+    <EmbeddedResource Include="Assets/Launch/*.jar" />
+    <Content Include="Assets/Launch/*.LICENSE" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
     <Resource Include="Assets/Credits/Pcl.png" />

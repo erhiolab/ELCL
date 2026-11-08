@@ -103,7 +103,7 @@ public partial class LaunchSettingsPage
             JvmArguments = JvmArgumentsBox.Text,
             GameArguments = GameArgumentsBox.Text,
             PreLaunchCommand = PreLaunchCommandBox.Text
-        }, "游戏窗口标题及高级启动文本已保存(待游戏启动功能接入).");
+        }, "游戏窗口标题及高级启动文本已保存.");
         UpdateLaunchPreviews();
         return saved;
     }
@@ -128,7 +128,7 @@ public partial class LaunchSettingsPage
         if (_initializingLaunchOptions || GarbageCollectorBox.SelectedIndex < 0 || !CommitLaunchText()) return;
         GameGarbageCollector gc = GarbageCollectorChoices[GarbageCollectorBox.SelectedIndex];
         if (gc == App.Settings.GarbageCollector) return;
-        SaveLaunchOptions(App.Settings with { GarbageCollector = gc }, $"游戏内存管理预设已保存: {gc}(待启动流程生成实际 JVM 参数).");
+        SaveLaunchOptions(App.Settings with { GarbageCollector = gc }, $"游戏内存管理预设已保存: {gc}.");
     }
 
     private void ResetJvmArguments_Click(object sender, RoutedEventArgs e)

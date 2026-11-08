@@ -51,7 +51,7 @@ internal sealed class LauncherAccountStore
         try
         {
             AccountFile loaded = _store.Load(new AccountFile([], null));
-            if (loaded.OfflineAccounts is null) throw new JsonException("账户列表缺失. ");
+            if (loaded.OfflineAccounts is null) throw new JsonException("账户列表缺失.");
             List<OfflineAccount> valid = loaded.OfflineAccounts
                 .Where(account => IsValidName(account.UserName) && account.Uuid == OfflinePlayerId.FromName(account.UserName))
                 .DistinctBy(account => account.Uuid)
@@ -66,7 +66,7 @@ internal sealed class LauncherAccountStore
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             _canWrite = false;
-            App.Logger.Error("Accounts", "读取账户文件失败, 本次运行使用空账户列表; 原文件已保留. ", exception);
+            App.Logger.Error("Accounts", "读取账户文件失败, 本次运行使用空账户列表; 原文件已保留.", exception);
         }
     }
 

@@ -15,11 +15,12 @@ Core 只处理数据和文件。你传入网络客户端、保存路径和需要
 | 读取中文 Minecraft Wiki 的版本页面 | [Minecraft Wiki](wiki.md) |
 | 根据用户名计算离线玩家 UUID | [离线玩家 UUID](offline-accounts.md) |
 | 替换启动标题、参数和命令中的玩家名、版本与路径标记 | [启动模板替换标记](launch-placeholders.md) |
+| 解析版本继承、收集启动依赖、解压本地库并生成启动参数 | [准备启动 Minecraft](launch.md) |
 | 登录并验证 Microsoft / Minecraft 账户 | [Microsoft 账户登录](microsoft-auth.md) |
 | 写会话日志、保存 JSON | [日志](logging.md) · [JSON 存储](storage.md) |
 
 第一次使用，直接看[快速开始](quick-start.md)。如果你在决定某项功能该放在 Core 还是自己的程序里，可以看 [Core 负责什么](architecture.md)。
 
 ::: tip 当前进度
-Core 的版本号是 `0.0.1`。它已有通用文件下载能力，但还不能自动收集并安装某个 Minecraft 版本所需的全部文件，也不负责账户登录或启动游戏。
+Core 的版本号是 `0.0.1`。已提供原版文件下载计划、Microsoft 账户请求和游戏启动准备 API；下载任务调度、账户保存、进程生命周期和界面仍由调用方组织。加载器安装器与处理器尚未接入。
 :::

@@ -34,6 +34,6 @@ description: 认识 ELCL 启动器，查阅 ELCLC 核心库文档。
 
   <section class="home-core"><div><span class="home-kicker">FOR DEVELOPERS</span><h2>ELCLC，给启动器写的通用核心。</h2><p>版本清单、模组加载器版本、Java 发现、文件下载、日志与 JSON 存储。核心库不依赖 ELCL 的窗口或设置，你可以在自己的 .NET 10 项目里使用。</p><a class="home-text-link" href="./core/quick-start">从第一个版本查询开始 <span aria-hidden="true">↗</span></a></div><div class="home-code"><div class="code-top"><span></span><span></span><span></span><small>Program.cs</small></div><pre><code>using var http = new HttpClient();&#10;var client = new MinecraftVersionCatalogClient(http);&#10;var catalog = await client.GetCatalogAsync(&#10;    MinecraftManifestSource.Official);&#10;&#10;Console.WriteLine(catalog.LatestReleaseId);</code></pre></div></section>
 
-  <section class="home-status"><span class="home-kicker">PROJECT STATUS</span><h2>项目还在路上。</h2><p>目前可以浏览游戏与加载器版本、管理 Java 和使用通用下载器。Minecraft 游戏文件安装、账户登录和启动游戏仍在开发中。欢迎在仓库里了解进度或参与讨论。</p><a class="home-text-link" href="https://github.com/erhiolab/ELCL">前往 GitHub <span aria-hidden="true">↗</span></a></section>
+  <section class="home-status"><span class="home-kicker">PROJECT STATUS</span><h2>项目还在路上。</h2><p>目前已接入原版游戏下载、账户管理与游戏启动，启动前会检查 Java 和游戏文件，各版本使用独立的游戏目录。加载器安装与版本专属设置仍在完善。欢迎在仓库里了解进度或参与讨论。</p><a class="home-text-link" href="https://github.com/erhiolab/ELCL">前往 GitHub <span aria-hidden="true">↗</span></a></section>
   <footer class="home-footer"><span>ELCL <span class="footer-divider">/</span> ErhioLab Craft Launcher</span><span>为 Minecraft Java 版而做 · 开源开发中</span></footer>
 </div>

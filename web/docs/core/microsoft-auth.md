@@ -34,6 +34,17 @@ Client ID 不是密码，但必须属于你自己的应用注册。访问令牌�
 
 如果没有 Minecraft Java 版授权或档案，登录会失败并抛出 `MicrosoftMinecraftAuthException`。它的 `Stage` 和 `Code` 可用于显示错误；调用方取消时会抛出取消异常。
 
+## 检查已保存的会话
+
+启动前可以验证现有的 Minecraft 访问令牌、Java 版授权和玩家档案：
+
+```csharp
+MinecraftAccountProfile profile = await client.ValidateMinecraftSessionAsync(
+    session.MinecraftAccessToken, cancellationToken);
+```
+
+返回值包含最新玩家名和 UUID。这个方法不会自动读取或刷新令牌；令牌过期或被服务拒绝时，调用方可以使用自己的刷新令牌调用 `RefreshAsync`，并安全保存新的结果。没有 Java 版授权时会抛出 `Code` 为 `no_entitlement` 的 `MicrosoftMinecraftAuthException`。刷新成功的会话也会执行相同的授权和档案检查。
+
 ## 读取当前皮肤
 
 登录后可用 Minecraft 访问令牌读取玩家档案中的当前皮肤，再下载原始 PNG：

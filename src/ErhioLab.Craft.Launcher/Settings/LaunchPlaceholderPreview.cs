@@ -4,17 +4,19 @@ using System.Reflection;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Accounts;
 
 namespace ErhioLab.Craft.Launcher.Settings;
 
 /// <summary>为设置页预览提供当前选择的信息; 实际启动应重新选择 Java 并生成启动上下文.</summary>
 internal static class LaunchPlaceholderPreview
 {
-    internal static MinecraftLaunchPlaceholderContext Create(LocalMinecraftVersion? version)
+    internal static MinecraftLaunchPlaceholderContext Create(LocalMinecraftVersion? version, LauncherSettings? settingsOverride = null, AccountEntry? accountOverride = null)
     {
-        LauncherSettings settings = App.Settings;
-        var account = App.Accounts.SelectedAccount;
+        LauncherSettings settings = settingsOverride ?? App.Settings;
+        var account = accountOverride ?? App.Accounts.SelectedAccount;
         string gameDirectory = settings.SelectedGameFolderPath ?? Path.Combine(AppContext.BaseDirectory, ".minecraft");
+        string? versionDirectory = version?.FolderPath ?? settings.SelectedVersionPath;
         string? java = settings.JavaInstallations.FirstOrDefault()?.Path;
         string? loader = version?.Loader;
         return new MinecraftLaunchPlaceholderContext
@@ -26,8 +28,8 @@ internal static class LaunchPlaceholderPreview
             CacheDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache"),
             JavaDirectory = GetJavaDirectory(java),
             GameDirectory = gameDirectory,
-            GameInstanceDirectory = gameDirectory,
-            VersionDirectory = settings.SelectedVersionPath,
+            GameInstanceDirectory = versionDirectory ?? string.Empty,
+            VersionDirectory = versionDirectory,
             VersionName = version?.Id ?? settings.SelectedVersionId,
             GameVersion = version?.GameVersion ?? version?.Id ?? settings.SelectedVersionId,
             ForgeVersion = loader == "Forge" ? version?.LoaderVersion : null,

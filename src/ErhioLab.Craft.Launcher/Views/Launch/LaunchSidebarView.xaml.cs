@@ -1,5 +1,4 @@
 using System.Windows;
-using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
@@ -11,6 +10,7 @@ public partial class LaunchSidebarView
     public LaunchSidebarView()
     {
         InitializeComponent();
+        App.GameLauncher.StateChanged += RefreshLaunchState;
         App.Accounts.Changed += (_, _) => RefreshAccount();
         App.Skins.AvatarChanged += uuid =>
         {
@@ -43,13 +43,20 @@ public partial class LaunchSidebarView
     internal void ShowSelectedVersion(string id)
     {
         MainActionTitle.Text = id;
-        MainActionDescription.Text = LocalizationManager.Get("launch.notImplemented");
+        RefreshLaunchState();
+    }
+
+    private void RefreshLaunchState()
+    {
+        MainActionButton.IsEnabled = !App.GameLauncher.IsPreparing;
+        MainActionDescription.Text = LocalizationManager.Get(App.GameLauncher.IsPreparing ? "gameLaunch.preparingShort" :
+            App.Settings.SelectedVersionId is not null ? "gameLaunch.clickToLaunch" : "launch.noInstance");
     }
 
     internal void ClearSelectedVersion()
     {
         MainActionTitle.Text = LocalizationManager.Get("launch.downloadVersion");
-        MainActionDescription.Text = LocalizationManager.Get("launch.noInstance");
+        RefreshLaunchState();
     }
 
     private void AccountManagement_Click(object sender, RoutedEventArgs e)
@@ -60,11 +67,11 @@ public partial class LaunchSidebarView
         }
     }
 
-    private void DownloadVersion_Click(object sender, RoutedEventArgs e)
+    private async void DownloadVersion_Click(object sender, RoutedEventArgs e)
     {
         if (App.Settings.SelectedVersionId is not null)
         {
-            LauncherDialogs.Information(LocalizationManager.Get("launch.gameLaunch"), LocalizationManager.Get("launch.gameLaunchNotImplemented"));
+            await App.GameLauncher.StartAsync();
             return;
         }
 

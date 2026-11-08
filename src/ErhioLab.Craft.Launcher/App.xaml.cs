@@ -16,6 +16,7 @@ using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Styles;
 using ErhioLab.Craft.Launcher.Tasks;
+using ErhioLab.Craft.Launcher.Launching;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -52,6 +53,7 @@ public partial class App
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
     private static readonly LauncherTaskManager TaskEngine = new();
     private static readonly JavaCatalogManager JavaEngine = new();
+    internal static GameLaunchService GameLauncher { get; } = new();
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
@@ -68,7 +70,7 @@ public partial class App
     /// <summary>本机 Java 的发现/排序与持久化管理.</summary>
     internal static JavaCatalogManager JavaCatalog => JavaEngine;
 
-    internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化. ");
+    internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化.");
     internal static LauncherSkinService Skins => _skinService ?? throw new InvalidOperationException("皮肤缓存尚未初始化.");
     internal static ServiceCredentials Services => _serviceCredentials ?? throw new InvalidOperationException("服务配置尚未初始化.");
 

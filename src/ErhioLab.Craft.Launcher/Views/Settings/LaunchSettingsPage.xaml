@@ -142,7 +142,7 @@
                         Margin="0,14,0,0"
                         FontSize="12"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.launchSettings.gameOptionsPending}"
+                        Text="{DynamicResource I18n.launchSettings.gameOptionsHint}"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </controls:LauncherCard>

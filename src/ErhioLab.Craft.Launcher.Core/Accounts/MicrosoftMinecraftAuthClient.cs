@@ -12,6 +12,8 @@ public sealed record MicrosoftDeviceAuthorization(string DeviceCode, string User
 public sealed record MicrosoftMinecraftSession(string UserName, Guid Uuid, string MinecraftAccessToken,
     DateTimeOffset MinecraftAccessTokenExpiresAt, string MicrosoftRefreshToken);
 
+public sealed record MinecraftAccountProfile(string UserName, Guid Uuid);
+
 /// <summary>登录服务返回的可显示错误. 不包含访问令牌.</summary>
 public sealed class MicrosoftMinecraftAuthException(string stage, string code, string message) : Exception(message)
 {
@@ -131,6 +133,15 @@ public sealed class MicrosoftMinecraftAuthClient(HttpClient httpClient)
         string minecraftToken = RequiredString(minecraft.RootElement, "access_token", "Minecraft");
         int expiresIn = RequiredInt(minecraft.RootElement, "expires_in", "Minecraft");
 
+        MinecraftAccountProfile profile = await ValidateMinecraftSessionAsync(minecraftToken, cancellationToken).ConfigureAwait(false);
+        return new MicrosoftMinecraftSession(profile.UserName, profile.Uuid, minecraftToken,
+            DateTimeOffset.UtcNow.AddSeconds(Math.Max(0, expiresIn)), refreshToken);
+    }
+
+    /// <summary>验证现有访问令牌/Java 版授权和档案; 不读取调用方保存的凭据.</summary>
+    public async Task<MinecraftAccountProfile> ValidateMinecraftSessionAsync(string minecraftToken, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(minecraftToken);
         using JsonDocument entitlements = await GetBearerJsonAsync(EntitlementsUrl, minecraftToken, "Minecraft", cancellationToken).ConfigureAwait(false);
         if (!entitlements.RootElement.TryGetProperty("items", out JsonElement items) || items.ValueKind != JsonValueKind.Array || items.GetArrayLength() == 0)
             throw new MicrosoftMinecraftAuthException("Minecraft", "no_entitlement", "此账户没有可用的 Minecraft Java 版授权.");
@@ -140,8 +151,7 @@ public sealed class MicrosoftMinecraftAuthClient(HttpClient httpClient)
         string id = RequiredString(profile.RootElement, "id", "Minecraft");
         if (!Guid.TryParseExact(id, "N", out Guid uuid))
             throw new MicrosoftMinecraftAuthException("Minecraft", "invalid_profile", "Minecraft 档案中的 UUID 无效.");
-        return new MicrosoftMinecraftSession(name, uuid, minecraftToken,
-            DateTimeOffset.UtcNow.AddSeconds(Math.Max(0, expiresIn)), refreshToken);
+        return new MinecraftAccountProfile(name, uuid);
     }
 
     private async Task<JsonDocument> ExchangeXboxTokenForMinecraftAsync(string userHash, string xstsToken, CancellationToken cancellationToken)
@@ -174,7 +184,7 @@ public sealed class MicrosoftMinecraftAuthClient(HttpClient httpClient)
         using HttpResponseMessage response = await SendWithConnectionRetryAsync(() =>
         {
             HttpRequestMessage request = new(HttpMethod.Post, uri);
-            // Xbox Live 的字段名区分大小写; JsonContent 的 Web 默认选项会改成 camelCase. 
+            // Xbox Live 的字段名区分大小写; JsonContent 的 Web 默认选项会改成 camelCase.
             request.Content = JsonContent.Create(value, options: XboxJsonOptions);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -198,7 +208,7 @@ public sealed class MicrosoftMinecraftAuthClient(HttpClient httpClient)
     private async Task<HttpResponseMessage> SendWithConnectionRetryAsync(Func<HttpRequestMessage> createRequest,
         CancellationToken cancellationToken)
     {
-        // 对连接故障和短暂的服务端响应有限重试, 每次都创建新的请求. 
+        // 对连接故障和短暂的服务端响应有限重试, 每次都创建新的请求.
         for (int attempt = 0; ; attempt++)
         {
             using HttpRequestMessage request = createRequest();

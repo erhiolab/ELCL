@@ -18,7 +18,6 @@ internal sealed class LauncherSkinService(string cacheDirectory)
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private static readonly MinecraftSkinClient SkinClient = new(HttpClient);
-    private static readonly MicrosoftMinecraftAuthClient AuthClient = new(HttpClient);
     private readonly Dictionary<Guid, SkinAvatar> _avatars = [];
     private readonly HashSet<Guid> _refreshing = [];
 
@@ -216,10 +215,7 @@ internal sealed class LauncherSkinService(string cacheDirectory)
 
     private static async Task<string> RefreshTokenAsync(Guid uuid)
     {
-        string refreshToken = App.Accounts.GetMicrosoftRefreshToken(uuid);
-        MicrosoftMinecraftSession session = await AuthClient.RefreshAsync(App.Services.MicrosoftClientId, refreshToken);
-        if (session.Uuid != uuid) throw new InvalidDataException("刷新令牌返回了不同的 Minecraft 账户.");
-        if (App.Accounts.MicrosoftAccounts.Any(item => item.Uuid == uuid)) App.Accounts.AddOrUpdateMicrosoft(session, selectAccount: false);
+        MicrosoftMinecraftSession session = await LauncherMicrosoftSessions.GetAsync(uuid, HttpClient, forceRefresh: true);
         return session.MinecraftAccessToken;
     }
 

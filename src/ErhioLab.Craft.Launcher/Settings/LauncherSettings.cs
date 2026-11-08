@@ -39,10 +39,10 @@ public sealed record LauncherSettings
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
 
-    /// <summary>游戏进程优先级; 当前仅保存, 待游戏启动功能接入.</summary>
+    /// <summary>游戏进程优先级.</summary>
     public GameProcessPriority GamePriority { get; init; } = GameProcessPriority.Normal;
 
-    /// <summary>游戏窗口显示方式; 当前仅保存, 待游戏启动功能接入.</summary>
+    /// <summary>游戏窗口显示方式.</summary>
     public GameWindowMode WindowMode { get; init; } = GameWindowMode.Default;
 
     /// <summary>自定义游戏窗口宽度, 单位为像素.</summary>
@@ -60,7 +60,7 @@ public sealed record LauncherSettings
     /// <summary>附加游戏参数模板.</summary>
     public string GameArguments { get; init; } = "";
 
-    /// <summary>游戏启动前执行的 Windows 命令模板; 当前仅保存, 不执行.</summary>
+    /// <summary>游戏启动前执行的 Windows 命令模板; 在创建游戏进程前执行.</summary>
     public string PreLaunchCommand { get; init; } = "";
 
     public bool WaitForPreLaunchCommand { get; init; } = true;
@@ -68,7 +68,7 @@ public sealed record LauncherSettings
     public bool DisableJavaLaunchWrapper { get; init; }
     public bool DisableLwjglUnsafeAgent { get; init; }
     public bool PreferHighPerformanceGpu { get; init; } = true;
-    /// <summary>证书验证偏好; 仅作为启动预设保存, 现有登录请求仍使用证书验证.</summary>
+    /// <summary>证书验证偏好; 仅应用于启动前账户请求, 不影响下载及皮肤客户端.</summary>
     public bool VerifyMicrosoftCertificates { get; init; } = true;
 
     /// <summary>是否根据可用物理内存自动估算游戏内存.</summary>

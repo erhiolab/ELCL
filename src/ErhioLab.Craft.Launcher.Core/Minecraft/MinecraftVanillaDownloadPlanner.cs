@@ -202,6 +202,8 @@ public static class MinecraftVanillaDownloadPlanner
         return mirror is null ? [official] : preferred == MinecraftManifestSource.Mirror ? [mirror, official] : [official, mirror];
     }
 
+    internal static IReadOnlyList<Uri> GetSources(Uri official, MinecraftManifestSource preferred) => Sources(official, preferred);
+
     private static Uri? MirrorUrl(Uri official)
     {
         string host = official.Host.ToLowerInvariant();

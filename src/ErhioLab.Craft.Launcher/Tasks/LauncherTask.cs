@@ -45,10 +45,22 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     private long _speed;
     private int _remainingFiles;
     private string? _error;
+    private bool _isStopping;
 
     internal CancellationTokenSource Cancellation { get; } = new();
     internal Task Completion { get; set; } = Task.CompletedTask;
     internal Action? CleanupOnRemove { get; set; }
+    internal Action? OnCompleted { get; init; }
+    internal Func<Task>? StopAsync { get; init; }
+    public bool IsRunningGame { get; init; }
+    public int? ProcessId { get; init; }
+    public bool IsStopping
+    {
+        get => _isStopping;
+        internal set { _isStopping = value; Changed(); Changed(nameof(StatusText)); Changed(nameof(ActionText)); Changed(nameof(CanInvokeAction)); }
+    }
+    public bool CanInvokeAction => !IsStopping;
+    public string? ProcessText => ProcessId is { } id ? string.Format(LocalizationManager.Get("gameTask.processId"), id) : null;
     public Guid Id { get; } = Guid.NewGuid();
     internal Func<string>? LocalizedTitle { get; set; }
     public string Title => LocalizedTitle?.Invoke() ?? title;
@@ -59,14 +71,16 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     public long SpeedBytesPerSecond { get => _speed; internal set { _speed = value; Changed(); } }
     public int RemainingFiles { get => _remainingFiles; internal set { _remainingFiles = value; Changed(); } }
     public string? Error { get => _error; internal set { _error = value; Changed(); } }
-    public string ProgressText => $"{Progress:0.0}%";
+    public string ProgressText => IsRunningGame ? string.Empty : $"{Progress:0.0}%";
     public bool IsActive => Status is LauncherTaskStatus.Queued or LauncherTaskStatus.Running;
-    public string ActionText => IsActive ? LocalizationManager.Get("task.cancel") : LocalizationManager.Get("task.remove");
+    public string ActionText => LocalizationManager.Get(IsRunningGame && IsActive
+        ? IsStopping ? "gameTask.stopping" : "gameTask.terminate"
+        : IsActive ? "task.cancel" : "task.remove");
     public string StatusCode => Status.ToString();
     public string StatusText => Status switch
     {
         LauncherTaskStatus.Queued => LocalizationManager.Get("task.queued"),
-        LauncherTaskStatus.Running => LocalizationManager.Get("task.running"),
+        LauncherTaskStatus.Running => LocalizationManager.Get(IsRunningGame ? IsStopping ? "gameTask.stopping" : "gameTask.running" : "task.running"),
         LauncherTaskStatus.Completed => LocalizationManager.Get("task.completed"),
         LauncherTaskStatus.Canceled => LocalizationManager.Get("task.canceled"),
         _ => LocalizationManager.Get("task.failed")
@@ -77,6 +91,7 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
         Changed(nameof(Title));
         Changed(nameof(StatusText));
         Changed(nameof(ActionText));
+        Changed(nameof(ProcessText));
         foreach (LauncherTaskStage stage in Stages) stage.RefreshLocalization();
     }
 
@@ -107,12 +122,13 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
         task.RefreshProgress();
     }
 
-    internal void ConfigureDownloadPlan(IReadOnlyList<DownloadFileRequest> allFiles, IReadOnlyList<DownloadFileRequest> missingFiles)
+    internal void ConfigureDownloadPlan(IReadOnlyList<DownloadFileRequest> allFiles, IReadOnlyList<DownloadFileRequest> missingFiles,
+        bool preserveStageWeight = false)
     {
         _plannedTotalBytes = allFiles.Sum(EstimatedSize);
         long missingBytes = missingFiles.Sum(EstimatedSize);
         _alreadyCompleteBytes = Math.Max(0, _plannedTotalBytes - missingBytes);
-        stage.PlannedBytes = Math.Max(1, _plannedTotalBytes);
+        if (!preserveStageWeight) stage.PlannedBytes = Math.Max(1, _plannedTotalBytes);
         task.RemainingFiles = missingFiles.Count;
         stage.Progress = _plannedTotalBytes == 0 ? 0 : Math.Clamp(_alreadyCompleteBytes * 100.0 / _plannedTotalBytes, 0, 99.9);
         task.RefreshProgress();

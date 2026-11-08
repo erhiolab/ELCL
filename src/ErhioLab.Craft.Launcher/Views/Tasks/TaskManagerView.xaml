@@ -20,6 +20,7 @@
             <StackPanel
                 Margin="24,98,24,0">
                 <TextBlock
+                    x:Name="OverallProgressLabel"
                     HorizontalAlignment="Center"
                     Foreground="{DynamicResource AccentBrush}"
                     Text="{DynamicResource I18n.taskManager.overallProgress}" />
@@ -99,14 +100,21 @@
                                             <ColumnDefinition
                                                 Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel
-                                            Orientation="Horizontal"
+                                        <Grid
                                             VerticalAlignment="Center">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition
+                                                    Width="*" />
+                                                <ColumnDefinition
+                                                    Width="Auto" />
+                                            </Grid.ColumnDefinitions>
                                             <TextBlock
                                                 FontSize="14"
                                                 FontWeight="SemiBold"
+                                                TextTrimming="CharacterEllipsis"
                                                 Text="{Binding Title}" />
                                             <TextBlock
+                                                Grid.Column="1"
                                                 Margin="12,0,0,0"
                                                 VerticalAlignment="Center"
                                                 Text="{Binding StatusText}">
@@ -142,8 +150,9 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                        </StackPanel>
+                                        </Grid>
                                         <TextBlock
+                                            x:Name="TaskProgressText"
                                             Grid.Column="1"
                                             Margin="8,0,12,0"
                                             VerticalAlignment="Center"
@@ -153,17 +162,21 @@
                                             Grid.Column="2"
                                             Width="54"
                                             Height="28"
+                                            Margin="12,0,0,0"
                                             Click="TaskAction_Click"
                                             Content="{Binding ActionText}"
+                                            IsEnabled="{Binding CanInvokeAction}"
                                             Style="{StaticResource SecondaryActionStyle}" />
                                     </Grid>
                                     <ProgressBar
+                                        x:Name="TaskProgressBar"
                                         Height="3"
                                         Margin="0,12,0,9"
                                         Maximum="100"
                                         Value="{Binding Progress, Mode=OneWay}"
                                         Foreground="{DynamicResource AccentBrush}" />
                                     <ItemsControl
+                                        x:Name="TaskStages"
                                         ItemsSource="{Binding Stages}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate
@@ -189,12 +202,49 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <TextBlock
+                                        x:Name="GameProcessText"
+                                        Margin="0,10,0,0"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        Text="{Binding ProcessText}"
+                                        Visibility="Collapsed" />
+                                    <TextBlock
+                                        x:Name="TaskErrorText"
                                         Margin="8,8,0,0"
                                         Foreground="#E66B6B"
                                         Text="{Binding Error}"
                                         TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding IsRunningGame}"
+                                    Value="True">
+                                    <Setter
+                                        TargetName="TaskProgressText"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                    <Setter
+                                        TargetName="TaskProgressBar"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                    <Setter
+                                        TargetName="TaskStages"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                    <Setter
+                                        TargetName="GameProcessText"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger
+                                    Binding="{Binding Error}"
+                                    Value="{x:Null}">
+                                    <Setter
+                                        TargetName="TaskErrorText"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
