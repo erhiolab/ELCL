@@ -233,6 +233,7 @@ public partial class VersionSelectionView
             }
 
             App.Logger.Information("Versions", $"扫描游戏目录 {selected.Path}, 找到 {found.Count} 个版本.");
+            await LauncherProfileCompatibility.SynchronizeVersionsAsync(selected.Path, found);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -498,6 +499,7 @@ public partial class VersionSelectionView
             return;
         }
 
+        await LauncherProfileCompatibility.EnsureFolderAsync(path);
         await ReloadFoldersAnimatedAsync();
         await RefreshVersionsAsync();
     }
@@ -539,6 +541,7 @@ public partial class VersionSelectionView
         try
         {
             Directory.Delete(versionFolder, true);
+            await LauncherProfileCompatibility.RemoveVersionAsync(folder.Path, versionFolder);
             if (SamePath(App.Settings.SelectedVersionPath, versionFolder) ||
                 App.Settings.GameFolders.Any(item => SamePath(item.Path, folder.Path) && SamePath(item.LastSelectedVersionPath, versionFolder)))
             {

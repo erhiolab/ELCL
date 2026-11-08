@@ -69,7 +69,7 @@ public sealed class AnimatedSegmentBar : FrameworkElement
         double total = first + second + third;
         double targetFirst = total > 0 && double.IsFinite(total) ? first / total : 0;
         double targetSecond = total > 0 && double.IsFinite(total) ? (first + second) / total : 0;
-        if (_hasValues && targetFirst == _targetFirst && targetSecond == _targetSecond) return;
+        if (_hasValues && Math.Abs(targetFirst - _targetFirst) < 1e-9 && Math.Abs(targetSecond - _targetSecond) < 1e-9) return;
 
         // 新数据到来时从屏幕上的当前位置继续, 避免中断上一段动画后跳回旧目标.
         double fromFirst = FirstBoundary;

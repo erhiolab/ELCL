@@ -113,15 +113,14 @@ public partial class AccountAppearanceView
         ModelPreview.SetAppearance(null, false, null);
         ModelEmptyText.Visibility = Visibility.Visible;
 
-        bool online = _accountUuid is not null;
         UpdateActionButtons();
-        if (!online) return;
+        if (account is not { IsMicrosoft: true }) return;
 
         UpdateSkinFromCache();
-        App.Logger.Information("Skins", $"开始加载账户外观: {account!.UserName} ({account.Uuid:N}).");
+        App.Logger.Information("Skins", $"开始加载账户外观: {account.UserName} ({account.Uuid:N}).");
         CancellationTokenSource cancellation = new();
         _loadCancellation = cancellation;
-        _ = LoadAppearanceAsync(account!.Uuid, _selectionRevision, cancellation.Token);
+        _ = LoadAppearanceAsync(account.Uuid, _selectionRevision, cancellation.Token);
     }
 
     private async Task LoadAppearanceAsync(Guid uuid, int revision, CancellationToken cancellationToken)
@@ -175,7 +174,7 @@ public partial class AccountAppearanceView
 
     private void UpdateSkinFromCache()
     {
-        if (_accountUuid is not Guid uuid) return;
+        if (_accountUuid is not { } uuid) return;
         BitmapSource? previous = _skin;
         _skin = App.Skins.GetAvatar(uuid)?.Skin;
         ModelEmptyText.Visibility = _skin is null ? Visibility.Visible : Visibility.Collapsed;
@@ -194,13 +193,13 @@ public partial class AccountAppearanceView
         if (ModelPreview is null || SlimModelButton is null || ApplyModelButton is null) return;
         ModelPreview.SetAppearance(_skin, SlimModelButton.IsChecked == true, _cape);
         UpdateActionButtons();
-        if (!_updatingChoices && _accountUuid is Guid uuid) App.Logger.Information("Skins", $"已选择皮肤模型: account={uuid:N}, model={(SlimModelButton.IsChecked == true ? "SLIM" : "CLASSIC")} (待应用).");
+        if (!_updatingChoices && _accountUuid is { } uuid) App.Logger.Information("Skins", $"已选择皮肤模型: account={uuid:N}, model={(SlimModelButton.IsChecked == true ? "SLIM" : "CLASSIC")} (待应用).");
     }
 
     private void CapeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateActionButtons();
-        if (_accountUuid is Guid uuid)
+        if (_accountUuid is { } uuid)
         {
             if (!_updatingChoices) App.Logger.Information("Skins", $"已选择披风: account={uuid:N}, cape={(CapeComboBox.SelectedItem as CapeChoice)?.Id ?? "无"} (待应用).");
             _ = ShowCapePreviewAsync(uuid, ++_capeRevision, _loadCancellation?.Token ?? CancellationToken.None);
@@ -219,7 +218,7 @@ public partial class AccountAppearanceView
         bool showElytra = ElytraPreviewCheckBox.IsChecked == true;
         ModelPreview.SetElytraPreview(showElytra);
         UpdateCapePreviewImage();
-        if (_accountUuid is Guid uuid && _cape is not null)
+        if (_accountUuid is { } uuid && _cape is not null)
         {
             FadeIn(ModelPreview);
             FadeIn(CapePreviewImage);
@@ -310,7 +309,7 @@ public partial class AccountAppearanceView
 
     private void UpdateCapePreviewImage()
     {
-        if (_cape is not BitmapSource texture)
+        if (_cape is not { } texture)
         {
             CapePreviewImage.Source = null;
             return;
@@ -357,7 +356,7 @@ public partial class AccountAppearanceView
 
     private async void UploadSkin_Click(object sender, RoutedEventArgs e)
     {
-        if (_accountUuid is not Guid uuid || _busy) return;
+        if (_accountUuid is not { } uuid || _busy) return;
         OpenFileDialog dialog = new() { Filter = "PNG (*.png)|*.png", CheckFileExists = true, Multiselect = false };
         if (dialog.ShowDialog() != true) return;
 
@@ -397,7 +396,7 @@ public partial class AccountAppearanceView
 
     private async void ApplyModel_Click(object sender, RoutedEventArgs e)
     {
-        if (_accountUuid is not Guid uuid || _busy) return;
+        if (_accountUuid is not { } uuid || _busy) return;
         SetBusy(true);
         App.Logger.Information("Skins", $"开始修改皮肤模型: account={uuid:N}, model={(SlimModelButton.IsChecked == true ? "SLIM" : "CLASSIC")}.");
         LauncherToasts.Information(LocalizationManager.Get("account.modelSaving"));
@@ -424,7 +423,7 @@ public partial class AccountAppearanceView
 
     private async void ApplyCape_Click(object sender, RoutedEventArgs e)
     {
-        if (_accountUuid is not Guid uuid || CapeComboBox.SelectedItem is not CapeChoice choice || _busy) return;
+        if (_accountUuid is not { } uuid || CapeComboBox.SelectedItem is not CapeChoice choice || _busy) return;
         SetBusy(true);
         App.Logger.Information("Skins", $"开始切换披风: account={uuid:N}, cape={choice.Id ?? "无"}.");
         LauncherToasts.Information(LocalizationManager.Get("account.capeSaving"));

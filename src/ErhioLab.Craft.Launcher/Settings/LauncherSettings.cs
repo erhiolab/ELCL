@@ -132,7 +132,7 @@ public sealed record LauncherSettings
             GameWindowWidth = Math.Clamp(GameWindowWidth, 1, 16384),
             GameWindowHeight = Math.Clamp(GameWindowHeight, 1, 16384),
             GameWindowTitle = NormalizeLaunchText(GameWindowTitle, 512).Replace('\r', ' ').Replace('\n', ' '),
-            JvmArguments = NormalizeLaunchText(JvmArguments ?? DefaultJvmArguments, 16384),
+            JvmArguments = NormalizeLaunchText(JvmArguments, 16384, DefaultJvmArguments),
             GameArguments = NormalizeLaunchText(GameArguments, 16384),
             PreLaunchCommand = NormalizeLaunchText(PreLaunchCommand, 8192),
             GarbageCollector = Enum.IsDefined(GarbageCollector) ? GarbageCollector : GameGarbageCollector.StandardG1,
@@ -150,9 +150,9 @@ public sealed record LauncherSettings
 
     private static IEnumerable<T> OrEmpty<T>(IEnumerable<T>? values) => values ?? [];
 
-    private static string NormalizeLaunchText(string? value, int limit)
+    private static string NormalizeLaunchText(string? value, int limit, string fallback = "")
     {
-        string text = (value ?? "").Replace("\0", "", StringComparison.Ordinal);
+        string text = (value ?? fallback).Replace("\0", "", StringComparison.Ordinal);
         return text[..Math.Min(text.Length, limit)];
     }
 

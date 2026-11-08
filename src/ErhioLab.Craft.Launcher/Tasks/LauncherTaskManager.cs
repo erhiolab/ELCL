@@ -7,6 +7,7 @@ using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
 
@@ -84,11 +85,18 @@ internal sealed class LauncherTaskManager
                 if (files.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions);
                 context.CancellationToken.ThrowIfCancellationRequested();
                 await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, installedName, context.CancellationToken);
+                await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
+                    installedName, cancellationToken: context.CancellationToken);
             })
         ];
 
         LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), stages, versionFolder,
-            () => CleanupVanillaVersionDirectory(versionFolder, clientPath, versionJsonPath, clientExisted, versionJsonExisted));
+            async () =>
+            {
+                CleanupVanillaVersionDirectory(versionFolder, clientPath, versionJsonPath, clientExisted, versionJsonExisted);
+                if (!versionJsonExisted)
+                    await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, versionFolder);
+            });
         task.LocalizedTitle = () => string.Format(LocalizationManager.Get("install.title"), installedName);
         return task;
     }
@@ -116,7 +124,7 @@ internal sealed class LauncherTaskManager
 
     /// <summary>创建由多个阶段组成的任务, 后续安装与模组操作可复用.</summary>
     internal LauncherTask Start(string title, IReadOnlyList<LauncherTaskStage> stages, string? targetPath = null,
-        Action? cleanupOnRemove = null, Action? onCompleted = null)
+        Func<Task>? cleanupOnRemove = null, Action? onCompleted = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         if (stages.Count == 0)
@@ -213,7 +221,7 @@ internal sealed class LauncherTaskManager
         if (!Tasks.Contains(task)) return;
         try
         {
-            task.CleanupOnRemove?.Invoke();
+            if (task.CleanupOnRemove is { } cleanup) await cleanup();
             Tasks.Remove(task);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)

@@ -16,6 +16,7 @@ Core 只处理数据和文件。你传入网络客户端、保存路径和需要
 | 根据用户名计算离线玩家 UUID | [离线玩家 UUID](offline-accounts.md) |
 | 替换启动标题、参数和命令中的玩家名、版本与路径标记 | [启动模板替换标记](launch-placeholders.md) |
 | 解析版本继承、收集启动依赖、解压本地库并生成启动参数 | [准备启动 Minecraft](launch.md) |
+| 创建或更新官方格式的安装配置，保留已有档案 | [启动器安装档案](launcher-profiles.md) |
 | 登录并验证 Microsoft / Minecraft 账户 | [Microsoft 账户登录](microsoft-auth.md) |
 | 写会话日志、保存 JSON | [日志](logging.md) · [JSON 存储](storage.md) |
 

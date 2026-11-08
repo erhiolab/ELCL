@@ -64,7 +64,7 @@ public sealed class SkinModelPreview : Grid
         };
         input.MouseMove += (_, e) =>
         {
-            if (_dragStart is not Point start || e.LeftButton != MouseButtonState.Pressed) return;
+            if (_dragStart is not { } start || e.LeftButton != MouseButtonState.Pressed) return;
             Point current = e.GetPosition(input);
             _yaw.Angle += (current.X - start.X) * 0.8;
             _pitch.Angle = Math.Clamp(_pitch.Angle + (current.Y - start.Y) * 0.6, -45, 45);

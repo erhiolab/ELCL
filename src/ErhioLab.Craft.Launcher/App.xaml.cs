@@ -139,6 +139,7 @@ public partial class App
         }
 
         LauncherThemeManager.Apply(Settings);
+        _ = LauncherProfileCompatibility.InitializeFolderAsync(localGameDirectory);
         _serviceCredentials = ServiceCredentials.Load(Path.Combine(dataDirectory, "services.json"));
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));

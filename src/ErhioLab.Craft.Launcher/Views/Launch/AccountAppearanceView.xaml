@@ -227,7 +227,8 @@
                             </Style>
                         </ComboBox.Style>
                         <ComboBox.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate
+                                DataType="{x:Type local:CapeChoice}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="38" />

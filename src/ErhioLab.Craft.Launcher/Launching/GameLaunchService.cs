@@ -253,6 +253,8 @@ internal sealed class GameLaunchService
                         {
                             GameWindowController.ApplyWindow(window, settings.GameWindowTitle, context!, settings.WindowMode == GameWindowMode.Maximized);
                             App.Logger.Information("Launch", $"游戏窗口已出现: PID={running.Process.Id}.");
+                            await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionDirectory,
+                                Path.GetFileName(versionDirectory), name, markUsed: true, task.CancellationToken);
                             return;
                         }
 

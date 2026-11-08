@@ -1,6 +1,7 @@
 {
     "Name": "简体中文",
     "Strings": {
+        "profiles.syncFailed": "安装档案兼容文件同步失败，游戏操作仍可继续，详细原因已写入日志。",
         "memoryOptimization.button": "内存优化",
         "memoryOptimization.busy": "正在优化",
         "memoryOptimization.beforeLaunch": "启动游戏前进行内存优化",

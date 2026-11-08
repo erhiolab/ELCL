@@ -49,7 +49,7 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
 
     internal CancellationTokenSource Cancellation { get; } = new();
     internal Task Completion { get; set; } = Task.CompletedTask;
-    internal Action? CleanupOnRemove { get; set; }
+    internal Func<Task>? CleanupOnRemove { get; set; }
     internal Action? OnCompleted { get; init; }
     internal Func<Task>? StopAsync { get; init; }
     public bool IsRunningGame { get; init; }
