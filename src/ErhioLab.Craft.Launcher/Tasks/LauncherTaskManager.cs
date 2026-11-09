@@ -215,7 +215,7 @@ internal sealed class LauncherTaskManager
 
     /// <summary>创建由多个阶段组成的任务, 后续安装与模组操作可复用.</summary>
     internal LauncherTask Start(string title, IReadOnlyList<LauncherTaskStage> stages, string? targetPath = null,
-        Func<Task>? cleanupOnRemove = null, Action? onCompleted = null)
+        Func<Task>? cleanupOnRemove = null, Action? onCompleted = null, bool isGameLaunch = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         if (stages.Count == 0)
@@ -223,7 +223,10 @@ internal sealed class LauncherTaskManager
             throw new ArgumentException(LocalizationManager.Get("task.stageRequired"), nameof(stages));
         }
 
-        LauncherTask task = new(title, stages, targetPath) { CleanupOnRemove = cleanupOnRemove, OnCompleted = onCompleted };
+        LauncherTask task = new(title, stages, targetPath)
+        {
+            CleanupOnRemove = cleanupOnRemove, OnCompleted = onCompleted, IsGameLaunch = isGameLaunch
+        };
         Tasks.Insert(0, task);
         task.Completion = RunAsync(task);
         return task;
@@ -235,7 +238,7 @@ internal sealed class LauncherTaskManager
     {
         LauncherTask task = new(name, [], versionDirectory)
         {
-            IsRunningGame = true, ProcessId = processId, StopAsync = stop, Status = LauncherTaskStatus.Running
+            IsGameLaunch = true, IsRunningGame = true, ProcessId = processId, StopAsync = stop, Status = LauncherTaskStatus.Running
         };
         Tasks.Insert(0, task);
         App.Logger.Information("Tasks", $"开始跟踪运行中的游戏: {name}, PID={processId}.");

@@ -52,6 +52,8 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     internal Func<Task>? CleanupOnRemove { get; set; }
     internal Action? OnCompleted { get; init; }
     internal Func<Task>? StopAsync { get; init; }
+    /// <summary>游戏启动准备或运行任务, 不独占整个版本目录.</summary>
+    internal bool IsGameLaunch { get; init; }
     public bool IsRunningGame { get; init; }
     public int? ProcessId { get; init; }
     public bool IsStopping

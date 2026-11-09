@@ -10,7 +10,6 @@ public partial class LaunchSidebarView
     public LaunchSidebarView()
     {
         InitializeComponent();
-        App.GameLauncher.StateChanged += RefreshLaunchState;
         App.Accounts.Changed += (_, _) => RefreshAccount();
         App.Skins.AvatarChanged += uuid =>
         {
@@ -48,9 +47,8 @@ public partial class LaunchSidebarView
 
     private void RefreshLaunchState()
     {
-        MainActionButton.IsEnabled = !App.GameLauncher.IsPreparing;
-        MainActionDescription.Text = LocalizationManager.Get(App.GameLauncher.IsPreparing ? "gameLaunch.preparingShort" :
-            App.Settings.SelectedVersionId is not null ? "gameLaunch.clickToLaunch" : "launch.noInstance");
+        MainActionDescription.Text = LocalizationManager.Get(App.Settings.SelectedVersionId is not null
+            ? "gameLaunch.clickToLaunch" : "launch.noInstance");
     }
 
     internal void ClearSelectedVersion()

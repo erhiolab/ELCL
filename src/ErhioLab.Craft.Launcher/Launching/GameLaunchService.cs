@@ -23,13 +23,9 @@ namespace ErhioLab.Craft.Launcher.Launching;
 internal sealed class GameLaunchService
 {
     private static readonly HttpClient MetadataHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private readonly HashSet<string> _runningVersions = new(StringComparer.OrdinalIgnoreCase);
-    internal bool IsPreparing { get; private set; }
-    internal event Action? StateChanged;
 
     internal async Task StartAsync()
     {
-        if (IsPreparing) return;
         LauncherSettings settings = App.Settings;
         AccountEntry? account = App.Accounts.SelectedAccount;
         if (account is null)
@@ -56,20 +52,13 @@ internal sealed class GameLaunchService
             return;
         }
 
-        if (_runningVersions.Contains(versionDirectory))
-        {
-            LauncherToasts.Information(L("gameLaunch.alreadyRunning"));
-            return;
-        }
-
-        if (App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, versionDirectory, StringComparison.OrdinalIgnoreCase)))
+        if (App.Tasks.Tasks.Any(task => task.IsActive && !task.IsGameLaunch
+            && string.Equals(task.TargetPath, versionDirectory, StringComparison.OrdinalIgnoreCase)))
         {
             LauncherToasts.Information(L("gameLaunch.installRunning"));
             return;
         }
 
-        IsPreparing = true;
-        StateChanged?.Invoke();
         string name = settings.SelectedVersionId ?? Path.GetFileName(versionDirectory);
         string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8];
         string runDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId);
@@ -83,6 +72,7 @@ internal sealed class GameLaunchService
         JavaInstallation? java = null;
         MicrosoftMinecraftSession? session = null;
         RunningGame? running = null;
+        bool handedOff = false;
         string accessToken = "0";
         int memory = 0;
 
@@ -112,7 +102,7 @@ internal sealed class GameLaunchService
         try
         {
             LauncherToasts.Information(string.Format(L("gameLaunch.preparing"), name));
-            App.Logger.Information("Launch", $"开始启动版本: {name}; 账户类型: {(account.IsMicrosoft ? "Microsoft" : "离线")}.");
+            App.Logger.Information("Launch", $"开始启动版本: {name}; 运行实例={runId}; 账户类型: {(account.IsMicrosoft ? "Microsoft" : "离线")}.");
             App.Logger.Information("Launch", $"固定版本隔离: 工作目录={versionDirectory}; 共享支持库与资源目录={gameDirectory}.");
             var task = App.Tasks.Start(string.Format(L("gameLaunch.task"), name),
             [
@@ -190,7 +180,7 @@ internal sealed class GameLaunchService
                 Stage("gameLaunch.prepare", async task =>
                 {
                     await Task.Run(() => MinecraftLaunchFiles.ExtractNativesAsync(files!, natives, task.CancellationToken), task.CancellationToken);
-                    string patchDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch-patches");
+                    string patchDirectory = Path.Combine(runDirectory, "patches");
                     bool customAgent = MinecraftLaunchBuilder.SplitArguments(settings.JvmArguments).Any(value => value.StartsWith("-javaagent:", StringComparison.Ordinal));
                     string? wrapper = !settings.DisableJavaLaunchWrapper && !customAgent
                         ? await LaunchPatches.ExtractAsync("JavaWrapper.jar", patchDirectory, task.CancellationToken)
@@ -245,7 +235,6 @@ internal sealed class GameLaunchService
                     string log = Path.Combine(AppContext.BaseDirectory, "ELCL", "logs", "game", runId + ".log");
                     running = RunningGame.Start(start, log, accessToken, session?.MicrosoftRefreshToken, settings.GamePriority);
                     App.Logger.Information("Launch", $"游戏进程已创建: PID={running.Process.Id}, 日志={log}.");
-                    _runningVersions.Add(versionDirectory);
                     while (!running.Process.HasExited)
                     {
                         task.CancellationToken.ThrowIfCancellationRequested();
@@ -269,10 +258,11 @@ internal sealed class GameLaunchService
             {
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
                 App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
-                    runningTask => WatchGameAsync(game, versionDirectory, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
+                    runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
                     game.TerminateAsync);
+                handedOff = true;
                 running = null;
-            });
+            }, isGameLaunch: true);
             task.LocalizedTitle = () => string.Format(L("gameLaunch.task"), name);
             await task.Completion;
         }
@@ -288,16 +278,13 @@ internal sealed class GameLaunchService
                 running.Kill();
                 await running.Completion;
                 running.Dispose();
-                _runningVersions.Remove(versionDirectory);
             }
 
-            if (!_runningVersions.Contains(versionDirectory)) CleanupRunDirectory(runDirectory);
-            IsPreparing = false;
-            StateChanged?.Invoke();
+            if (!handedOff) CleanupRunDirectory(runDirectory);
         }
     }
 
-    private async Task<int> WatchGameAsync(RunningGame running, string versionDirectory, string runDirectory, string name,
+    private static async Task<int> WatchGameAsync(RunningGame running, string runDirectory, string name,
         string title, MinecraftLaunchPlaceholderContext context, LauncherTask task)
     {
         try
@@ -344,10 +331,8 @@ internal sealed class GameLaunchService
         }
         finally
         {
-            _runningVersions.Remove(versionDirectory);
             running.Dispose();
             CleanupRunDirectory(runDirectory);
-            StateChanged?.Invoke();
         }
     }
 
