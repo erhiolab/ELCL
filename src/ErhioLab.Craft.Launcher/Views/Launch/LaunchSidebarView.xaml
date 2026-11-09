@@ -175,7 +175,9 @@
                     Content="{DynamicResource I18n.common.selectVersion}"
                     Style="{StaticResource SecondaryActionStyle}" />
                 <Button
+                    x:Name="VersionSettingsButton"
                     Grid.Column="2"
+                    Click="VersionSettings_Click"
                     Content="{DynamicResource I18n.launchSidebar.versionSettings}"
                     IsEnabled="False"
                     Style="{StaticResource SecondaryActionStyle}" />

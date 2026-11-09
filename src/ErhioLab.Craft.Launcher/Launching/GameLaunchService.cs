@@ -24,17 +24,22 @@ internal sealed class GameLaunchService
 {
     private static readonly HttpClient MetadataHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    internal async Task StartAsync()
+    internal Task StartAsync() => PrepareAsync(App.Settings);
+
+    internal Task ExportScriptAsync(string gameDirectory, LocalMinecraftVersion version, string path) =>
+        PrepareAsync(App.Settings with { SelectedGameFolderPath = gameDirectory, SelectedVersionPath = version.FolderPath, SelectedVersionId = version.Id }, Path.GetFullPath(path));
+
+    private async Task PrepareAsync(LauncherSettings settings, string? exportPath = null)
     {
-        LauncherSettings settings = App.Settings;
         AccountEntry? account = App.Accounts.SelectedAccount;
-        if (account is null)
+        if (account is null && exportPath is null)
         {
             App.Logger.Warning("Launch", "启动检查失败: 未选择账户.");
             await LauncherDialogs.WarningAsync(L("gameLaunch.title"), L("gameLaunch.noAccount"));
             if (Application.Current.MainWindow is MainWindow main) main.OpenAccountManagement();
             return;
         }
+        account ??= new AccountEntry("Player", OfflinePlayerId.FromName("Player"), false);
 
         if (settings.SelectedGameFolderPath is not { } gameDirectory || settings.SelectedVersionPath is not { } versionDirectory || !Directory.Exists(versionDirectory))
         {
@@ -61,7 +66,9 @@ internal sealed class GameLaunchService
 
         string name = settings.SelectedVersionId ?? Path.GetFileName(versionDirectory);
         string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8];
-        string runDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId);
+        string runDirectory = exportPath is null
+            ? Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId)
+            : Path.Combine(versionDirectory, "ELCL", "export-runtime", runId);
         string natives = Path.Combine(runDirectory, "natives");
         MinecraftManifestSource source = settings.FileDownloadSource == VersionListSource.OfficialFirst ? MinecraftManifestSource.Official : MinecraftManifestSource.Mirror;
         DownloadOptions downloads = new(settings.DownloadMaxConnections, (long)(settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
@@ -73,6 +80,8 @@ internal sealed class GameLaunchService
         MicrosoftMinecraftSession? session = null;
         RunningGame? running = null;
         bool handedOff = false;
+        bool exported = false;
+        bool optimizeMemory = settings.OptimizeMemoryBeforeLaunch && exportPath is null;
         string accessToken = "0";
         int memory = 0;
 
@@ -101,17 +110,17 @@ internal sealed class GameLaunchService
 
         try
         {
-            LauncherToasts.Information(string.Format(L("gameLaunch.preparing"), name));
-            App.Logger.Information("Launch", $"开始启动版本: {name}; 运行实例={runId}; 账户类型: {(account.IsMicrosoft ? "Microsoft" : "离线")}.");
+            LauncherToasts.Information(string.Format(L(exportPath is null ? "gameLaunch.preparing" : "versionSettings.exportPreparing"), name));
+            App.Logger.Information("Launch", $"{(exportPath is null ? "开始启动版本" : "开始导出启动脚本")}: {name}; 运行实例={runId}; 账户类型: {(account.IsMicrosoft ? "Microsoft" : "离线")}.");
             App.Logger.Information("Launch", $"固定版本隔离: 工作目录={versionDirectory}; 共享支持库与资源目录={gameDirectory}.");
-            var task = App.Tasks.Start(string.Format(L("gameLaunch.task"), name),
+            var task = App.Tasks.Start(string.Format(L(exportPath is null ? "gameLaunch.task" : "versionSettings.exportTask"), name),
             [
-                Stage("gameLaunch.account", async task =>
+                Stage(exportPath is null ? "gameLaunch.account" : "versionSettings.exportIdentity", async task =>
                 {
                     // 启动还包括登录/命令和窗口等待; 固定阶段权重避免下载完后整体提前显示 100%.
                     // 下载阶段内部仍按实际文件字节计算进度.
-                    task.ConfigureStageWeights(settings.OptimizeMemoryBeforeLaunch ? [5, 5, 5, 5, 30, 40, 5, 5, 5] : [5, 5, 5, 30, 40, 5, 5, 5]);
-                    if (!account.IsMicrosoft) return;
+                    task.ConfigureStageWeights(optimizeMemory ? [5, 5, 5, 5, 30, 40, 5, 5, 5] : [5, 5, 5, 30, 40, 5, 5, 5]);
+                    if (exportPath is not null || !account.IsMicrosoft) return;
                     using var handler = new HttpClientHandler();
                     if (!settings.VerifyMicrosoftCertificates)
                     {
@@ -130,7 +139,7 @@ internal sealed class GameLaunchService
                         (id, token) => Application.Current.Dispatcher.InvokeAsync(() => FetchParentAsync(id, source, downloads, task, token)).Task.Unwrap(), task.CancellationToken);
                     App.Logger.Information("Launch", $"版本元数据已解析: 基础版本={version.GameVersion}, Java 要求={version.JavaMajorVersion}.");
                 }),
-                .. (settings.OptimizeMemoryBeforeLaunch ? new[] { Stage("memoryOptimization.launchStage", async task =>
+                .. (optimizeMemory ? new[] { Stage("memoryOptimization.launchStage", async task =>
                 {
                     try { await App.MemoryOptimizer.OptimizeAsync(showNotifications: false, task.CancellationToken); }
                     catch (OperationCanceledException) when (task.CancellationToken.IsCancellationRequested) { throw; }
@@ -196,13 +205,13 @@ internal sealed class GameLaunchService
                     {
                         GameVersion = version.GameVersion, VersionName = name,
                         PlayerName = session?.UserName ?? account.UserName, PlayerUuid = account.Uuid,
-                        LoginType = L(account.IsMicrosoft ? "launch.microsoftAccount" : "account.offlineShort")
+                        LoginType = L(exportPath is null && account.IsMicrosoft ? "launch.microsoftAccount" : "account.offlineShort")
                     };
                     (int? width, int? height) = WindowDimensions(settings);
                     options = new()
                     {
                         Java = java!, Context = context, WorkingDirectory = versionDirectory, NativesDirectory = natives,
-                        AccessToken = accessToken, IsMicrosoftAccount = account.IsMicrosoft, ClientId = App.Services.MicrosoftClientId,
+                        AccessToken = accessToken, IsMicrosoftAccount = exportPath is null && account.IsMicrosoft, ClientId = App.Services.MicrosoftClientId,
                         MemoryMiB = memory, GarbageCollector = (MinecraftGarbageCollector)settings.GarbageCollector,
                         JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments,
                         WindowWidth = width, WindowHeight = height, Fullscreen = settings.WindowMode == GameWindowMode.Fullscreen,
@@ -216,10 +225,16 @@ internal sealed class GameLaunchService
                         throw new InvalidOperationException(L("gameLaunch.unknownTitle"));
                     App.Logger.Information("Launch", $"启动参数已生成: 窗口模式={settings.WindowMode}, GC={settings.GarbageCollector}, JLW={wrapper is not null}, LUA={agent is not null}.");
                 }),
-                Stage("gameLaunch.command", task => PreLaunchCommandRunner.RunAsync(settings, context!, task.CancellationToken)),
-                Stage("gameLaunch.process", async task =>
+                Stage("gameLaunch.command", task => exportPath is null ? PreLaunchCommandRunner.RunAsync(settings, context!, task.CancellationToken) : Task.CompletedTask),
+                Stage(exportPath is null ? "gameLaunch.process" : "versionSettings.writeScript", async task =>
                 {
                     task.CancellationToken.ThrowIfCancellationRequested();
+                    if (exportPath is not null)
+                    {
+                        await LaunchScriptExporter.WriteAsync(exportPath, runDirectory, MinecraftLaunchBuilder.CreateStartInfo(version!, files!, options!), settings, context!, task.CancellationToken);
+                        exported = true;
+                        return;
+                    }
                     try
                     {
                         GameWindowController.SetGpuPreference(java!.Path, settings.PreferHighPerformanceGpu);
@@ -256,6 +271,7 @@ internal sealed class GameLaunchService
                 })
             ], versionDirectory, onCompleted: () =>
             {
+                if (exportPath is not null) return;
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
                 App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
                     runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
@@ -263,7 +279,7 @@ internal sealed class GameLaunchService
                 handedOff = true;
                 running = null;
             }, isGameLaunch: true);
-            task.LocalizedTitle = () => string.Format(L("gameLaunch.task"), name);
+            task.LocalizedTitle = () => string.Format(L(exportPath is null ? "gameLaunch.task" : "versionSettings.exportTask"), name);
             await task.Completion;
         }
         catch (Exception error)
@@ -280,7 +296,7 @@ internal sealed class GameLaunchService
                 running.Dispose();
             }
 
-            if (!handedOff) CleanupRunDirectory(runDirectory);
+            if (!handedOff && !exported) CleanupRunDirectory(runDirectory, exportPath is null ? null : Path.Combine(versionDirectory, "ELCL", "export-runtime"));
         }
     }
 
@@ -336,7 +352,7 @@ internal sealed class GameLaunchService
         }
     }
 
-    private static async Task VerifyAndDownloadAsync(IReadOnlyList<DownloadFileRequest> all, DownloadOptions options,
+    internal static async Task VerifyAndDownloadAsync(IReadOnlyList<DownloadFileRequest> all, DownloadOptions options,
         LauncherTaskContext task, string name)
     {
         var missing = await Task.Run(() => MinecraftVanillaDownloadPlanner.MissingFilesAsync(all, task.CancellationToken), task.CancellationToken);
@@ -347,7 +363,7 @@ internal sealed class GameLaunchService
         if (missing.Count > 0) await task.DownloadAsync(new DownloadTaskRequest(name, missing), options);
     }
 
-    private static async Task<string> FetchParentAsync(string id, MinecraftManifestSource source, DownloadOptions options,
+    internal static async Task<string> FetchParentAsync(string id, MinecraftManifestSource source, DownloadOptions options,
         LauncherTaskContext task, CancellationToken cancellationToken)
     {
         var catalog = await new MinecraftVersionCatalogClient(MetadataHttp).GetCatalogAsync(source, cancellationToken);
@@ -376,11 +392,13 @@ internal sealed class GameLaunchService
                                                                      || java.Architecture.Contains("arm64", StringComparison.OrdinalIgnoreCase) ? "aarch64"
         : java.Architecture.Contains("64", StringComparison.Ordinal) ? "amd64" : "x86";
 
-    private static void CleanupRunDirectory(string directory)
+    private static void CleanupRunDirectory(string directory, string? exportRoot = null)
     {
         string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch")) + Path.DirectorySeparatorChar;
         string full = Path.GetFullPath(directory);
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("运行缓存清理路径越界.");
+        bool exportWorkspace = exportRoot is not null
+            && string.Equals(Path.GetDirectoryName(full), Path.GetFullPath(exportRoot), StringComparison.OrdinalIgnoreCase);
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) && !exportWorkspace) throw new InvalidOperationException("运行缓存清理路径越界.");
         try
         {
             if (Directory.Exists(full)) Directory.Delete(full, true);

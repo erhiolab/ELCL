@@ -47,6 +47,7 @@ public partial class LaunchSidebarView
 
     private void RefreshLaunchState()
     {
+        VersionSettingsButton.IsEnabled = App.Settings.SelectedVersionPath is not null;
         MainActionDescription.Text = LocalizationManager.Get(App.Settings.SelectedVersionId is not null
             ? "gameLaunch.clickToLaunch" : "launch.noInstance");
     }
@@ -87,5 +88,10 @@ public partial class LaunchSidebarView
         {
             window.OpenVersionSelection();
         }
+    }
+
+    private async void VersionSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is MainWindow window) await window.OpenSelectedVersionSettingsAsync();
     }
 }

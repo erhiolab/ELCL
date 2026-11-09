@@ -142,6 +142,45 @@
                         Text="{DynamicResource I18n.common.selectVersion}" />
                 </StackPanel>
 
+                <Grid
+                    x:Name="VersionSettingsTitle"
+                    Grid.Column="0"
+                    Margin="18,0,0,0"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="Auto" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        Width="30"
+                        Height="30"
+                        Click="CloseVersionSettings_Click"
+                        ToolTip="{DynamicResource I18n.versionSettings.back}"
+                        Style="{StaticResource SecondaryActionStyle}">
+                        <Path
+                            Width="15"
+                            Height="15"
+                            Data="{x:Static icons:LauncherIcons.Back}"
+                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                            StrokeThickness="1.5"
+                            StrokeStartLineCap="Round"
+                            StrokeEndLineCap="Round"
+                            StrokeLineJoin="Round"
+                            Stretch="Uniform" />
+                    </Button>
+                    <TextBlock
+                        x:Name="VersionSettingsTitleText"
+                        Grid.Column="1"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+
                 <StackPanel
                     x:Name="AccountManagementTitle"
                     Grid.Column="0"
@@ -385,6 +424,7 @@
             <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
             <tasks:TaskManagerView
                 x:Name="TaskManagerPage"
+                Panel.ZIndex="1"
                 Grid.Row="1"
                 Visibility="Collapsed" />
             <launch:VersionSelectionView
@@ -395,9 +435,14 @@
                 x:Name="AccountManagementPage"
                 Grid.Row="1"
                 Visibility="Collapsed" />
+            <launch:VersionSettingsView
+                x:Name="VersionSettingsPage"
+                Grid.Row="1"
+                Visibility="Collapsed" />
             <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->
             <Image
                 x:Name="ThemeTransitionImage"
+                Panel.ZIndex="2"
                 Grid.Row="0"
                 Grid.RowSpan="2"
                 IsHitTestVisible="False"

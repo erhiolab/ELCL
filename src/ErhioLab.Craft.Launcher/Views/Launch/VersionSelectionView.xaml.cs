@@ -13,9 +13,9 @@ using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Dialogs;
-using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Versions;
 
 using Microsoft.Win32;
 
@@ -30,6 +30,13 @@ public partial class VersionSelectionView
 
     /// <summary>用户选择版本后通知主窗口返回启动页.</summary>
     internal event Action<LocalMinecraftVersion>? VersionChosen;
+    internal event Action<LocalMinecraftVersion>? VersionSettingsRequested;
+
+    internal Task ReloadAsync()
+    {
+        ReloadFolders();
+        return RefreshVersionsAsync();
+    }
 
     /// <summary>扫描后自动选择版本时同步启动页, 不关闭版本选择页.</summary>
     internal event Action<LocalMinecraftVersion>? VersionSelectionChanged;
@@ -216,12 +223,14 @@ public partial class VersionSelectionView
                 return;
             }
 
+            var descriptions = await Task.Run(() => found.ToDictionary(item => item.FolderPath, item => VersionSettingsStore.ReadDescription(item.FolderPath), StringComparer.OrdinalIgnoreCase));
+            if (version != _scanVersion) return;
             string? rememberedPath = App.Settings.GameFolders.FirstOrDefault(folder => SamePath(folder.Path, selected.Path))?.LastSelectedVersionPath;
             string? preferredPath = rememberedPath ?? App.Settings.SelectedVersionPath;
             LocalMinecraftVersion[] validVersions = found.Where(item => item.IsValid).ToArray();
             LocalMinecraftVersion? selectedVersion = validVersions.FirstOrDefault(item => SamePath(item.FolderPath, preferredPath)) ?? validVersions.FirstOrDefault();
             UpdateSelectedVersion(selectedVersion);
-            VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath))).ToArray();
+            VersionList.ItemsSource = found.Select(item => new VersionRow(item, SamePath(item.FolderPath, App.Settings.SelectedVersionPath), descriptions[item.FolderPath])).ToArray();
             SetEmptyVersionsText("versionSelector.noVersions");
             EmptyVersionsText.Visibility = found.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (found.Count > 0)
@@ -532,41 +541,20 @@ public partial class VersionSelectionView
             return;
         }
 
-        string versionsRoot = Path.GetFullPath(Path.Combine(folder.Path, "versions"));
-        string versionFolder = Path.GetFullPath(row.Version.FolderPath);
-        if (!SamePath(Directory.GetParent(versionFolder)?.FullName, versionsRoot) ||
-            !Directory.Exists(versionFolder) ||
-            File.GetAttributes(versionFolder).HasFlag(FileAttributes.ReparsePoint))
-        {
-            LauncherToasts.Error(LocalizationManager.Get("versionSelector.directoryChanged"));
-            return;
-        }
-
-        if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionSelector.deleteVersionTitle"), string.Format(LocalizationManager.Get("folder.confirmDeleteVersion"), row.Version.Id), LauncherDialogLevel.Danger, LocalizationManager.Get("common.delete")))
-        {
-            return;
-        }
-
         try
         {
-            App.Logger.Information("Versions", $"开始删除本地版本目录: {versionFolder}");
-            Directory.Delete(versionFolder, true);
-            await LauncherProfileCompatibility.RemoveVersionAsync(folder.Path, versionFolder);
-            if (SamePath(App.Settings.SelectedVersionPath, versionFolder) ||
-                App.Settings.GameFolders.Any(item => SamePath(item.Path, folder.Path) && SamePath(item.LastSelectedVersionPath, versionFolder)))
-            {
-                UpdateSelectedVersion(null);
-            }
-
-            App.Logger.Information("Versions", $"删除本地版本: {versionFolder}");
-            LauncherToasts.Success(LocalizationManager.Get("versionSelector.deleted"));
-            await RefreshVersionsAsync();
+            if (await VersionManagementService.DeleteAsync(folder.Path, row.Version)) await RefreshVersionsAsync();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            App.Logger.Error("Versions", $"删除本地版本失败: {versionFolder}", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("versionSelector.deleteFailed"), exception.Message);
+            App.Logger.Error("Versions", $"删除本地版本失败: {row.Version.FolderPath}", exception);
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("versionSettings.operationFailed"), exception.Message));
         }
+    }
+
+    private void VersionSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: VersionRow row }) VersionSettingsRequested?.Invoke(row.Version);
     }
 
     private static bool SamePath(string? left, string? right)
@@ -647,47 +635,7 @@ public partial class VersionSelectionView
         }
     }
 
-    /// <summary>本地版本与显示描述.</summary>
-    public sealed record VersionRow(LocalMinecraftVersion Version, bool IsSelected)
-    {
-        public Geometry Icon => !Version.IsValid ? LauncherIcons.Error
-            : Version.Loader is { } loader && Enum.TryParse(loader, true, out MinecraftLoaderKind kind)
-            ? LauncherIcons.ForLoader(kind)
-            : Version.Type switch
-        {
-            "snapshot" => LauncherIcons.VersionPreview,
-            "old_alpha" or "old_beta" => LauncherIcons.VersionAncient,
-            _ => LauncherIcons.VersionRelease
-        };
-
-        public bool HasParsedVersion => Version.IsValid && !string.IsNullOrWhiteSpace(Version.GameVersion)
-            && (Version.Loader is null || !string.IsNullOrWhiteSpace(Version.LoaderVersion));
-
-        public bool HasLoader => HasParsedVersion && Version.Loader is not null;
-
-        public string GameBadge => Version.GameVersion ?? string.Empty;
-
-        public string LoaderBadge => Version.Loader is null ? string.Empty : $"{Version.Loader} {Version.LoaderVersion}";
-
-        public string StatusText
-        {
-            get
-            {
-                if (!Version.IsValid) return LocalizationManager.Get(Version.Error switch
-                {
-                    LocalMinecraftVersionError.MissingMetadata => "versionSelector.missingMetadata",
-                    LocalMinecraftVersionError.InvalidMetadata => "versionSelector.invalidMetadata",
-                    _ => "versionSelector.unreadableMetadata"
-                });
-                if (!HasParsedVersion) return LocalizationManager.Get("versionSelector.parseFailed");
-                return Version.Type switch
-                {
-                    "release" => LocalizationManager.Get("version.release"),
-                    "snapshot" => LocalizationManager.Get("versionSelector.snapshotType"),
-                    "old_alpha" or "old_beta" => LocalizationManager.Get("version.oldVersions"),
-                    _ => LocalizationManager.Get("versionSelector.customVersion")
-                };
-            }
-        }
-    }
+    /// <summary>版本列表为共用展示模型补充选中状态.</summary>
+    public sealed record VersionRow(LocalMinecraftVersion Version, bool IsSelected, string? CustomDescription = null)
+        : LocalVersionPresentation(Version, CustomDescription);
 }

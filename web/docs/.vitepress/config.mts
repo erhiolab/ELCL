@@ -31,6 +31,7 @@ export default defineConfig({
                 {
                     text: "ELCL 启动器", items: [
                         { text: "启动游戏", link: "/launcher/launch" },
+                        { text: "版本设置", link: "/launcher/version-settings" },
                         { text: "下载与安装", link: "/launcher/download" },
                         { text: "百宝箱与性能", link: "/launcher/toolbox" },
                         { text: "高级启动选项", link: "/launcher/advanced-options" }

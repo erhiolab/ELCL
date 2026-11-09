@@ -1,8 +1,9 @@
-﻿<UserControl
+<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionSelectionView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
     Background="{DynamicResource InkBrush}"
     IsVisibleChanged="View_IsVisibleChanged">
@@ -254,75 +255,10 @@
                         Background="{DynamicResource AccentMutedBrush}"
                         CornerRadius="6"
                         Style="{StaticResource VersionListHoverStyle}" />
-                    <Path
-                        Grid.Column="0"
-                        Width="20"
-                        Height="20"
+                    <controls:LocalVersionInfo
+                        Grid.ColumnSpan="2"
                         VerticalAlignment="Center"
-                        Data="{Binding Icon}"
-                        Stroke="{DynamicResource AccentTextBrush}"
-                        StrokeEndLineCap="Round"
-                        StrokeLineJoin="Round"
-                        StrokeStartLineCap="Round"
-                        Stretch="Uniform"
-                        StrokeThickness="1.6" />
-                    <StackPanel
-                        Grid.Column="1"
-                        VerticalAlignment="Center">
-                        <TextBlock
-                            FontSize="{DynamicResource BodyFontSize}"
-                            FontWeight="Medium"
-                            Text="{Binding Version.Id}" />
-                        <StackPanel
-                            Margin="0,5,0,0"
-                            Orientation="Horizontal">
-                            <TextBlock
-                                Margin="0,0,8,0"
-                                VerticalAlignment="Center"
-                                FontSize="{DynamicResource SmallFontSize}"
-                                Foreground="{DynamicResource TextMutedBrush}"
-                                Text="{Binding StatusText}" />
-                            <Border
-                                Margin="0,0,6,0"
-                                Padding="6,2"
-                                Background="{DynamicResource AccentMutedBrush}"
-                                CornerRadius="4">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasParsedVersion}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock
-                                    FontSize="{DynamicResource SmallFontSize}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding GameBadge}" />
-                            </Border>
-                            <Border
-                                Padding="6,2"
-                                Background="{DynamicResource AccentMutedBrush}"
-                                CornerRadius="4">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasLoader}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock
-                                    FontSize="{DynamicResource SmallFontSize}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding LoaderBadge}" />
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
+                        Info="{Binding}" />
                     <StackPanel
                         x:Name="VersionActions"
                         Grid.Column="2"
@@ -346,9 +282,10 @@
                                 Stretch="Uniform" />
                         </Button>
                         <Button
-                            IsEnabled="False"
+                            Click="VersionSettings_Click"
+                            Tag="{Binding}"
                             Style="{StaticResource VersionActionStyle}"
-                            ToolTip="{DynamicResource I18n.versionSelector.versionSettingsUnavailable}">
+                            ToolTip="{DynamicResource I18n.launchSidebar.versionSettings}">
                             <Path
                                 Width="15"
                                 Height="15"

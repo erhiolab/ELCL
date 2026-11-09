@@ -62,6 +62,7 @@ public partial class MainWindow
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
         _routes = ShellRouteCatalog.Create();
+        InitializeVersionSettings();
         VersionSelectionPage.VersionChosen += OnVersionChosen;
         VersionSelectionPage.VersionSelectionChanged += version =>
         {
@@ -231,7 +232,7 @@ public partial class MainWindow
 
     private void CloseVersionSelection() => CloseSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择");
 
-    private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
+    private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name, Action? onClosed = null)
     {
         if (page.Visibility != Visibility.Visible)
         {
@@ -261,6 +262,7 @@ public partial class MainWindow
             TopNavigationHost.Visibility = Visibility.Visible;
             TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
+            onClosed?.Invoke();
             UpdateTaskManagerButton();
         };
         page.BeginAnimation(OpacityProperty, fade);
@@ -281,7 +283,10 @@ public partial class MainWindow
 
     private void UpdateTaskManagerButton()
     {
-        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible || VersionSelectionPage.Visibility == Visibility.Visible || AccountManagementPage.Visibility == Visibility.Visible || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        bool versionSettings = VersionSettingsPage.Visibility == Visibility.Visible;
+        TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible
+            || !versionSettings && (VersionSelectionPage.Visibility == Visibility.Visible || AccountManagementPage.Visibility == Visibility.Visible)
+            || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void OnTasksChanged()
@@ -299,6 +304,7 @@ public partial class MainWindow
         TaskManagerButton.Visibility = Visibility.Collapsed;
         TitleBarLabel.Visibility = Visibility.Collapsed;
         TopNavigationHost.Visibility = Visibility.Collapsed;
+        VersionSettingsTitle.Visibility = Visibility.Collapsed;
         TaskTitle.Visibility = Visibility.Visible;
         TaskManagerPage.Visibility = Visibility.Visible;
         TaskManagerPage.Opacity = 0;
@@ -328,6 +334,11 @@ public partial class MainWindow
         TaskTitle.Visibility = Visibility.Collapsed;
         TitleBarLabel.Visibility = Visibility.Visible;
         TopNavigationHost.Visibility = Visibility.Visible;
+        if (VersionSettingsPage.Visibility == Visibility.Visible)
+        {
+            TitleBarLabel.Visibility = TopNavigationHost.Visibility = Visibility.Collapsed;
+            VersionSettingsTitle.Visibility = Visibility.Visible;
+        }
         DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(170));
         fade.Completed += (_, _) =>
         {

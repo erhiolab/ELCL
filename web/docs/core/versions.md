@@ -42,3 +42,22 @@ foreach (var entry in entries)
 原版 JSON 的 `id` 和 `inheritsFrom` 除现代数字版本号、周快照外，也支持历史版本格式：例如 Pre-Classic 的 `rd-132211`、Classic 的 `c0.0.13a_03`、Indev/Infdev 的 `in-20100125` / `inf-20100618`、Alpha 的 `a1.2.6` 和 Beta 的 `b1.8.1`。这些 ID 会完整保留为 `GameVersion`，版本类别仍取自 JSON 的 `type`。只匹配完整格式，不从自定义名称中截取这类片段。
 
 这个 API 提供的是**版本信息**，并不下载或安装游戏。
+
+## 管理版本目录
+
+`MinecraftVersionDirectory` 提供目录重命名和删除，不读取启动器配置，也不决定弹窗和任务策略。
+
+```csharp
+var references = MinecraftVersionDirectory.GetReferences(gameDirectory, version.FolderPath);
+var renamed = await MinecraftVersionDirectory.RenameAsync(
+    gameDirectory, version.FolderPath, "My Minecraft", cancellationToken);
+
+// 仅在调用方已经确认用户意图、并结束相关任务后调用。
+MinecraftVersionDirectory.Delete(gameDirectory, renamed.FolderPath);
+```
+
+目标必须是指定游戏目录下 `versions` 的直接子目录，链接目录和越界路径会拒绝。`GetReferences` 查找其他可读取版本通过 `inheritsFrom` 或 `jar` 对该目录的引用；存在引用时，重命名和删除会拒绝。调用方还需要阻止正在运行、启动或处理这个目录的任务与这些操作并发。
+
+重命名会同步更新目录名称、JSON 文件名、JSON 的 `id` 以及原同名 JAR，并把扫描到的实际游戏版本保留到 `clientVersion`。未知元数据字段和版本内其他文件会保留，不会覆盖已有同名目标。中间目录用于处理 Windows 上仅修改大小写的名称；失败时会尝试回滚文件名及原始 JSON，回滚本身失败时抛出包含两次异常的 `AggregateException`，调用方应保留目录供恢复。
+
+取消只在提交文件变更前生效，提交阶段不会在文件操作之间中断。无法解析的版本目录也能重命名，但不会修复其 JSON。删除会移除整个目标版本目录，包括版本内的存档与模组；共享支持库和资源不在删除范围内。启动器配置、安装档案与界面刷新由调用方负责。

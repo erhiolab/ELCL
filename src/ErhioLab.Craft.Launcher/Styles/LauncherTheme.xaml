@@ -39,6 +39,9 @@
     <SolidColorBrush
         x:Key="TextMutedBrush"
         Color="#FF7F8998" />
+    <SolidColorBrush
+        x:Key="DangerTextBrush"
+        Color="#FFFF717D" />
     <!-- 主题色, 用于主按钮/选中状态和强调文字. -->
     <SolidColorBrush
         x:Key="AccentBrush"
