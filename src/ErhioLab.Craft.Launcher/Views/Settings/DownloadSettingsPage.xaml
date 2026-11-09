@@ -21,11 +21,11 @@
                         <StackPanel
                             VerticalAlignment="Center">
                             <TextBlock
-                                FontSize="12"
+                                FontSize="{DynamicResource LabelFontSize}"
                                 Text="{DynamicResource I18n.downloadSettings.versionListSource}" />
                             <TextBlock
                                 Margin="0,3,0,0"
-                                FontSize="10"
+                                FontSize="{DynamicResource SmallFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 Text="{DynamicResource I18n.downloadSettings.fallbackDescription}" />
                         </StackPanel>
@@ -51,11 +51,11 @@
                         <StackPanel
                             VerticalAlignment="Center">
                             <TextBlock
-                                FontSize="12"
+                                FontSize="{DynamicResource LabelFontSize}"
                                 Text="{DynamicResource I18n.downloadSettings.fileDownloadSource}" />
                             <TextBlock
                                 Margin="0,3,0,0"
-                                FontSize="10"
+                                FontSize="{DynamicResource SmallFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 Text="{DynamicResource I18n.downloadSettings.fallbackDescription}" />
                         </StackPanel>
@@ -87,11 +87,11 @@
                         <StackPanel
                             VerticalAlignment="Center">
                             <TextBlock
-                                FontSize="12"
+                                FontSize="{DynamicResource LabelFontSize}"
                                 Text="{DynamicResource I18n.downloadSettings.maxConnections}" />
                             <TextBlock
                                 Margin="0,3,0,0"
-                                FontSize="10"
+                                FontSize="{DynamicResource SmallFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 Text="{DynamicResource I18n.downloadSettings.connectionRangeHint}" />
                         </StackPanel>
@@ -140,11 +140,11 @@
                         <StackPanel
                             VerticalAlignment="Center">
                             <TextBlock
-                                FontSize="12"
+                                FontSize="{DynamicResource LabelFontSize}"
                                 Text="{DynamicResource I18n.downloadSettings.speedLimit}" />
                             <TextBlock
                                 Margin="0,3,0,0"
-                                FontSize="10"
+                                FontSize="{DynamicResource SmallFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 Text="{DynamicResource I18n.downloadSettings.speedLimitHint}" />
                         </StackPanel>

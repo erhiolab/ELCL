@@ -25,11 +25,8 @@
             Property="Padding"
             Value="0,6" />
         <Setter
-            Property="Foreground"
-            Value="{DynamicResource TextBrush}" />
-        <Setter
             Property="FontSize"
-            Value="12" />
+            Value="{DynamicResource LabelFontSize}" />
         <Setter
             Property="Margin"
             Value="0,6,0,0" />
@@ -249,7 +246,7 @@
                             TextWrapping="Wrap" />
                         <TextBlock
                             Margin="0,4,0,0"
-                            FontSize="11"
+                            FontSize="{DynamicResource CaptionFontSize}"
                             Foreground="{DynamicResource TextMutedBrush}"
                             Text="{TemplateBinding Caption}"
                             TextWrapping="Wrap" />
@@ -293,7 +290,7 @@
         TargetType="TextBlock">
         <Setter
             Property="FontSize"
-            Value="10" />
+            Value="{DynamicResource SmallFontSize}" />
         <Setter
             Property="FontWeight"
             Value="Normal" />
@@ -306,7 +303,7 @@
         TargetType="TextBlock">
         <Setter
             Property="FontSize"
-            Value="12" />
+            Value="{DynamicResource LabelFontSize}" />
         <Setter
             Property="Foreground"
             Value="{DynamicResource TextMutedBrush}" />
@@ -322,21 +319,6 @@
         <Setter
             Property="Height"
             Value="36" />
-        <Setter
-            Property="Padding"
-            Value="10,6" />
-        <Setter
-            Property="VerticalContentAlignment"
-            Value="Center" />
-        <Setter
-            Property="Background"
-            Value="{DynamicResource InkRaisedBrush}" />
-        <Setter
-            Property="BorderBrush"
-            Value="{DynamicResource LineBrush}" />
-        <Setter
-            Property="Foreground"
-            Value="{DynamicResource TextBrush}" />
     </Style>
 
     <Style
@@ -367,15 +349,6 @@
         <Setter
             Property="Height"
             Value="36" />
-        <Setter
-            Property="Background"
-            Value="{DynamicResource InkRaisedBrush}" />
-        <Setter
-            Property="BorderBrush"
-            Value="{DynamicResource LineBrush}" />
-        <Setter
-            Property="Foreground"
-            Value="{DynamicResource TextBrush}" />
     </Style>
     <Style
         x:Key="BareTextBoxStyle"

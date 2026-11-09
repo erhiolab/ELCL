@@ -11,6 +11,7 @@
 
 - `src/ErhioLab.Craft.Launcher.Core` 是可复用的 .NET 类库；Minecraft 领域逻辑可以放在这里，WPF、启动器配置、主题、通知和数据目录选择留在 `src/ErhioLab.Craft.Launcher`。
 - WPF 界面优先复用 `src/ErhioLab.Craft.Launcher/Styles/` 的按钮、列表和卡片样式；新控件使用动态主题资源。展开、切页、悬浮及选中状态要有与现有界面一致的缓动。
+- XAML 使用四个空格缩进；元素有属性时，元素名与属性分行，每个属性独占一行；子元素和结束标签分别换行，不把控件、Setter、Trigger、Storyboard 等嵌套结构压缩在同一行。
 - 卡片页面的主内容边距统一引用 `FormPageContentMargin`，不要在各页面另写数值；左右与顶部均为 24，底部为 36。不要为修正卡片间距而改动侧栏内部留白。
 - 用户操作的进度、成功和可恢复错误优先使用应用内通知条反馈；需要用户确认、必须立即处理的阻断问题再使用弹窗。重要操作的开始、完成和失败都要写入日志，失败日志保留异常信息；避免把高频拖动、滚轮等逐帧事件写入日志，也不要只在页面里显示状态文字而缺少通知与日志。
 - 启动器界面图标统一使用 `src/ErhioLab.Craft.Launcher/Icons/LauncherIcons.cs` 中的线框 Geometry，使用描边和主题动态资源，避免实心图标、字体字符和页面内的 Unicode 符号或重复 Path 数据。

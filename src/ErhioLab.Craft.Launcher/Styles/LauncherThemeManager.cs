@@ -12,8 +12,6 @@ internal static class LauncherThemeManager
     /// <param name="settings">已经规范化的外观设置.</param>
     internal static void Apply(LauncherSettings settings)
     {
-        SwitchLibraryTheme(settings.Theme);
-
         bool day = settings.Theme == LauncherTheme.Day;
         Color accent = (Color)ColorConverter.ConvertFromString(settings.AccentColor);
         Color surface = Parse(day ? "#FFF7FAFD" : "#FF10131A");
@@ -43,45 +41,6 @@ internal static class LauncherThemeManager
         Set("MemoryUsedBrush", Blend(Colors.Black, saturatedAccent, day ? 0.72 : 0.8));
         Set("MemoryAllocatedBrush", memoryAccent);
         Set("MemoryFreeBrush", Blend(Colors.White, memoryAccent, day ? 0.24 : 0.4));
-    }
-
-    private static void SwitchLibraryTheme(LauncherTheme theme)
-    {
-        string themeName = theme == LauncherTheme.Day ? "Light" : "Dark";
-        Uri themeUri = new($"pack://application:,,,/Wpf.Ui;component/Resources/Theme/{themeName}.xaml", UriKind.Absolute);
-
-        if (ReplaceThemeDictionary(Application.Current.Resources, themeName, themeUri))
-        {
-            return;
-        }
-
-        throw new InvalidOperationException("找不到 WPF UI 主题资源字典.");
-    }
-
-    private static bool ReplaceThemeDictionary(ResourceDictionary parent, string themeName, Uri themeUri)
-    {
-        for (int index = 0; index < parent.MergedDictionaries.Count; index++)
-        {
-            ResourceDictionary dictionary = parent.MergedDictionaries[index];
-            string? source = dictionary.Source?.ToString();
-            if (source is not null && source.Contains("Wpf.Ui;component/Resources/Theme/", StringComparison.OrdinalIgnoreCase))
-            {
-                if (!source.EndsWith($"/{themeName}.xaml", StringComparison.OrdinalIgnoreCase))
-                {
-                    // 只替换颜色资源, 不调用会修改窗口背景的 ApplicationThemeManager.Apply.
-                    parent.MergedDictionaries[index] = new ResourceDictionary { Source = themeUri };
-                }
-
-                return true;
-            }
-
-            if (ReplaceThemeDictionary(dictionary, themeName, themeUri))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static Color Parse(string value) => (Color)ColorConverter.ConvertFromString(value);

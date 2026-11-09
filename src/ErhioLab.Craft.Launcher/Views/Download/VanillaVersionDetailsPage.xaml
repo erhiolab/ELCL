@@ -134,7 +134,7 @@
                     <TextBox
                         x:Name="VersionNameBox"
                         VerticalContentAlignment="Center"
-                        FontSize="13"
+                        FontSize="{DynamicResource BodyFontSize}"
                         Foreground="{DynamicResource TextBrush}"
                         Style="{StaticResource BareTextBoxStyle}"
                         ToolTip="{DynamicResource I18n.versionDetails.versionNameHint}" />
@@ -185,14 +185,14 @@
                                         <TextBlock
                                             Grid.Column="1"
                                             VerticalAlignment="Center"
-                                            FontSize="13"
+                                            FontSize="{DynamicResource BodyFontSize}"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource TextBrush}"
                                             Text="{Binding Name}" />
                                         <TextBlock
                                             Grid.Column="2"
                                             VerticalAlignment="Center"
-                                            FontSize="12"
+                                            FontSize="{DynamicResource LabelFontSize}"
                                             Style="{StaticResource LoaderStatusStyle}"
                                             Text="{Binding StatusText}" />
                                         <Path
@@ -263,13 +263,13 @@
                                                     <StackPanel
                                                         VerticalAlignment="Center">
                                                         <TextBlock
-                                                            FontSize="13"
+                                                            FontSize="{DynamicResource BodyFontSize}"
                                                             FontWeight="SemiBold"
                                                             Foreground="{DynamicResource TextBrush}"
                                                             Text="{Binding Label}" />
                                                         <TextBlock
                                                             Margin="0,3,0,0"
-                                                            FontSize="11"
+                                                            FontSize="{DynamicResource CaptionFontSize}"
                                                             Foreground="{DynamicResource TextMutedBrush}"
                                                             Text="{Binding Detail}" />
                                                     </StackPanel>
@@ -283,7 +283,7 @@
                                                         CornerRadius="4">
                                                         <TextBlock
                                                             x:Name="BadgeText"
-                                                            FontSize="10"
+                                                            FontSize="{DynamicResource SmallFontSize}"
                                                             Foreground="{DynamicResource AccentTextBrush}"
                                                             Text="{DynamicResource I18n.version.release}" />
                                                     </Border>
@@ -340,7 +340,7 @@
                 <TextBlock
                     Margin="9,0,0,0"
                     VerticalAlignment="Center"
-                    FontSize="13"
+                    FontSize="{DynamicResource BodyFontSize}"
                     Text="{DynamicResource I18n.common.startDownload}" />
             </StackPanel>
         </Button>

@@ -43,7 +43,7 @@
                             Text="{DynamicResource I18n.toolbox.customDownloadTitle}" />
                         <TextBlock
                             Margin="0,9,0,0"
-                            FontSize="11"
+                            FontSize="{DynamicResource CaptionFontSize}"
                             Foreground="{DynamicResource TextMutedBrush}"
                             Text="{DynamicResource I18n.toolbox.downloadDescription}"
                             TextWrapping="Wrap" />
@@ -52,7 +52,7 @@
                 <StackPanel>
                     <TextBlock
                         Margin="0,0,0,7"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Text="{DynamicResource I18n.toolbox.downloadUrl}" />
                     <TextBox
                         x:Name="DownloadUrlBox"
@@ -61,7 +61,7 @@
 
                     <TextBlock
                         Margin="0,16,0,7"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Text="{DynamicResource I18n.toolbox.saveTo}" />
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -84,14 +84,14 @@
 
                     <TextBlock
                         Margin="0,16,0,7"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Text="{DynamicResource I18n.toolbox.fileName}" />
                     <TextBox
                         x:Name="FileNameBox"
                         Style="{StaticResource FormTextBoxStyle}" />
                     <TextBlock
                         Margin="0,6,0,0"
-                        FontSize="10"
+                        FontSize="{DynamicResource SmallFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.toolbox.fileNameHint}" />
 

@@ -12,7 +12,7 @@
                 Header="{DynamicResource I18n.settings.configuration}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.settings.configurationDescription}"
                         TextWrapping="Wrap" />

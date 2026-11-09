@@ -129,7 +129,7 @@
                     x:Name="AccountDescriptionText"
                     Margin="0,6,0,0"
                     HorizontalAlignment="Center"
-                    FontSize="11"
+                    FontSize="{DynamicResource CaptionFontSize}"
                     Foreground="{DynamicResource TextMutedBrush}"
                     Text="{DynamicResource I18n.launchSidebar.manageAccountsHint}" />
             </StackPanel>
@@ -146,14 +146,14 @@
                     <TextBlock
                         x:Name="MainActionTitle"
                         HorizontalAlignment="Center"
-                        FontSize="13"
+                        FontSize="{DynamicResource BodyFontSize}"
                         FontWeight="Bold"
                         Text="{DynamicResource I18n.launchSidebar.downloadGameVersion}" />
                     <TextBlock
                         x:Name="MainActionDescription"
                         Margin="0,3,0,0"
                         HorizontalAlignment="Center"
-                        FontSize="9"
+                        FontSize="{DynamicResource SmallFontSize}"
                         Opacity="0.65"
                         Text="{DynamicResource I18n.launchSidebar.noLaunchableInstance}" />
                 </StackPanel>

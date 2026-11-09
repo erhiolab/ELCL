@@ -28,7 +28,6 @@
                             Grid.Column="1"
                             Height="Auto"
                             MinHeight="36"
-                            HorizontalContentAlignment="Stretch"
                             SelectionChanged="ProcessPriorityBox_SelectionChanged"
                             Style="{StaticResource FormComboBoxStyle}">
                             <ComboBox.ItemTemplate>
@@ -85,7 +84,7 @@
                             <StackPanel>
                                 <TextBlock
                                     Margin="0,0,0,6"
-                                    FontSize="12"
+                                    FontSize="{DynamicResource LabelFontSize}"
                                     Foreground="{DynamicResource TextMutedBrush}"
                                     Text="{DynamicResource I18n.launchSettings.windowWidth}" />
                                 <TextBox
@@ -99,7 +98,7 @@
                                 Grid.Column="2">
                                 <TextBlock
                                     Margin="0,0,0,6"
-                                    FontSize="12"
+                                    FontSize="{DynamicResource LabelFontSize}"
                                     Foreground="{DynamicResource TextMutedBrush}"
                                     Text="{DynamicResource I18n.launchSettings.windowHeight}" />
                                 <TextBox
@@ -135,12 +134,12 @@
                     <TextBlock
                         x:Name="GameWindowTitlePreview"
                         Margin="155,5,0,0"
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         TextWrapping="Wrap" />
                     <TextBlock
                         Margin="0,14,0,0"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.launchSettings.gameOptionsHint}"
                         TextWrapping="Wrap" />
@@ -227,7 +226,7 @@
                     <TextBlock
                         x:Name="MemoryModeHintText"
                         Margin="0,10,0,0"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         TextWrapping="Wrap" />
                     <Grid
@@ -235,7 +234,7 @@
                         <TextBlock
                             x:Name="UsedMemoryTitle"
                             HorizontalAlignment="Left"
-                            FontSize="11"
+                            FontSize="{DynamicResource CaptionFontSize}"
                             Foreground="{DynamicResource TextMutedBrush}"
                             SizeChanged="MemoryLabel_SizeChanged"
                             Text="{DynamicResource I18n.launchSettings.memoryUsed}" />
@@ -243,7 +242,7 @@
                             IsHitTestVisible="False">
                             <TextBlock
                                 x:Name="GameMemoryTitle"
-                                FontSize="11"
+                                FontSize="{DynamicResource CaptionFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 SizeChanged="MemoryLabel_SizeChanged"
                                 Text="{DynamicResource I18n.launchSettings.memoryGame}" />
@@ -295,7 +294,7 @@
                             <TextBlock
                                 x:Name="JavaCountText"
                                 Margin="8,3,0,0"
-                                FontSize="11"
+                                FontSize="{DynamicResource CaptionFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}" />
                         </StackPanel>
                         <Button
@@ -319,14 +318,14 @@
                 </controls:LauncherCard.Header>
                 <StackPanel>
                     <TextBlock
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         TextWrapping="Wrap"
                         Text="{DynamicResource I18n.launchSettings.javaPriorityHint}" />
                     <TextBlock
                         x:Name="EmptyText"
                         Margin="0,18,0,2"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.launchSettings.noJavaHint}" />
                     <ItemsControl
@@ -357,11 +356,11 @@
                                             <StackPanel
                                                 Orientation="Horizontal">
                                                 <TextBlock
-                                                    FontSize="13"
+                                                    FontSize="{DynamicResource BodyFontSize}"
                                                     FontWeight="SemiBold"
                                                     Text="Java " />
                                                 <TextBlock
-                                                    FontSize="13"
+                                                    FontSize="{DynamicResource BodyFontSize}"
                                                     FontWeight="SemiBold"
                                                     Text="{Binding Version}" />
                                                 <TextBlock
@@ -371,7 +370,7 @@
                                             </StackPanel>
                                             <TextBlock
                                                 Margin="0,4,8,0"
-                                                FontSize="11"
+                                                FontSize="{DynamicResource CaptionFontSize}"
                                                 Foreground="{DynamicResource TextMutedBrush}"
                                                 Text="{Binding Path}"
                                                 TextTrimming="CharacterEllipsis"
@@ -624,7 +623,7 @@
                                     Margin="0,14,0,0">
                                     <TextBlock
                                         Margin="0,0,0,6"
-                                        FontSize="12"
+                                        FontSize="{DynamicResource LabelFontSize}"
                                         Foreground="{DynamicResource TextMutedBrush}"
                                         Text="{DynamicResource I18n.launchSettings.placeholderPreview}" />
                                     <TextBox
@@ -638,7 +637,7 @@
                                     <TextBlock
                                         x:Name="UnknownPlaceholdersText"
                                         Margin="0,5,0,0"
-                                        FontSize="11"
+                                        FontSize="{DynamicResource CaptionFontSize}"
                                         Foreground="{DynamicResource TextMutedBrush}"
                                         TextWrapping="Wrap" />
                                 </StackPanel>

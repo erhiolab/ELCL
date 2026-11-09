@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -10,6 +11,9 @@ namespace ErhioLab.Craft.Launcher.Controls;
 public partial class AccentColorPicker
 {
     private bool _syncing = true;
+    private readonly List<ScrollViewer> _scrollHosts = [];
+    private Window? _popupOwner;
+    private Point? _lastAnchorPosition;
 
     /// <summary>用户确认颜色时触发.</summary>
     internal event Action<string>? ColorSelected;
@@ -19,6 +23,71 @@ public partial class AccentColorPicker
     {
         InitializeComponent();
         SetColor("#80CEFF");
+        Unloaded += (_, _) => PickerPopup.IsOpen = false;
+    }
+
+    private void PickerPopup_Opened(object? sender, EventArgs e)
+    {
+        _lastAnchorPosition = null;
+        for (DependencyObject? ancestor = PickerButton; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
+        {
+            if (ancestor is not ScrollViewer scroll) continue;
+            _scrollHosts.Add(scroll);
+            scroll.ScrollChanged += PopupHost_ScrollChanged;
+        }
+
+        _popupOwner = Window.GetWindow(this);
+        if (_popupOwner is not null)
+        {
+            _popupOwner.LocationChanged += UpdatePopupPosition;
+            _popupOwner.SizeChanged += UpdatePopupPosition;
+        }
+        LayoutUpdated += UpdatePopupPosition;
+        UpdatePopupPosition(null, EventArgs.Empty);
+    }
+
+    private void PickerPopup_Closed(object? sender, EventArgs e)
+    {
+        LayoutUpdated -= UpdatePopupPosition;
+        foreach (var scroll in _scrollHosts) scroll.ScrollChanged -= PopupHost_ScrollChanged;
+        _scrollHosts.Clear();
+        if (_popupOwner is not null)
+        {
+            _popupOwner.LocationChanged -= UpdatePopupPosition;
+            _popupOwner.SizeChanged -= UpdatePopupPosition;
+            _popupOwner = null;
+        }
+        _lastAnchorPosition = null;
+    }
+
+    private void PopupHost_ScrollChanged(object sender, ScrollChangedEventArgs e) => UpdatePopupPosition(sender, e);
+
+    private void UpdatePopupPosition(object? sender, EventArgs e)
+    {
+        if (!PickerPopup.IsOpen) return;
+        if (!PickerButton.IsVisible || PresentationSource.FromVisual(PickerButton) is null)
+        {
+            PickerPopup.IsOpen = false;
+            return;
+        }
+
+        // Popup uses a separate native window. Close it if its anchor leaves the viewport.
+        for (DependencyObject? ancestor = PickerButton; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
+        {
+            if (ancestor is not ScrollContentPresenter viewport) continue;
+            var anchorBounds = PickerButton.TransformToAncestor(viewport).TransformBounds(new Rect(PickerButton.RenderSize));
+            if (new Rect(viewport.RenderSize).Contains(anchorBounds)) continue;
+            PickerPopup.IsOpen = false;
+            return;
+        }
+
+        var position = PickerButton.PointToScreen(new Point(0, PickerButton.ActualHeight));
+        if (_lastAnchorPosition == position) return;
+        _lastAnchorPosition = position;
+        // Invalidate placement without changing the configured offset or its binding.
+        var offset = PickerPopup.HorizontalOffset;
+        PickerPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset + 0.01);
+        PickerPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset);
     }
 
     /// <summary>从外部配置更新当前颜色和所有选择控件.</summary>

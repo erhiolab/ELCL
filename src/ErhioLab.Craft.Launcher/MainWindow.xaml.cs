@@ -89,6 +89,8 @@ public partial class MainWindow
         Background = Brushes.Transparent;
         Opacity = 1;
         WindowRoot.Opacity = opacity;
+        RenderOptions.SetClearTypeHint(WindowRoot, opacity >= 0.999 ? ClearTypeHint.Enabled : ClearTypeHint.Auto);
+        TextOptions.SetTextRenderingMode(WindowRoot, opacity >= 0.999 ? TextRenderingMode.ClearType : TextRenderingMode.Grayscale);
         UpdateWindowClip();
     }
 

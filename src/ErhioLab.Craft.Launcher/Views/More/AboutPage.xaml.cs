@@ -39,8 +39,7 @@ public partial class AboutPage
             new CreditEntry("P", "PCL2", LocalizationManager.Get("about.layoutAndCodeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.png")),
             new CreditEntry("PL", "Prism Launcher", LocalizationManager.Get("about.codeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/PrismLauncher/PrismLauncher", LoadAvatar("PrismLauncher.png")),
             new CreditEntry("BM", "BMCLAPI", LocalizationManager.Get("about.mirrorDescription"), LocalizationManager.Get("about.sponsorMirror"), "https://afdian.com/a/bangbang93", LoadAvatar("Bmclapi.jpg")),
-            new CreditEntry("MC", "Minecraft Wiki", LocalizationManager.Get("about.wikiDescription"), LocalizationManager.Get("about.openWiki"), "https://zh.minecraft.wiki/", LoadAvatar("MinecraftWiki.png")),
-            new CreditEntry("UI", "WPF UI", LocalizationManager.Get("about.wpfUiDescription"), LocalizationManager.Get("about.projectHomepage"), "https://wpfui.lepo.co/", LoadAvatar("WpfUi.png"))
+            new CreditEntry("MC", "Minecraft Wiki", LocalizationManager.Get("about.wikiDescription"), LocalizationManager.Get("about.openWiki"), "https://zh.minecraft.wiki/", LoadAvatar("MinecraftWiki.png"))
         };
     }
 

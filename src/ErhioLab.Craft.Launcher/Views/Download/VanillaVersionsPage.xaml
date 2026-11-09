@@ -116,12 +116,12 @@
                         Grid.Column="1"
                         VerticalAlignment="Center">
                         <TextBlock
-                            FontSize="13"
+                            FontSize="{DynamicResource BodyFontSize}"
                             FontWeight="Medium"
                             Text="{Binding Version.Id}" />
                         <TextBlock
                             Margin="0,2,0,0"
-                            FontSize="10"
+                            FontSize="{DynamicResource SmallFontSize}"
                             Foreground="{DynamicResource TextMutedBrush}"
                             Text="{Binding Description}" />
                     </StackPanel>
@@ -195,7 +195,7 @@
                             x:Name="VersionSearchBox"
                             VerticalContentAlignment="Center"
                             CaretBrush="{DynamicResource AccentBrush}"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Foreground="{DynamicResource TextBrush}"
                             KeyDown="VersionSearchBox_KeyDown"
                             Style="{StaticResource BareTextBoxStyle}"
@@ -245,7 +245,7 @@
                                 <ToggleButton
                                     Click="GroupHeader_Click"
                                     Content="{Binding Title}"
-                                    FontSize="13"
+                                    FontSize="{DynamicResource BodyFontSize}"
                                     FontWeight="SemiBold"
                                     IsChecked="{Binding IsInitiallyExpanded, Mode=OneTime}"
                                     Style="{StaticResource VersionGroupHeaderStyle}"

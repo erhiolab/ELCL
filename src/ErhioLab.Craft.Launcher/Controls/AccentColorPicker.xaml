@@ -68,13 +68,16 @@
                     CornerRadius="3" />
                 <TextBlock
                     VerticalAlignment="Center"
-                    FontSize="11"
+                    FontSize="{DynamicResource CaptionFontSize}"
                     Text="{DynamicResource I18n.accentPicker.chooseColor}" />
             </StackPanel>
         </ToggleButton>
 
         <Popup
+            x:Name="PickerPopup"
             AllowsTransparency="True"
+            Opened="PickerPopup_Opened"
+            Closed="PickerPopup_Closed"
             IsOpen="{Binding IsChecked, ElementName=PickerButton, Mode=TwoWay}"
             Placement="Bottom"
             PlacementTarget="{Binding ElementName=PickerButton}"
@@ -87,15 +90,17 @@
                 BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="1"
                 CornerRadius="9"
+                UseLayoutRounding="True"
+                SnapsToDevicePixels="True"
                 TextElement.Foreground="{DynamicResource TextBrush}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="13"
+                        FontSize="{DynamicResource BodyFontSize}"
                         FontWeight="SemiBold"
                         Text="{DynamicResource I18n.accentPicker.chooseColor}" />
                     <TextBlock
                         Margin="0,4,0,12"
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.accentPicker.presetColors}" />
                     <WrapPanel>
@@ -135,7 +140,7 @@
                         Margin="0,13,0,12"
                         Background="{DynamicResource LineSoftBrush}" />
                     <TextBlock
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Text="{DynamicResource I18n.accentPicker.customColor}" />
                     <Border
                         Height="9"
@@ -175,7 +180,7 @@
                         ValueChanged="PickerSlider_ValueChanged" />
                     <TextBlock
                         Margin="0,6,0,0"
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Text="{DynamicResource I18n.accentPicker.saturation}" />
                     <Slider
                         x:Name="SaturationSlider"
@@ -183,7 +188,7 @@
                         ValueChanged="PickerSlider_ValueChanged" />
                     <TextBlock
                         Margin="0,6,0,0"
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Text="{DynamicResource I18n.accentPicker.brightness}" />
                     <Slider
                         x:Name="BrightnessSlider"
@@ -216,7 +221,7 @@
                             BorderBrush="{DynamicResource LineBrush}"
                             BorderThickness="1"
                             FontFamily="{StaticResource MonoFont}"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Foreground="{DynamicResource TextBrush}"
                             KeyDown="HexInput_KeyDown"
                             TextChanged="HexInput_TextChanged" />
@@ -224,7 +229,7 @@
                     <TextBlock
                         x:Name="HexErrorText"
                         Margin="0,6,0,0"
-                        FontSize="11"
+                        FontSize="{DynamicResource CaptionFontSize}"
                         Foreground="#FFE5484D"
                         Text="{DynamicResource I18n.accentPicker.hexHint}"
                         Visibility="Collapsed" />

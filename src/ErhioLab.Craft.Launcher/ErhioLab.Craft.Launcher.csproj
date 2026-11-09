@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WPF-UI" Version="4.3.0" />
     <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
     <EmbeddedResource Include="Languages/**/*.json" />
     <EmbeddedResource Include="Assets/Launch/*.jar" />
@@ -21,7 +20,6 @@
     <Resource Include="Assets/Credits/PrismLauncher.png" />
     <Resource Include="Assets/Credits/Bmclapi.jpg" />
     <Resource Include="Assets/Credits/MinecraftWiki.png" />
-    <Resource Include="Assets/Credits/WpfUi.png" />
   </ItemGroup>
 </Project>
 

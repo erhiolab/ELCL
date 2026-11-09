@@ -12,7 +12,7 @@
                 Header="{DynamicResource I18n.debug.dialogs}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.debug.dialogPreviewDescription}" />
                     <WrapPanel
@@ -49,7 +49,7 @@
                 Header="{DynamicResource I18n.debug.notifications}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.debug.notificationDescription}" />
                     <WrapPanel

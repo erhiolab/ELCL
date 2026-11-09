@@ -18,7 +18,7 @@
             Value="{StaticResource TextFont}" />
         <Setter
             Property="FontSize"
-            Value="13" />
+            Value="{DynamicResource BodyFontSize}" />
         <Setter
             Property="FontWeight"
             Value="SemiBold" />
@@ -83,7 +83,7 @@
             Value="{DynamicResource TextMutedBrush}" />
         <Setter
             Property="FontSize"
-            Value="12" />
+            Value="{DynamicResource LabelFontSize}" />
         <Setter
             Property="Cursor"
             Value="Hand" />

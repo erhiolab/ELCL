@@ -88,11 +88,11 @@
                         <StackPanel
                             VerticalAlignment="Center">
                             <TextBlock
-                                FontSize="12"
+                                FontSize="{DynamicResource LabelFontSize}"
                                 Text="{DynamicResource I18n.personalization.windowOpacity}" />
                             <TextBlock
                                 Margin="0,2,0,0"
-                                FontSize="10"
+                                FontSize="{DynamicResource SmallFontSize}"
                                 Foreground="{DynamicResource TextMutedBrush}"
                                 Text="40% - 100%" />
                         </StackPanel>
@@ -111,7 +111,7 @@
                             Grid.Column="2"
                             VerticalAlignment="Center"
                             FontFamily="{StaticResource MonoFont}"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Foreground="{DynamicResource AccentTextBrush}"
                             TextAlignment="Right" />
                     </Grid>
@@ -130,7 +130,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock
                             VerticalAlignment="Center"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Text="{DynamicResource I18n.personalization.theme}" />
                         <StackPanel
                             Grid.Column="1"
@@ -155,7 +155,7 @@
                                         Stretch="Uniform" />
                                     <TextBlock
                                         VerticalAlignment="Center"
-                                        FontSize="12"
+                                        FontSize="{DynamicResource LabelFontSize}"
                                         Text="{DynamicResource I18n.personalization.lightMode}" />
                                 </StackPanel>
                             </RadioButton>
@@ -179,7 +179,7 @@
                                         Stretch="Uniform" />
                                     <TextBlock
                                         VerticalAlignment="Center"
-                                        FontSize="12"
+                                        FontSize="{DynamicResource LabelFontSize}"
                                         Text="{DynamicResource I18n.personalization.darkMode}" />
                                 </StackPanel>
                             </RadioButton>
@@ -200,7 +200,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock
                             VerticalAlignment="Center"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Text="{DynamicResource I18n.personalization.accentColor}" />
                         <controls:AccentColorPicker
                             x:Name="AccentPicker"
@@ -221,7 +221,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock
                         VerticalAlignment="Center"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Text="{DynamicResource I18n.personalization.interfaceLanguage}" />
                     <ComboBox
                         x:Name="LanguageComboBox"
@@ -250,7 +250,7 @@
                     </ComboBox>
                     <TextBlock
                         Margin="0,8,0,0"
-                        FontSize="12"
+                        FontSize="{DynamicResource LabelFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.personalization.memoryUnitHint}"
                         TextWrapping="Wrap" />
@@ -303,7 +303,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock
                             VerticalAlignment="Center"
-                            FontSize="12"
+                            FontSize="{DynamicResource LabelFontSize}"
                             Text="{DynamicResource I18n.personalization.titleBarText}" />
                         <TextBox
                             x:Name="TitleTextBox"
