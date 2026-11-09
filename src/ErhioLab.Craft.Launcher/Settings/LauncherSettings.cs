@@ -15,6 +15,9 @@ public sealed record LauncherSettings
     /// <summary>界面语言代码, 对应 Languages 下的 JSON 文件名.</summary>
     public string Language { get; init; } = LocalizationManager.DefaultLanguage;
 
+    /// <summary>允许发送匿名启动事件, 使用随机安装 ID, 默认开启.</summary>
+    public bool AnonymousAnalyticsEnabled { get; init; } = true;
+
     /// <summary>六位 RGB 主题色, 默认值为 #80CEFF.</summary>
     public string AccentColor { get; init; } = "#80CEFF";
 

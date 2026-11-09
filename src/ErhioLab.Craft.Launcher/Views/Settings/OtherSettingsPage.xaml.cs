@@ -10,13 +10,37 @@ using Microsoft.Win32;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>配置导入与导出页面.</summary>
+/// <summary>隐私偏好与配置导入/导出页面.</summary>
 public partial class OtherSettingsPage
 {
+    private bool _initializingPrivacy = true;
     /// <summary>初始化其他设置页面.</summary>
     public OtherSettingsPage()
     {
         InitializeComponent();
+        Loaded += (_, _) => RefreshPrivacyControls();
+        RefreshPrivacyControls();
+    }
+
+    private void RefreshPrivacyControls()
+    {
+        _initializingPrivacy = true;
+        AnonymousAnalyticsBox.IsChecked = App.Settings.AnonymousAnalyticsEnabled;
+        _initializingPrivacy = false;
+    }
+
+    private void AnonymousAnalytics_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializingPrivacy) return;
+        var enabled = AnonymousAnalyticsBox.IsChecked == true;
+        if (enabled == App.Settings.AnonymousAnalyticsEnabled) return;
+        App.Logger.Information("Privacy", $"开始保存匿名统计偏好: enabled={enabled}.");
+        if (!App.UpdateSettings(App.Settings with { AnonymousAnalyticsEnabled = enabled }))
+        {
+            RefreshPrivacyControls();
+            return;
+        }
+        App.Logger.Information("Privacy", $"匿名统计偏好已保存: enabled={enabled}.");
     }
 
     private void ExportSettings_Click(object sender, RoutedEventArgs e)

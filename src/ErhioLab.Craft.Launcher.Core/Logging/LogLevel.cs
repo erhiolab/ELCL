@@ -1,6 +1,6 @@
 namespace ErhioLab.Craft.Launcher.Core.Logging;
 
-/// <summary>区分普通信息、调试信息和需要关注的问题.</summary>
+/// <summary>区分普通信息/调试信息和需要关注的问题.</summary>
 public enum LogLevel
 {
     /// <summary>调试信息.</summary>

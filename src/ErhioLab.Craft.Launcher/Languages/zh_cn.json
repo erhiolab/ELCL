@@ -1,6 +1,9 @@
 {
     "Name": "简体中文",
     "Strings": {
+        "privacy.title": "隐私",
+        "privacy.anonymousAnalytics": "允许匿名数据收集",
+        "privacy.analyticsDescription": "默认开启。当启动ELCL，启动游戏等事件时，ELCL 会发送匿名事件。发送匿名信息。你可以关闭此功能，以防止发送匿名信息。ELCL 不会上传或收集任何个人信息。",
         "sidebar.performance": "性能",
         "performance.interval": "刷新间隔",
         "performance.processor": "处理器",

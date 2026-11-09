@@ -12,6 +12,7 @@ using ErhioLab.Craft.Launcher.Core.Accounts;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Views.Launch;
 
@@ -206,7 +207,7 @@ public partial class AccountManagementView
         ShowMicrosoftPanel();
         try
         {
-            string clientId = App.Services.MicrosoftClientId;
+            string clientId = ServiceConfiguration.MicrosoftClientId;
             MicrosoftDeviceAuthorization authorization = await _microsoftAuth.StartDeviceAuthorizationAsync(clientId, cancellation.Token);
             _deviceAuthorization = authorization;
             App.Logger.Information("Accounts", "已获取 Microsoft 设备码, 等待用户授权.");

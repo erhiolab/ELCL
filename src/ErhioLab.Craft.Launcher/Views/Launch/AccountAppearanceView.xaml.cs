@@ -46,7 +46,7 @@ internal sealed class CapeChoice(string? id, string name, MinecraftPlayerCape? c
     public event PropertyChangedEventHandler? PropertyChanged;
 }
 
-/// <summary>Microsoft 账户的 3D 皮肤、披风预览和外观设置.</summary>
+/// <summary>Microsoft 账户的 3D 皮肤/披风预览和外观设置.</summary>
 public partial class AccountAppearanceView
 {
     private Guid? _accountUuid;

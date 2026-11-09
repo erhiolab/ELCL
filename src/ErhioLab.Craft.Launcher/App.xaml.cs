@@ -18,6 +18,7 @@ using ErhioLab.Craft.Launcher.Styles;
 using ErhioLab.Craft.Launcher.Tasks;
 using ErhioLab.Craft.Launcher.Launching;
 using ErhioLab.Craft.Launcher.SystemTools;
+using ErhioLab.Craft.Launcher.Analytics;
 
 namespace ErhioLab.Craft.Launcher;
 
@@ -50,13 +51,14 @@ public partial class App
     private static JsonFileStore<LauncherSettings>? _settingsStore;
     private static LauncherAccountStore? _accountStore;
     private static LauncherSkinService? _skinService;
-    private static ServiceCredentials? _serviceCredentials;
+    private static AnalyticsEvents? _analytics;
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
     private static readonly LauncherTaskManager TaskEngine = new();
     private static readonly JavaCatalogManager JavaEngine = new();
     internal static GameLaunchService GameLauncher { get; } = new();
     internal static MemoryOptimizationService MemoryOptimizer { get; } = new();
+    internal static AnalyticsEvents? Analytics => _analytics;
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
@@ -75,7 +77,6 @@ public partial class App
 
     internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化.");
     internal static LauncherSkinService Skins => _skinService ?? throw new InvalidOperationException("皮肤缓存尚未初始化.");
-    internal static ServiceCredentials Services => _serviceCredentials ?? throw new InvalidOperationException("服务配置尚未初始化.");
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -110,6 +111,7 @@ public partial class App
         };
         TaskScheduler.UnobservedTaskException += (_, args) => LogUnhandled("后台任务", args.Exception);
 
+        var analyticsSettingsLoaded = true;
         try
         {
             Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
@@ -137,6 +139,7 @@ public partial class App
             // 保留无法解析的配置文件, 只在本次运行中使用默认值.
             Logger.Error("Settings", "读取配置失败, 本次使用默认设置.", exception);
             Settings = new LauncherSettings();
+            analyticsSettingsLoaded = false;
             LocalizationManager.Apply(Settings.Language);
         }
 
@@ -161,7 +164,9 @@ public partial class App
 
         LauncherThemeManager.Apply(Settings);
         _ = LauncherProfileCompatibility.InitializeFolderAsync(localGameDirectory);
-        _serviceCredentials = ServiceCredentials.Load(Path.Combine(dataDirectory, "services.json"));
+        _analytics = new AnalyticsEvents(
+            () => InstallationIdentity.GetOrCreate(Path.Combine(dataDirectory, "installation-id")), Logger);
+        _analytics.SetEnabled(analyticsSettingsLoaded && Settings.AnonymousAnalyticsEnabled);
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
@@ -170,6 +175,7 @@ public partial class App
             mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
         _ = JavaCatalog.InitializeIfEmptyAsync();
         Skins.RefreshAll();
+        _ = _analytics.LauncherOpenedAsync();
         if (cleanupResult is { } cleaned)
             Dispatcher.BeginInvoke(() => Notifications.LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupCompleted"),
                 cleaned.Files, cleaned.Bytes / 1048576d, cleaned.Skipped, cleaned.Failed)), System.Windows.Threading.DispatcherPriority.ContextIdle);
@@ -203,6 +209,7 @@ public partial class App
         }
 
         Settings = normalized;
+        _analytics?.SetEnabled(Settings.AnonymousAnalyticsEnabled);
         if (languageChanged)
         {
             LocalizationManager.Apply(Settings.Language);
@@ -246,6 +253,7 @@ public partial class App
         LauncherSettings normalized = imported.Normalize();
         _settingsStore!.Save(normalized);
         _ = _settingsStore.Load(new LauncherSettings()).Normalize();
+        if (!normalized.AnonymousAnalyticsEnabled) _analytics?.SetEnabled(false);
         Logger.Information("Settings", $"配置已导入并验证: {path}");
     }
 
@@ -322,6 +330,7 @@ public partial class App
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _analytics?.Dispose();
         try
         {
             DownloadEngine.DisposeAsync().AsTask().GetAwaiter().GetResult();

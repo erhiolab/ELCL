@@ -62,7 +62,7 @@
     <SolidColorBrush
         x:Key="AccentHoverBrush"
         Color="#FF1A3445" />
-    <!-- 内存条由深到浅区分系统已用、游戏分配和剩余内存. -->
+    <!-- 内存条由深到浅区分系统已用/游戏分配和剩余内存. -->
     <SolidColorBrush
         x:Key="MemoryUsedBrush"
         Color="#FF007DCC" />

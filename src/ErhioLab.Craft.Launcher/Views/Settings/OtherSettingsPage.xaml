@@ -9,6 +9,24 @@
         <StackPanel
             Margin="{StaticResource FormPageContentMargin}">
             <controls:LauncherCard
+                Header="{DynamicResource I18n.privacy.title}">
+                <StackPanel>
+                    <CheckBox
+                        x:Name="AnonymousAnalyticsBox"
+                        Content="{DynamicResource I18n.privacy.anonymousAnalytics}"
+                        Checked="AnonymousAnalytics_Changed"
+                        Unchecked="AnonymousAnalytics_Changed"
+                        Style="{StaticResource FormCheckBoxStyle}" />
+                    <TextBlock
+                        Margin="0,8,0,0"
+                        FontSize="{DynamicResource LabelFontSize}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.privacy.analyticsDescription}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="0,14,0,0"
                 Header="{DynamicResource I18n.settings.configuration}">
                 <StackPanel>
                     <TextBlock

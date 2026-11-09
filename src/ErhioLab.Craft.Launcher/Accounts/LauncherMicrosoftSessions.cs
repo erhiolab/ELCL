@@ -2,6 +2,7 @@ using System.IO;
 using System.Net.Http;
 
 using ErhioLab.Craft.Launcher.Core.Accounts;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Accounts;
 
@@ -31,10 +32,10 @@ internal static class LauncherMicrosoftSessions
                 }
                 catch (MicrosoftMinecraftAuthException error) when (error.Code.Equals("UNAUTHORIZED", StringComparison.OrdinalIgnoreCase))
                 {
-                    session = await auth.RefreshAsync(App.Services.MicrosoftClientId, refresh, cancellationToken);
+                    session = await auth.RefreshAsync(ServiceConfiguration.MicrosoftClientId, refresh, cancellationToken);
                 }
             }
-            else session = await auth.RefreshAsync(App.Services.MicrosoftClientId, refresh, cancellationToken);
+            else session = await auth.RefreshAsync(ServiceConfiguration.MicrosoftClientId, refresh, cancellationToken);
             if (session.Uuid != uuid) throw new InvalidDataException("登录服务返回了不同的 Minecraft 账户.");
             cancellationToken.ThrowIfCancellationRequested();
             if (App.Accounts.MicrosoftAccounts.All(value => value.Uuid != uuid)) throw new InvalidOperationException("登录期间账户已被移除.");

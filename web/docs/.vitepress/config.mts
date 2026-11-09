@@ -34,6 +34,7 @@ export default defineConfig({
                         { text: "版本设置", link: "/launcher/version-settings" },
                         { text: "下载与安装", link: "/launcher/download" },
                         { text: "百宝箱与性能", link: "/launcher/toolbox" },
+                        { text: "隐私与匿名统计", link: "/launcher/privacy" },
                         { text: "高级启动选项", link: "/launcher/advanced-options" }
                     ]
                 }

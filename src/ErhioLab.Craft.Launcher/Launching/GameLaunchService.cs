@@ -211,7 +211,7 @@ internal sealed class GameLaunchService
                     options = new()
                     {
                         Java = java!, Context = context, WorkingDirectory = versionDirectory, NativesDirectory = natives,
-                        AccessToken = accessToken, IsMicrosoftAccount = exportPath is null && account.IsMicrosoft, ClientId = App.Services.MicrosoftClientId,
+                        AccessToken = accessToken, IsMicrosoftAccount = exportPath is null && account.IsMicrosoft, ClientId = ServiceConfiguration.MicrosoftClientId,
                         MemoryMiB = memory, GarbageCollector = (MinecraftGarbageCollector)settings.GarbageCollector,
                         JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments,
                         WindowWidth = width, WindowHeight = height, Fullscreen = settings.WindowMode == GameWindowMode.Fullscreen,
@@ -258,6 +258,7 @@ internal sealed class GameLaunchService
                         {
                             GameWindowController.ApplyWindow(window, settings.GameWindowTitle, context!, settings.WindowMode == GameWindowMode.Maximized);
                             App.Logger.Information("Launch", $"游戏窗口已出现: PID={running.Process.Id}.");
+                            _ = App.Analytics?.GameLaunchSucceededAsync();
                             await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionDirectory,
                                 Path.GetFileName(versionDirectory), name, markUsed: true, task.CancellationToken);
                             return;

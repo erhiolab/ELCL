@@ -14,7 +14,7 @@ using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
 
-/// <summary>统一管理启动器操作的阶段、进度和取消, 下载器由任务阶段调用.</summary>
+/// <summary>统一管理启动器操作的阶段/进度和取消, 下载器由任务阶段调用.</summary>
 internal sealed class LauncherTaskManager
 {
     private static readonly HttpClient InstallerHttp = new(new HttpClientHandler

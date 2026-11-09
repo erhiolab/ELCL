@@ -248,7 +248,7 @@ public sealed class MinecraftLoaderVersionClient
         using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_sourceTimeout);
         using HttpResponseMessage response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
-        // Fabric 对不支持的游戏版本可能返回官方 400、镜像 404; 这是无可用版本.
+        // Fabric 对不支持的游戏版本可能返回官方 400/镜像 404; 这是无可用版本.
         bool unsupportedFabric = kind == MinecraftLoaderKind.Fabric
                                  && (response.StatusCode == HttpStatusCode.NotFound
                                      || source == MinecraftManifestSource.Official && response.StatusCode == HttpStatusCode.BadRequest);
