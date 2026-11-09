@@ -162,7 +162,7 @@
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <StackPanel
-            Margin="24,24,24,36">
+            Margin="{StaticResource FormPageContentMargin}">
             <Border
                 Height="42"
                 Margin="0,0,0,14"

@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="{DynamicResource InkBrush}">
     <Grid
-        Margin="34,28,34,30">
+        Margin="{StaticResource FormPageContentMargin}">
         <Grid.RowDefinitions>
             <RowDefinition
                 Height="Auto" />

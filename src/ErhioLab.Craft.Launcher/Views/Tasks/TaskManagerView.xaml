@@ -72,7 +72,7 @@
             Grid.Column="1"
             VerticalScrollBarVisibility="Auto">
             <Grid
-                Margin="24">
+                Margin="{StaticResource FormPageContentMargin}">
                 <TextBlock
                     x:Name="EmptyText"
                     Margin="0,28,0,0"

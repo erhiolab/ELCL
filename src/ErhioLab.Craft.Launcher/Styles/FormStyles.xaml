@@ -3,10 +3,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
-    <!-- 表单页保留左右 32 的留白，顶部与下载页、关于页统一为 24。 -->
+    <!-- 卡片页面共用内容边距, 左右/顶部统一为 24, 底部为 36. -->
     <Thickness
         x:Key="FormPageContentMargin">
-        32,24,32,36
+        24,24,24,36
     </Thickness>
 
     <Style
@@ -176,11 +176,48 @@
                         BorderThickness="1"
                         CornerRadius="10">
                         <StackPanel>
-                            <ContentPresenter
-                                ContentSource="Header"
-                                HorizontalAlignment="Stretch"
-                                TextElement.FontSize="16"
-                                TextElement.FontWeight="SemiBold" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="Auto" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Path
+                                    Width="19"
+                                    Height="19"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center"
+                                    Data="{TemplateBinding Icon}"
+                                    Stroke="{DynamicResource AccentTextBrush}"
+                                    StrokeThickness="1.5"
+                                    StrokeStartLineCap="Round"
+                                    StrokeEndLineCap="Round"
+                                    StrokeLineJoin="Round"
+                                    Stretch="Uniform">
+                                    <Path.Style>
+                                        <Style
+                                            TargetType="Path">
+                                            <Style.Triggers>
+                                                <DataTrigger
+                                                    Binding="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}"
+                                                    Value="{x:Null}">
+                                                    <Setter
+                                                        Property="Visibility"
+                                                        Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                                <ContentPresenter
+                                    Grid.Column="1"
+                                    ContentSource="Header"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    TextElement.FontSize="16"
+                                    TextElement.FontWeight="SemiBold" />
+                            </Grid>
                             <Border
                                 Height="1"
                                 Margin="0,13,0,12"
@@ -193,6 +230,89 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style
+        TargetType="{x:Type controls:MetricReadout}">
+        <Setter
+            Property="Template">
+            <Setter.Value>
+                <ControlTemplate
+                    TargetType="{x:Type controls:MetricReadout}">
+                    <StackPanel
+                        Margin="0,0,12,0">
+                        <TextBlock
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextBrush}"
+                            Text="{TemplateBinding Value}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            FontSize="11"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{TemplateBinding Caption}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style
+        x:Key="HardwareModelTextStyle"
+        TargetType="TextBlock">
+        <Setter
+            Property="FontSize"
+            Value="14" />
+        <Setter
+            Property="FontWeight"
+            Value="Medium" />
+        <Setter
+            Property="Foreground"
+            Value="{DynamicResource TextBrush}" />
+        <Setter
+            Property="TextWrapping"
+            Value="Wrap" />
+    </Style>
+    <Style
+        x:Key="InfoBadgeStyle"
+        TargetType="Border">
+        <Setter
+            Property="Padding"
+            Value="7,2" />
+        <Setter
+            Property="CornerRadius"
+            Value="4" />
+        <Setter
+            Property="Background"
+            Value="{DynamicResource AccentMutedBrush}" />
+    </Style>
+    <Style
+        x:Key="InfoBadgeTextStyle"
+        TargetType="TextBlock">
+        <Setter
+            Property="FontSize"
+            Value="10" />
+        <Setter
+            Property="FontWeight"
+            Value="Normal" />
+        <Setter
+            Property="Foreground"
+            Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style
+        x:Key="HardwareDetailTextStyle"
+        TargetType="TextBlock">
+        <Setter
+            Property="FontSize"
+            Value="12" />
+        <Setter
+            Property="Foreground"
+            Value="{DynamicResource TextMutedBrush}" />
+        <Setter
+            Property="TextWrapping"
+            Value="Wrap" />
     </Style>
 
     <Style

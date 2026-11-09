@@ -72,7 +72,7 @@
     </UserControl.Resources>
 
     <Grid
-        Margin="24,24,24,20">
+        Margin="{StaticResource FormPageContentMargin}">
         <Grid.RowDefinitions>
             <RowDefinition
                 Height="Auto" />

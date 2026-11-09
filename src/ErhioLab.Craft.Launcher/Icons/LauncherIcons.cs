@@ -9,6 +9,16 @@ public static class LauncherIcons
 {
     /// <summary>系统性能.</summary>
     public static readonly Geometry Performance = Parse("M 2,15 V 9 H 5 V 15 Z M 8,15 V 5 H 11 V 15 Z M 14,15 V 1 H 17 V 15 Z M 1,18 H 18");
+    /// <summary>处理器.</summary>
+    public static readonly Geometry Processor = Parse("M 4,4 H 14 V 14 H 4 Z M 7,7 H 11 V 11 H 7 Z M 6,1 V 4 M 9,1 V 4 M 12,1 V 4 M 6,14 V 17 M 9,14 V 17 M 12,14 V 17 M 1,6 H 4 M 1,9 H 4 M 1,12 H 4 M 14,6 H 17 M 14,9 H 17 M 14,12 H 17");
+    /// <summary>物理内存.</summary>
+    public static readonly Geometry Memory = Parse("M 2,4 H 16 V 13 H 2 Z M 5,7 V 10 M 9,7 V 10 M 13,7 V 10 M 4,13 V 16 M 7,13 V 16 M 11,13 V 16 M 14,13 V 16");
+    /// <summary>显示适配器.</summary>
+    public static readonly Geometry Graphics = Parse("M 2,4 H 16 V 13 H 2 Z M 2,2 V 16 M 5,13 V 16 H 12 V 13 M 11,8.5 A 3,3 0 1 1 5,8.5 A 3,3 0 1 1 11,8.5 M 14,7 V 10");
+    /// <summary>磁盘容量.</summary>
+    public static readonly Geometry Disk = Parse("M 4,3 H 14 L 17,11 V 15 H 1 V 11 Z M 1,11 H 17 M 12,13 H 12.2 M 14.5,13 H 14.7");
+    /// <summary>操作系统.</summary>
+    public static readonly Geometry OperatingSystem = Parse("M 2,3 H 16 V 15 H 2 Z M 2,7 H 16 M 5,5 H 5.2 M 8,5 H 8.2");
     /// <summary>启动.</summary>
     public static readonly Geometry Launch = Parse("M 4,2 L 11,6.3 Q 11.8,7 11,7.7 L 4,12 Q 3,12.5 3,11.5 L 3,2.5 Q 3,1.5 4,2 Z");
 

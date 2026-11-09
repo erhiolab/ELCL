@@ -101,7 +101,7 @@
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <StackPanel
-            Margin="24,24,24,36">
+            Margin="{StaticResource FormPageContentMargin}">
             <Border
                 Padding="18,14"
                 Style="{StaticResource PanelCardStyle}">
