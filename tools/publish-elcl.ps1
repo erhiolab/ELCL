@@ -2,8 +2,10 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'src\ErhioLab.Craft.Launcher\ErhioLab.Craft.Launcher.csproj'
+$coreProjectPath = Join-Path $projectRoot 'src\ErhioLab.Craft.Launcher.Core\ErhioLab.Craft.Launcher.Core.csproj'
 $releasePath = Join-Path $projectRoot 'artifacts\publish'
 $outputRoot = Join-Path $projectRoot 'artifacts\staging\publish\win-x64'
+$coreOutputRoot = Join-Path $projectRoot 'artifacts\staging\publish\core'
 $dotnetCandidates = @(
     Join-Path $env:USERPROFILE '.dotnet\dotnet.exe'
     (Get-Command dotnet -ErrorAction SilentlyContinue).Source
@@ -61,17 +63,39 @@ function Publish-ElclVariant {
 Publish-ElclVariant -Name 'framework-dependent' -SelfContained $false
 Publish-ElclVariant -Name 'self-contained' -SelfContained $true
 
-# 两种模式都发布成功后, 将带版本号的单文件 EXE 放到仓库外层的发布目录.
+Write-Host 'Building core DLL ...'
+& $dotnetPath build $coreProjectPath `
+    --configuration Release `
+    --output $coreOutputRoot `
+    --property:DebugType=none `
+    --nologo
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Core DLL build failed, dotnet exit code: $LASTEXITCODE"
+}
+
+$coreFileName = 'ErhioLab.Craft.Launcher.Core.dll'
+$coreDll = Join-Path $coreOutputRoot $coreFileName
+if (-not (Test-Path -LiteralPath $coreDll -PathType Leaf)) {
+    throw "Core build did not produce a DLL: $coreDll"
+}
+Copy-Item -LiteralPath $coreDll -Destination (Join-Path $outputRoot $coreFileName) -Force
+
+# 全部产物生成成功后, 将两个单文件 EXE 和可独立引用的核心 DLL 放到发布目录.
 $stagedFiles = @(Get-ChildItem -LiteralPath $outputRoot -File)
-if ($stagedFiles.Count -ne 2) {
-    throw "Staging must contain exactly two EXEs: $outputRoot"
+if ($stagedFiles.Count -ne 3) {
+    throw "Staging must contain exactly two EXEs and one core DLL: $outputRoot"
 }
 
 New-Item -ItemType Directory -Path $releasePath -Force | Out-Null
-foreach ($name in 'framework-dependent', 'self-contained') {
-    $fileName = "ELCL-$version-win-x64-$name.exe"
+$releaseFiles = @(
+    "ELCL-$version-win-x64-framework-dependent.exe"
+    "ELCL-$version-win-x64-self-contained.exe"
+    $coreFileName
+)
+foreach ($fileName in $releaseFiles) {
     $source = Join-Path $outputRoot $fileName
     $destination = Join-Path $releasePath $fileName
     Copy-Item -LiteralPath $source -Destination $destination -Force
-    Write-Host "Release EXE: $destination"
+    Write-Host "Release artifact: $destination"
 }

@@ -258,7 +258,7 @@ public partial class App
             UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = AppContext.BaseDirectory
         };
         if (Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
-            start.ArgumentList.Add(typeof(App).Assembly.Location);
+            start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, typeof(App).Assembly.GetName().Name + ".dll"));
         using var current = Process.GetCurrentProcess();
         start.ArgumentList.Add("--restart-parent");
         start.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
