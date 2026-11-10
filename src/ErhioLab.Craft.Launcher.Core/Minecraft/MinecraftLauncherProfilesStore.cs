@@ -19,6 +19,7 @@ public sealed class MinecraftLauncherProfilesStore
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private readonly SemaphoreSlim _gate;
     public string FilePath { get; }
 
@@ -137,7 +138,16 @@ public sealed class MinecraftLauncherProfilesStore
             {
                 ReadOnlyMemory<byte> json = original;
                 if (original.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF })) json = json[3..];
-                root = JsonNode.Parse(json.Span, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false })
+                string text;
+                try
+                {
+                    text = StrictUtf8.GetString(json.Span);
+                }
+                catch (DecoderFallbackException error)
+                {
+                    throw new JsonException("启动器档案文件不是有效的 UTF-8, 已保留原文件.", error);
+                }
+                root = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false })
                     as JsonObject ?? throw new JsonException("启动器档案文件必须是 JSON 对象.");
                 _ = Profiles(root);
             }

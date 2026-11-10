@@ -75,7 +75,7 @@ internal static class LauncherProfileCompatibility
                 await update(new MinecraftLauncherProfilesStore(path));
                 App.Logger.Information("Profiles", $"已同步 ELCL 安装档案: {description}, 文件={path}.");
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
             {
                 failed = true;
                 App.Logger.Error("Profiles", $"兼容档案同步失败, 未覆盖损坏或被占用的文件: {path}.", error);

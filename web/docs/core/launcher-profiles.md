@@ -77,7 +77,9 @@ await store.RemoveProfileAsync(profileId, cancellationToken);
 
 ## 写入保护与异常
 
-无效 JSON、重复属性、非对象根节点或非对象档案会抛出 `JsonException`，不自动修复或覆盖。
+现有文件必须为 UTF-8，可带 UTF-8 BOM。无效 UTF-8、无效 JSON、重复属性、非对象根节点或非对象档案会抛出 `JsonException`，不自动修复或覆盖。GBK 等编码不会被猜测转换，以免改坏其他程序的档案。
+
+更新或删除档案前会先严格检查整个文件的 UTF-8 编码，包括不属于调用方的条目和未知字段。编码错误的 `JsonException` 会保留原始解码异常作为 `InnerException`，调用方可以记录错误并跳过档案同步，继续使用游戏版本。
 
 文件先写同目录临时文件再替换。同进程同路径的操作串行执行；检测到写入前文件被其他程序改变时抛出 `IOException`。这不是跨进程事务锁，仍应避免两个启动器同时修改。
 
