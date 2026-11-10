@@ -184,7 +184,13 @@ public partial class MainWindow
     internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
 
     /// <summary>从启动页打开本地游戏版本选择.</summary>
-    internal void OpenVersionSelection() => OpenSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择");
+    internal void OpenVersionSelection()
+    {
+        if (VersionSelectionPage.Visibility == Visibility.Visible) return;
+        VersionSelectionPage.PrepareForOpen();
+        OpenSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择",
+            () => _ = VersionSelectionPage.LoadAfterEntranceAsync());
+    }
 
     /// <summary>从启动页打开账户管理.</summary>
     internal void OpenAccountManagement()
@@ -193,14 +199,15 @@ public partial class MainWindow
         OpenSecondaryPage(AccountManagementPage, AccountManagementTitle, "账户管理");
     }
 
-    private void OpenSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
+    private void OpenSecondaryPage(FrameworkElement page, FrameworkElement title, string name, Action? onOpened = null)
     {
         if (page.Visibility == Visibility.Visible)
         {
             return;
         }
 
-        ++_secondaryPageTransitionVersion;
+        int version = ++_secondaryPageTransitionVersion;
+        page.IsHitTestVisible = true;
         TaskManagerButton.Visibility = Visibility.Collapsed;
         TitleBarLabel.Visibility = Visibility.Collapsed;
         TopNavigationHost.Visibility = Visibility.Collapsed;
@@ -215,10 +222,16 @@ public partial class MainWindow
         page.BeginAnimation(OpacityProperty, null);
         page.Opacity = 0;
         page.RenderTransform = new TranslateTransform(0, 14);
-        page.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        DoubleAnimation entrance = new(0, 1, TimeSpan.FromMilliseconds(220))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        });
+        };
+        entrance.Completed += (_, _) =>
+        {
+            if (version == _secondaryPageTransitionVersion && page.IsVisible && page.IsHitTestVisible)
+                onOpened?.Invoke();
+        };
+        page.BeginAnimation(OpacityProperty, entrance);
         page.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
             new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
             {
@@ -235,11 +248,13 @@ public partial class MainWindow
 
     private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name, Action? onClosed = null)
     {
-        if (page.Visibility != Visibility.Visible)
+        if (page.Visibility != Visibility.Visible || !page.IsHitTestVisible)
         {
             return;
         }
 
+        // 退场期间不再响应页面点击, 重复关闭也不能重启动画.
+        page.IsHitTestVisible = false;
         int version = ++_secondaryPageTransitionVersion;
         title.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(170)));
         DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(190))
@@ -256,6 +271,7 @@ public partial class MainWindow
             page.BeginAnimation(OpacityProperty, null);
             page.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
             page.Visibility = Visibility.Collapsed;
+            page.IsHitTestVisible = true;
             page.Opacity = 1;
             title.BeginAnimation(OpacityProperty, null);
             title.Visibility = Visibility.Collapsed;
@@ -274,6 +290,8 @@ public partial class MainWindow
 
     private void OnVersionChosen(LocalMinecraftVersion version)
     {
+        if (VersionSelectionPage.Visibility != Visibility.Visible || !VersionSelectionPage.IsHitTestVisible) return;
+
         if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
         {
             sidebar.ShowSelectedVersion(version.Id);

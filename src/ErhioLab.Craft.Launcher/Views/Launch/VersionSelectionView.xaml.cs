@@ -58,15 +58,28 @@ public partial class VersionSelectionView
         };
     }
 
-    private async void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (!IsVisible)
-        {
-            return;
-        }
+        if (!IsVisible) ++_scanVersion;
+    }
 
+    internal void PrepareForOpen()
+    {
+        ++_scanVersion;
+        VersionList.BeginAnimation(OpacityProperty, null);
+        VersionList.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
+        VersionList.Opacity = 0;
+        VersionList.ItemsSource = null;
+        SetEmptyVersionsText("versionSelector.readingVersions");
+        EmptyVersionsText.Visibility = Visibility.Visible;
+    }
+
+    internal async Task LoadAfterEntranceAsync()
+    {
+        if (!IsVisible || !IsHitTestVisible) return;
         ReloadFolders();
         await Dispatcher.InvokeAsync(() => MoveSelectedFolderHighlight(false), DispatcherPriority.Loaded);
+        if (!IsVisible || !IsHitTestVisible) return;
         await RefreshVersionsAsync();
     }
 
