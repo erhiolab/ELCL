@@ -4,6 +4,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
@@ -11,6 +13,7 @@ namespace ErhioLab.Craft.Launcher.Views.Settings;
 public partial class DownloadSettingsPage
 {
     private bool _initializing = true;
+    private bool _zeroThreadEasterEggShown;
 
     /// <summary>读取当前设置并初始化下拉列表.</summary>
     public DownloadSettingsPage()
@@ -39,6 +42,8 @@ public partial class DownloadSettingsPage
     private void RefreshControls()
     {
         _initializing = true;
+        _zeroThreadEasterEggShown |= App.Settings.ZeroDownloadThreadsEggShown;
+        ThreadCountSlider.Minimum = _zeroThreadEasterEggShown ? 1 : 0;
         VersionListSourceBox.SelectedIndex = App.Settings.VersionListSource == VersionListSource.MirrorFirst ? 1 : 0;
         FileDownloadSourceBox.SelectedIndex = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst ? 1 : 0;
         ThreadCountSlider.Value = App.Settings.DownloadMaxConnections;
@@ -91,6 +96,24 @@ public partial class DownloadSettingsPage
         {
             ThreadCountText.Text = ((int)Math.Round(e.NewValue)).ToString(CultureInfo.InvariantCulture);
         }
+
+        if (_initializing || _zeroThreadEasterEggShown || e.NewValue > 0) return;
+
+        // 先锁定状态并修正控件, 避免值变更和失去鼠标捕获时重复触发.
+        _zeroThreadEasterEggShown = true;
+        _initializing = true;
+        ThreadCountSlider.Minimum = 1;
+        ThreadCountSlider.Value = 1;
+        if (ThreadCountSlider.IsMouseCaptureWithin) Mouse.Capture(null);
+        _initializing = false;
+        App.UpdateSettings(App.Settings with
+        {
+            DownloadMaxConnections = 1,
+            ZeroDownloadThreadsEggShown = true
+        });
+        App.Logger.Information("Settings", "触发零下载线程彩蛋, 最大连接数恢复为 1.");
+        LauncherDialogs.Information(LocalizationManager.Get("downloadSettings.zeroThreadsTitle"),
+            LocalizationManager.Get("downloadSettings.zeroThreadsMessage"));
     }
 
     private void ThreadCountSlider_Commit(object sender, RoutedEventArgs e)
@@ -100,7 +123,7 @@ public partial class DownloadSettingsPage
             return;
         }
 
-        int selected = (int)Math.Round(ThreadCountSlider.Value);
+        int selected = Math.Max(1, (int)Math.Round(ThreadCountSlider.Value));
         if (selected != App.Settings.DownloadMaxConnections)
         {
             if (!App.UpdateSettings(App.Settings with { DownloadMaxConnections = selected }))

@@ -18,19 +18,14 @@
                             <ColumnDefinition
                                 Width="*" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                FontSize="{DynamicResource LabelFontSize}"
-                                Text="{DynamicResource I18n.downloadSettings.versionListSource}" />
-                            <TextBlock
-                                Margin="0,3,0,0"
-                                FontSize="{DynamicResource SmallFontSize}"
-                                Foreground="{DynamicResource TextMutedBrush}"
-                                Text="{DynamicResource I18n.downloadSettings.fallbackDescription}" />
-                        </StackPanel>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="{DynamicResource LabelFontSize}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
+                            Text="{DynamicResource I18n.downloadSettings.versionListSource}" />
                         <ComboBox
                             x:Name="VersionListSourceBox"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
                             Grid.Column="1"
                             Style="{StaticResource FormComboBoxStyle}"
                             SelectionChanged="VersionListSourceBox_SelectionChanged">
@@ -48,19 +43,14 @@
                             <ColumnDefinition
                                 Width="*" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                FontSize="{DynamicResource LabelFontSize}"
-                                Text="{DynamicResource I18n.downloadSettings.fileDownloadSource}" />
-                            <TextBlock
-                                Margin="0,3,0,0"
-                                FontSize="{DynamicResource SmallFontSize}"
-                                Foreground="{DynamicResource TextMutedBrush}"
-                                Text="{DynamicResource I18n.downloadSettings.fallbackDescription}" />
-                        </StackPanel>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="{DynamicResource LabelFontSize}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
+                            Text="{DynamicResource I18n.downloadSettings.fileDownloadSource}" />
                         <ComboBox
                             x:Name="FileDownloadSourceBox"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
                             Grid.Column="1"
                             Style="{StaticResource FormComboBoxStyle}"
                             SelectionChanged="FileDownloadSourceBox_SelectionChanged">

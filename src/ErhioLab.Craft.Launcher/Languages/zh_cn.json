@@ -1,6 +1,8 @@
 {
     "Name": "简体中文",
     "Strings": {
+        "downloadSettings.zeroThreadsTitle": "抓到一只调皮的人类喵！",
+        "downloadSettings.zeroThreadsMessage": "哼，线程数都设成 0 了，你打算用什么下载？难道要本喵给你把数据叼回来吗！已经帮你把最低值限制成 1 了，别想再拉到 0 啦。才、才不是怕你下载不了呢，喵！",
         "gameLogs.button": "日志",
         "gameLogs.title": "Minecraft 日志 · {0}",
         "gameLogs.state": "PID {0} · {1} · 保留 {2} 条",

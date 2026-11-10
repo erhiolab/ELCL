@@ -38,6 +38,8 @@ public sealed record LauncherSettings
 
     /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
     public int DownloadMaxConnections { get; init; } = 8;
+    /// <summary>是否已触发零下载线程彩蛋, 触发后滑块最低为 1.</summary>
+    public bool ZeroDownloadThreadsEggShown { get; init; }
 
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
