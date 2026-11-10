@@ -6,7 +6,7 @@
 
 ## 示例准备
 
-示例按下面各节顺序执行，使用已有的 `1.21.1` 安装和离线身份。它会按需补齐缺失文件，最后只生成启动信息，不自动运行游戏。
+示例按下面各节顺序执行，使用已有的 `1.21.1` 安装和离线账户信息。它会按需补齐缺失文件，最后只生成启动信息，不自动运行游戏。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Accounts;
@@ -131,7 +131,7 @@ var options = new MinecraftLaunchOptions
 var start = MinecraftLaunchBuilder.CreateStartInfo(version, files, options);
 ```
 
-返回已填充 `ArgumentList` 的启动信息，不调用 `Process.Start`。示例是离线身份；正版启动应传入有效 Minecraft 会话，并设置 `IsMicrosoftAccount`。
+返回已填充 `ArgumentList` 的启动信息，不调用 `Process.Start`。示例使用离线账户信息；使用 Microsoft 账户启动时，应传入有效的 Minecraft 会话，并将 `IsMicrosoftAccount` 设为 `true`。
 
 | 选项 | 用途 |
 | --- | --- |

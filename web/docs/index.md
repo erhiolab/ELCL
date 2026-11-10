@@ -39,7 +39,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/accounts">
         <span class="feature-number">02 / 账户</span>
         <h3>选好这次的玩家身份</h3>
-        <p>添加 Microsoft 账户或离线用户，双击切换。正版账户还可以预览三维皮肤、上传皮肤和选择已有披风。</p>
+        <p>添加 Microsoft 账户或离线账户，双击切换。Microsoft 账户还可以预览三维皮肤、上传皮肤和选择已有披风。</p>
         <span class="home-feature-link">打开账户指南</span>
       </a>
       <a class="home-feature" href="./launcher/version-settings">
