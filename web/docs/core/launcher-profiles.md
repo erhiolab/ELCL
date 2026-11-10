@@ -1,82 +1,84 @@
 # 启动器安装档案
 
-`launcher_profiles.json` 保存的是官方启动器中的安装配置，例如版本名称、版本 ID 和游戏目录。它不是启动 Minecraft 的必需文件，但一些安装器会检查它，也可以用它让官方启动器识别你创建的安装配置。
+命名空间：`ErhioLab.Craft.Launcher.Core.Minecraft`。
 
-`MinecraftLauncherProfilesStore` 用来创建和更新这类文件。它和保存应用设置的 `JsonFileStore<T>` 用途不同：更新档案时会保留其他配置和未知字段，不会用自己的模型覆盖整个文件。
+`launcher_profiles.json` 保存官方启动器的安装配置，不是账户文件，也不是启动游戏的必需条件。这个 API 更新指定档案，同时保留其他条目和未知字段。
 
-## 创建文件和登记版本
-
-文件路径、档案 ID 和游戏目录都由调用方指定：
+## 创建 `MinecraftLauncherProfilesStore`
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 
-string gameRoot = Path.GetFullPath(".minecraft");
-string versionId = "1.21.1";
-string versionDirectory = Path.Combine(gameRoot, "versions", versionId);
+string gameDirectory = Path.GetFullPath(".minecraft");
 var store = new MinecraftLauncherProfilesStore(
-    Path.Combine(gameRoot, MinecraftLauncherProfilesStore.LegacyFileName));
+    Path.Combine(gameDirectory, MinecraftLauncherProfilesStore.LegacyFileName));
+CancellationToken cancellationToken = default;
+```
 
-// 仅在文件不存在时创建。已存在则返回 false，即使原文件无法解析。
+构造只确定路径，不会立即创建文件。`FilePath` 返回完整路径。
+
+Microsoft Store 版文件名常量是 `MicrosoftStoreFileName`。要同步两份文件时分别创建 Store，核心不会自动寻找另一份。
+
+## `MinecraftLauncherProfilesStore.EnsureCreatedAsync` {#minecraftlauncherprofilesstore-ensurecreatedasync}
+
+```csharp
 bool created = await store.EnsureCreatedAsync(cancellationToken);
+```
 
-// 实际应用中应保存并复用这个 ID；每次生成新 ID 会产生重复条目。
-string profileId = "0f3f3584bbae4c51a1451c34b4827069";
+不存在时创建含空 `profiles` 与 `settings` 的文件，成功创建返回 `true`。已经存在返回 `false`，即使内容损坏也不覆盖。
+
+## `MinecraftLauncherProfilesStore.UpsertProfileAsync` {#minecraftlauncherprofilesstore-upsertprofileasync}
+
+按稳定 ID 新增或更新一个档案。
+
+```csharp
+string profileId = "my-launcher-1.21.1";
 var profile = new MinecraftLauncherProfile(
-    Name: "原版 1.21.1",
-    VersionId: versionId,
-    GameDirectory: versionDirectory);
-
+    Name: "原版 1.21.1", VersionId: "1.21.1",
+    GameDirectory: Path.Combine(gameDirectory, "versions", "1.21.1"));
 await store.UpsertProfileAsync(profileId, profile,
     cancellationToken: cancellationToken);
 ```
 
-新建文件只包含空的 `profiles` 和 `settings` 对象。`UpsertProfileAsync` 也可以直接用于不存在的文件，无需先调用 `EnsureCreatedAsync`。
+| 输入 | 含义 |
+| --- | --- |
+| `profileId` | 调用方保存并复用的档案 ID，不要每次生成新值。 |
+| `profile.Name`、`VersionId` | 显示名称和实际安装 ID，不是加载器所基于的原版 ID。 |
+| `GameDirectory` | 工作目录，写入绝对路径；为空时移除该档案的 `gameDir`。 |
+| `Icon` | 官方图标值，默认 `Grass`。 |
+| `markUsed` | 默认 `false`；游戏成功启动后可设为 `true` 更新最后使用时间。 |
 
-`Name` 是显示名称，`VersionId` 对应 `versions/<版本 ID>/` 中的实际版本，而不是它所基于的原版版本号。例如安装名是 `1.21.1-Fabric`，这里就应填写 `1.21.1-Fabric`。
+文件不存在时也可直接使用，不必先调用 `EnsureCreatedAsync`。相同 ID 更新原条目，保留 `created` 和未知字段；默认不改已有 `lastUsed`。
 
-`GameDirectory` 是该安装配置的工作目录，会保存为绝对路径。需要版本隔离时传入版本目录；省略时移除该档案的 `gameDir` 字段，让官方启动器使用自己的默认目录。是否隔离由调用方决定。`Icon` 默认为官方启动器内置的 `Grass`，也可以传入其他受支持的图标值。
+## `MinecraftLauncherProfilesStore.UpsertProfilesAsync` {#minecraftlauncherprofilesstore-upsertprofilesasync}
 
-## 更新和移除
-
-同一个 ID 会更新原条目，不会增加另一份。每次更新会写入 `name`、`lastVersionId`、`type: "custom"`、`icon` 和 `gameDir`，其他字段保留。新条目会填写 UTC 格式的 `created`，未启动过的 `lastUsed` 为 `1970-01-01T00:00:00.000Z`。
-
-游戏成功启动后，可以更新最后使用时间：
-
-```csharp
-await store.UpsertProfileAsync(profileId, profile, markUsed: true,
-    cancellationToken: cancellationToken);
-
-// 删除版本时，只移除属于自己程序的档案 ID。
-await store.RemoveProfileAsync(profileId, cancellationToken);
-```
-
-更新已有条目会保留 `created`。默认也保留 `lastUsed`，只有 `markUsed: true` 才会更新它。移除不存在的档案不会写文件；文件不存在时也不会创建。
-
-如果你的程序已经扫描到了多个已安装版本，可以一次登记，避免每个版本单独写文件：
+批量登记，避免每个版本单独写文件。
 
 ```csharp
 var profiles = new Dictionary<string, MinecraftLauncherProfile>
 {
     [profileId] = profile,
-    ["cc0818f351554b5ba12358fa02b426f4"] = new(
-        "原版 1.21.4", "1.21.4", Path.Combine(gameRoot, "versions", "1.21.4"))
+    ["my-launcher-1.21.4"] = new("原版 1.21.4", "1.21.4")
 };
 await store.UpsertProfilesAsync(profiles, cancellationToken: cancellationToken);
 ```
 
-批量登记只增加或更新传入的 ID，不删除其他档案。任意条目无效时整批不会写入；文件内容没有变化时，单条和批量更新都不会重写文件。默认不会把扫描版本算成启动游戏，因此不改变已有的最后使用时间。
+只新增或更新传入 ID，不删除未列出的档案。任意条目无效时整批不写入。内容没有变化时不重写文件。
 
-请为自己的档案使用稳定且独立的 ID，不要仅凭 `lastVersionId` 相同就覆盖其他启动器创建的条目。
+不要仅凭 `VersionId` 相同覆盖其他启动器的条目，应为自己的档案分配独立 ID。
 
-## 文件兼容和写入保护
+## `MinecraftLauncherProfilesStore.RemoveProfileAsync` {#minecraftlauncherprofilesstore-removeprofileasync}
 
-Microsoft Store 版官方启动器可能使用 `launcher_profiles_microsoft_store.json`，可以把这个路径传给同一个类，文件名常量为 `MicrosoftStoreFileName`。核心不会自行寻找或同步另一份文件。
+```csharp
+await store.RemoveProfileAsync(profileId, cancellationToken);
+```
 
-已有文件中的其他安装配置、`settings`、账户字段和未知字段会保留；核心不会读取这些字段来登录，也不会把调用方的账户或令牌写进去。它不会替调用方选择官方启动器的当前档案。
+只移除指定 ID。文件或档案不存在时直接返回，不创建文件。
 
-文件无法解析、包含重复属性、根节点或 `profiles` 不是对象、待更新条目不是对象时，会抛出 `JsonException`，原文件保留。权限、占用和其他文件错误通过相应异常交给调用方处理，不会自动重置文件。
+## 写入保护与异常
 
-写入先落到同目录的临时文件，再替换目标文件。同一进程内，对同一路径的操作会串行执行，多个实例也共用这把锁。替换前若检测到原文件内容被其他程序改变，会抛出 `IOException`；这不是跨进程事务锁，仍应避免和官方启动器同时修改同一个文件。所有异步方法都接受取消令牌。
+无效 JSON、重复属性、非对象根节点或非对象档案会抛出 `JsonException`，不自动修复或覆盖。
 
-格式说明可参考 [Minecraft Wiki：启动器档案文件格式](https://zh.minecraft.wiki/w/启动器档案文件格式)。
+文件先写同目录临时文件再替换。同进程同路径的操作串行执行；检测到写入前文件被其他程序改变时抛出 `IOException`。这不是跨进程事务锁，仍应避免两个启动器同时修改。
+
+格式背景见 [Minecraft Wiki](https://zh.minecraft.wiki/w/启动器档案文件格式)。

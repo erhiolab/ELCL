@@ -1,39 +1,62 @@
 # 快速开始
 
-你需要 .NET 10 SDK，以及一个目标框架为 `net10.0` 的项目。目前 Core 还没有发布 NuGet 包，可以先从仓库引用项目。
+准备 .NET 10 SDK 和一个目标框架为 `net10.0` 的项目。当前从源码引用 Core，不需要引用 ELCL 的 WPF 项目。
 
-在你的 `.csproj` 中加入：
+## 引用项目
+
+在自己的 `.csproj` 中加入项目引用，路径按实际目录调整：
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
+    <ProjectReference Include="../ELCL/src/ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
 </ItemGroup>
 ```
 
-相对路径按你自己的目录结构调整。只想拿 DLL，也可以先在仓库根目录运行 `dotnet build ErhioLab.Craft.Launcher.Core.slnx -c Release`，再引用构建产物。
+也可以在仓库根目录构建核心解决方案，引用得到的 DLL：
 
-## 先拿到游戏版本列表
+```shell
+dotnet build ErhioLab.Craft.Launcher.Core.slnx -c Release
+```
+
+## 运行第一个请求
+
+把下面的代码放进控制台项目的 `Program.cs`，运行后会打印最新正式版与实际使用的来源。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 
-using HttpClient http = new();
+using var http = new HttpClient();
 var client = new MinecraftVersionCatalogClient(http);
+using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
 try
 {
-    var catalog = await client.GetCatalogAsync(MinecraftManifestSource.Official);
+    var catalog = await client.GetCatalogAsync(
+        MinecraftManifestSource.Official, cancellation.Token);
+
     Console.WriteLine($"最新正式版：{catalog.LatestReleaseId}");
+    Console.WriteLine($"实际来源：{catalog.Source}");
 
     foreach (var version in catalog.Versions.Take(5))
-        Console.WriteLine($"{version.Id} · {version.Kind}");
+        Console.WriteLine($"{version.Id} · {version.ReleaseTime:d}");
+}
+catch (OperationCanceledException)
+{
+    Console.Error.WriteLine("请求已取消或超过等待时间。");
 }
 catch (MinecraftVersionCatalogException error)
 {
-    Console.Error.WriteLine($"两个版本源都不可用：{error.Message}");
+    Console.Error.WriteLine(error.Message);
 }
 ```
 
-`Official` 表示先试 Mojang 官方源；请求失败、超时或内容无效时，会再试镜像。`catalog.Source` 告诉你实际用了哪个来源。需要取消时，把 `CancellationToken` 作为第二个参数传入。
+`Official` 表示官方优先，无法取得有效清单时再尝试镜像，不保证最终结果一定来自官方。
 
-拿到清单之后，可以继续看[版本字段与本地扫描](versions.md)。要下载文件，看[下载器](downloader.md)。记得复用 `HttpClient`，不要每查一次就新建一个。
+## 下一步
+
+- 想列出本机的游戏：看[本地扫描](local-versions.md)。
+- 想安装一个原版版本：看[原版安装流程](vanilla-installation.md)。
+- 想启动已有版本：看[启动准备](launch.md)。
+- 想直接下载一个文件：看[下载器](downloader.md)。
+
+后续示例采用隐式全局引用；自建项目可启用 `ImplicitUsings`，或自行添加 `System`、`System.IO`、`System.Net.Http` 等命名空间。

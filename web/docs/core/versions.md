@@ -1,63 +1,75 @@
 # 游戏版本列表
 
-`MinecraftVersionCatalogClient` 负责取得 Minecraft Java 版版本清单。它会先尝试你指定的来源；失败、超时或返回无效清单时，再尝试另一个来源。
+命名空间：`ErhioLab.Craft.Launcher.Core.Minecraft`。
+
+这里查询 Mojang 发布的版本，不扫描本地安装，也不自动下载游戏。已有游戏目录请看[本地版本扫描](local-versions.md)。
+
+## 创建 `MinecraftVersionCatalogClient`
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 
-using HttpClient http = new();
-var client = new MinecraftVersionCatalogClient(http);
-var catalog = await client.GetCatalogAsync(MinecraftManifestSource.Official);
-
-Console.WriteLine($"最新正式版：{catalog.LatestReleaseId}");
-Console.WriteLine($"最新预览版：{catalog.LatestPreviewId}");
-Console.WriteLine($"实际来源：{catalog.Source}");
+using var http = new HttpClient();
+var client = new MinecraftVersionCatalogClient(
+    http, sourceTimeout: TimeSpan.FromSeconds(5));
+CancellationToken cancellationToken = default;
 ```
 
-`catalog.Versions` 按原清单顺序保存每个版本。`Id` 是版本号，`Kind` 区分正式版、预览版、远古版与愚人节版；`ReleaseTime` 是发布时间，`MetadataUrl` 指向该版本的元数据 JSON，`Sha1` 可能为空。
+`httpClient` 由调用方管理；`officialUrl` 和 `mirrorUrl` 可以替换清单端点。`sourceTimeout` 是单个来源的等待时间，默认 5 秒，必须大于零。
 
-每个来源默认最多等待 5 秒，可通过构造函数的 `sourceTimeout` 调整。如果一轮中两个来源都失败，并且至少一个是暂时性的连接错误、超时、HTTP 408、429 或 5xx，Core 会等 400 毫秒，再按相同优先顺序重试一轮。这样首次连接时的 TLS 握手中断等短暂故障，不必让用户手动刷新。清单格式错误和其他 4xx 错误本身不构成重试理由；调用方主动取消也会立即停止。
+## `MinecraftVersionCatalogClient.GetCatalogAsync` {#minecraftversioncatalogclient-getcatalogasync}
 
-两轮仍失败时会抛出 `MinecraftVersionCatalogException`，内部保留各次请求的错误，便于查日志。Core 不保存版本列表缓存；如果想在离线时仍显示上次获取的版本，需要由调用方自行保存清单或解析后的结果。如果你已经拿到了清单 JSON，也可以用 `MinecraftVersionCatalogClient.Parse(json, source)` 离线解析。愚人节分类依据已知版本 ID 和发布时间，新版本可能需要更新识别规则。
-
-## 扫描已有游戏目录
-
-`LocalMinecraftVersionScanner.Scan(gameDirectory)` 会查看指定目录下的 `versions` 文件夹，优先读取与目录同名的 JSON；没有同名文件时，尝试目录下的第一个 JSON。默认只返回能读取的版本。想记录缺失、损坏或无法访问的元数据，可传入 `onFileError` 回调，参数包含文件路径和原始异常。扫描不会改动游戏文件，也不会替你决定哪个目录是“默认”目录。
-
-如果要做版本目录管理界面，可以传入 `includeInvalidVersions: true`，把无效目录也列出来：
+按优先来源取得清单，返回 `MinecraftVersionCatalog`。
 
 ```csharp
-var entries = LocalMinecraftVersionScanner.Scan(gameDirectory,
-    onFileError: (path, error) => Console.Error.WriteLine($"{path}: {error}"),
-    includeInvalidVersions: true);
-
-foreach (var entry in entries)
-    Console.WriteLine(entry.IsValid ? entry.Id : $"{entry.Id}: {entry.Error}");
+var catalog = await client.GetCatalogAsync(
+    MinecraftManifestSource.Official, cancellationToken);
+Console.WriteLine(catalog.LatestReleaseId);
+Console.WriteLine(catalog.LatestPreviewId);
+Console.WriteLine(catalog.Source);
 ```
 
-错误条目的 `Id` 使用目录名称，`FolderPath` 保留实际路径，`JsonPath` 是尝试读取的路径（可能不存在），其他版本字段为空。`Error` 区分 `MissingMetadata`、`InvalidMetadata` 和 `UnreadableMetadata`；正常条目为 `None`。正常版本按发布时间排序，错误目录排在其后。调用方可用这些信息显示错误图标、打开目录或提供删除操作，但不要把错误条目当成可启动版本，也不要登记为有效安装档案。`IsValid` 只表示这次元数据读取是否成功，不代表客户端 JAR、依赖及资源完整，启动前仍需检查。
+| 参数 | 含义 |
+| --- | --- |
+| `preferredSource` | `Official` 官方优先，或 `Mirror` 镜像优先。 |
+| `cancellationToken` | 可选，取消请求与重试等待。 |
 
-返回的 `LocalMinecraftVersion` 除 `Id`、`Type` 和 `ReleaseTime` 外，还提供可为空的 `GameVersion`、`Loader`、`LoaderVersion`。扫描器优先读取 `clientVersion`、Forge/NeoForge 的 `arguments.game` 参数、`inheritsFrom`（必要时追溯本地父版本 JSON）以及 `libraries` 中的加载器坐标。仅当元数据不足时，才识别完整且明确的“游戏版本-加载器-加载器版本”命名格式；任意自定义名称中的数字不会被当作版本号。无法确认的字段保持为空，调用方可据此显示解析失败。
+首选来源失败、超时或清单无效时会尝试另一来源。如果两个都失败，且存在暂时性网络故障，会等 400 毫秒再试一轮。HTTP 408、429、5xx 等可以触发这次重试，明确的格式错误和普通 4xx 本身不会。
 
-原版 JSON 的 `id` 和 `inheritsFrom` 除现代数字版本号、周快照外，也支持历史版本格式：例如 Pre-Classic 的 `rd-132211`、Classic 的 `c0.0.13a_03`、Indev/Infdev 的 `in-20100125` / `inf-20100618`、Alpha 的 `a1.2.6` 和 Beta 的 `b1.8.1`。这些 ID 会完整保留为 `GameVersion`，版本类别仍取自 JSON 的 `type`。只匹配完整格式，不从自定义名称中截取这类片段。
+最终失败抛出 `MinecraftVersionCatalogException`，内部保留各次异常；主动取消不会包装为来源故障。
 
-这个 API 提供的是**版本信息**，并不下载或安装游戏。
+## `MinecraftVersionCatalogClient.Parse` {#minecraftversioncatalogclient-parse}
 
-## 管理版本目录
-
-`MinecraftVersionDirectory` 提供目录重命名和删除，不读取启动器配置，也不决定弹窗和任务策略。
+解析已取得的 JSON，不进行网络请求，也不保存缓存。
 
 ```csharp
-var references = MinecraftVersionDirectory.GetReferences(gameDirectory, version.FolderPath);
-var renamed = await MinecraftVersionDirectory.RenameAsync(
-    gameDirectory, version.FolderPath, "My Minecraft", cancellationToken);
-
-// 仅在调用方已经确认用户意图、并结束相关任务后调用。
-MinecraftVersionDirectory.Delete(gameDirectory, renamed.FolderPath);
+string json = await File.ReadAllTextAsync("manifest.json", cancellationToken);
+var cached = MinecraftVersionCatalogClient.Parse(
+    json, MinecraftManifestSource.Official);
+Console.WriteLine(cached.Versions.Count);
 ```
 
-目标必须是指定游戏目录下 `versions` 的直接子目录，链接目录和越界路径会拒绝。`GetReferences` 查找其他可读取版本通过 `inheritsFrom` 或 `jar` 对该目录的引用；存在引用时，重命名和删除会拒绝。调用方还需要阻止正在运行、启动或处理这个目录的任务与这些操作并发。
+`source` 用于标明这份 JSON 的来源，不会据此访问网络。内容无效时抛出 JSON 相关异常。
 
-重命名会同步更新目录名称、JSON 文件名、JSON 的 `id` 以及原同名 JAR，并把扫描到的实际游戏版本保留到 `clientVersion`。未知元数据字段和版本内其他文件会保留，不会覆盖已有同名目标。中间目录用于处理 Windows 上仅修改大小写的名称；失败时会尝试回滚文件名及原始 JSON，回滚本身失败时抛出包含两次异常的 `AggregateException`，调用方应保留目录供恢复。
+想离线展示上次结果时，可由应用保存原始清单，下次用本方法读取，再后台刷新。
 
-取消只在提交文件变更前生效，提交阶段不会在文件操作之间中断。无法解析的版本目录也能重命名，但不会修复其 JSON。删除会移除整个目标版本目录，包括版本内的存档与模组；共享支持库和资源不在删除范围内。启动器配置、安装档案与界面刷新由调用方负责。
+## 返回字段
+
+| 字段 | 含义 |
+| --- | --- |
+| `Source` | 本次实际返回结果的来源。 |
+| `LatestReleaseId`、`LatestPreviewId` | 官方标记的最新正式版与预览版。 |
+| `Versions` | 按清单顺序排列的版本集合。 |
+| `MinecraftVersion.Id` | 原始游戏 ID，后续查询或下载用它。 |
+| `Kind` | `Release`、`Preview`、`Ancient` 或 `AprilFools`。 |
+| `MetadataUrl`、`Sha1` | 版本 JSON 地址及可为空的校验值。 |
+| `ReleaseTime` | 发布时间。 |
+
+愚人节分类依赖已知 ID 与日期规则，新发布版本可能需要更新核心识别规则。
+
+## 本地版本与目录管理
+
+原来在本页的本地方法已分篇：
+
+- [扫描已有游戏目录](local-versions.md)。
+- [重命名、查引用和删除版本](version-directories.md)。

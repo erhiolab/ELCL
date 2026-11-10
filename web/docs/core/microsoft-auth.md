@@ -1,82 +1,105 @@
 # Microsoft 账户登录
 
-`MicrosoftMinecraftAuthClient` 负责发送登录请求，依次取得 Microsoft、Xbox Live、XSTS 和 Minecraft 会话，再读取玩家的 Java 版档案。Core 不决定 Client ID、不打开浏览器，也不保存账户或令牌；这些由调用它的程序负责。
+命名空间：`ErhioLab.Craft.Launcher.Core.Accounts`。
 
-## 设备代码登录
+使用设备代码流登录，依次交换 Microsoft、Xbox Live、XSTS 和 Minecraft 会话，验证 Java 版授权并读取玩家档案。
 
-先在 Microsoft Entra 注册支持个人 Microsoft 账户的应用，并允许公共客户端流。把该应用的 Client ID 传给 Core：
+核心不打开网页、不复制代码、不保存账户，也不提供内置 Client ID。
+
+## 创建 `MicrosoftMinecraftAuthClient`
+
+先注册允许个人 Microsoft 账户和公共客户端流的应用，并确认 Minecraft API 的使用许可。设备代码流不要求客户端密钥。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Accounts;
 
-using HttpClient http = new();
+using var http = new HttpClient();
 var client = new MicrosoftMinecraftAuthClient(http);
-string clientId = "你的应用 Client ID";
-
-var request = await client.StartDeviceAuthorizationAsync(clientId);
-Console.WriteLine($"打开 {request.VerificationUri}，输入 {request.UserCode}");
-
-var session = await client.CompleteDeviceAuthorizationAsync(clientId, request);
-Console.WriteLine($"已登录：{session.UserName} ({session.Uuid})");
+string clientId = Environment.GetEnvironmentVariable("MY_APP_CLIENT_ID")
+    ?? throw new InvalidOperationException("请配置自己的应用 Client ID。");
+CancellationToken cancellationToken = default;
 ```
 
-调用方可以复制用户代码并打开 `VerificationUri`。`CompleteDeviceAuthorizationAsync` 会按服务器给定的间隔轮询，处理等待授权和减慢轮询的响应，直到成功、过期、失败或调用方取消。成功后返回 Minecraft 用户名、UUID、游戏访问令牌及过期时间、Microsoft 刷新令牌。刷新时调用 `RefreshAsync(clientId, refreshToken)`，并保存新返回的刷新令牌。
+环境变量名称仅是示例，值的读取方式由你的应用决定。
 
-如果建立连接或 TLS 握手暂时失败，Core 会重新创建请求并最多再试两次；HTTP 408、429、5xx 或成功状态下意外返回 HTML／空响应也会有限重试。明确的授权失败不会重试。如果某一步仍返回非 JSON，异常会给出阶段、HTTP 状态、Content-Type 和响应长度，便于排查；异常不包含令牌或响应正文。
+## `MicrosoftMinecraftAuthClient.StartDeviceAuthorizationAsync` {#microsoftminecraftauthclient-startdeviceauthorizationasync}
 
-Xbox Live 请求使用服务要求的原始 JSON 字段名，例如 `Properties`、`RelyingParty` 和 `TokenType`。调用方无需自行构造这些请求。
+请求一组设备代码。
 
-Minecraft 令牌通过 `/authentication/login_with_xbox` 获取，请求中使用 `identityToken`。Microsoft 网页授权成功只说明用户允许了应用；新注册的应用还可能需要单独获得 Minecraft API 的使用许可。若这一步返回 `403 FORBIDDEN`，先检查应用审核状态，参见 [Minecraft 帮助中心的申请说明](https://help.minecraft.net/hc/en-us/articles/16254801392141) 和 [申请表](https://aka.ms/mce-reviewappid)。提交后需等待审核，Core 无法绕过服务端的拒绝。
+```csharp
+var authorization = await client.StartDeviceAuthorizationAsync(clientId, cancellationToken);
+Console.WriteLine($"打开 {authorization.VerificationUri}");
+Console.WriteLine($"输入代码：{authorization.UserCode}");
+```
 
-Client ID 不是密码，但必须属于你自己的应用注册。访问令牌和刷新令牌是敏感数据，不要写进日志或公开配置。ELCLC 不保存这些令牌；调用方需要自行选择安全的存储方式。
+返回 `MicrosoftDeviceAuthorization`：
 
-如果请求设备代码时出现 `AADSTS70002` 或 `invalid_client`，请检查应用注册的“身份验证”：添加“移动和桌面应用程序”平台，并启用“允许公共客户端流”。修改注册后重新开始登录。
+| 字段 | 用途 |
+| --- | --- |
+| `UserCode`、`VerificationUri` | 展示给用户的代码与网页。 |
+| `DeviceCode` | 后续轮询使用，不是供用户输入的代码。 |
+| `ExpiresAt`、`PollInterval` | 过期时间与服务要求的轮询间隔。 |
 
-如果没有 Minecraft Java 版授权或档案，登录会失败并抛出 `MicrosoftMinecraftAuthException`。它的 `Stage` 和 `Code` 可用于显示错误；调用方取消时会抛出取消异常。
+调用方可以打开网页并复制 `UserCode`，再继续下一步。应用注册错误或服务拒绝会抛出认证异常。
 
-## 检查已保存的会话
+## `MicrosoftMinecraftAuthClient.CompleteDeviceAuthorizationAsync` {#microsoftminecraftauthclient-completedeviceauthorizationasync}
 
-启动前可以验证现有的 Minecraft 访问令牌、Java 版授权和玩家档案：
+等待网页授权，并完成 Minecraft 会话交换。
+
+```csharp
+MicrosoftMinecraftSession session = await client.CompleteDeviceAuthorizationAsync(
+    clientId, authorization, cancellationToken);
+Console.WriteLine($"已登录：{session.UserName}");
+```
+
+`authorization` 必须来自同一应用的设备代码请求。方法按服务间隔轮询，处理等待授权和要求减慢轮询的响应，不需要调用方再写循环。
+
+代码过期、用户拒绝、服务拒绝或缺少 Java 版授权时会失败；取消令牌可停止等待。
+
+## `MicrosoftMinecraftAuthClient.RefreshAsync` {#microsoftminecraftauthclient-refreshasync}
+
+使用之前安全保存的 Microsoft 刷新令牌取得新会话。
+
+```csharp
+var renewed = await client.RefreshAsync(
+    clientId, session.MicrosoftRefreshToken, cancellationToken);
+```
+
+成功后应保存这次返回的新刷新令牌、Minecraft 访问令牌和过期时间，而不是一直复用旧结果。
+
+方法同样验证 Java 版授权与档案。刷新失败时，由调用方决定是否提示重新登录；不会自动打开浏览器。
+
+## `MicrosoftMinecraftAuthClient.ValidateMinecraftSessionAsync` {#microsoftminecraftauthclient-validateminecraftsessionasync}
+
+验证当前 Minecraft 令牌，返回最新玩家名和 UUID。
 
 ```csharp
 MinecraftAccountProfile profile = await client.ValidateMinecraftSessionAsync(
-    session.MinecraftAccessToken, cancellationToken);
+    renewed.MinecraftAccessToken, cancellationToken);
 ```
 
-返回值包含最新玩家名和 UUID。这个方法不会自动读取或刷新令牌；令牌过期或被服务拒绝时，调用方可以使用自己的刷新令牌调用 `RefreshAsync`，并安全保存新的结果。没有 Java 版授权时会抛出 `Code` 为 `no_entitlement` 的 `MicrosoftMinecraftAuthException`。刷新成功的会话也会执行相同的授权和档案检查。
+只验证传入的 Minecraft 访问令牌，不会读取存储，也不会自动刷新。过期后可以调用 `RefreshAsync` 再验证；`no_entitlement` 表示没有可用 Java 版授权。
 
-## 读取当前皮肤
+## 会话返回值
 
-登录后可用 Minecraft 访问令牌读取玩家档案中的当前皮肤，再下载原始 PNG：
+`MicrosoftMinecraftSession` 包含 `UserName`、`Uuid`、`MinecraftAccessToken`、`MinecraftAccessTokenExpiresAt` 和 `MicrosoftRefreshToken`。
 
-```csharp
-var skins = new MinecraftSkinClient(http);
-MinecraftPlayerSkin? active = await skins.GetActiveSkinAsync(session.MinecraftAccessToken);
-if (active is not null)
-{
-    byte[] png = await skins.DownloadSkinAsync(active);
-    await File.WriteAllBytesAsync("skin.png", png);
-}
-```
+Client ID 是公开应用标识；令牌则是凭据。不要将它们一起放进公开配置、日志或错误截图。核心不负责加密保存，调用方应使用平台提供的凭据保护方式。
 
-`GetActiveSkinAsync` 只选择档案中状态为 `ACTIVE` 的皮肤；没有时返回 `null`。Minecraft 档案有时返回 `http://textures.minecraft.net` 地址，Core 会将这个官方纹理域名改用 HTTPS。读取档案或下载图片遇到短暂连接故障、HTTP 408、429、5xx 时会有限重试。`DownloadSkinAsync` 要求 HTTPS、限制文件大小为 2 MiB，并检查 PNG 文件签名。Core 返回原始图片字节，不指定缓存目录，也不生成界面头像；调用方可以自行缓存并按需要裁剪头部。
+皮肤和披风使用 Minecraft 令牌，见[外观 API](skins.md)。
 
-## 皮肤和披风管理
+## 错误怎么处理
 
-`GetAppearanceAsync` 一次读取当前皮肤及账户拥有的披风。每件披风包含 ID、名称、纹理地址和是否正在使用；没有启用披风时，所有 `IsActive` 都是 `false`。`DownloadCapeAsync` 返回披风 PNG 的原始字节。
+`MicrosoftMinecraftAuthException.Stage` 表示失败阶段，`Code` 表示服务或核心错误码，适合用于决定提示；`Message` 是可读说明。
 
-```csharp
-MinecraftPlayerAppearance appearance = await skins.GetAppearanceAsync(session.MinecraftAccessToken);
-foreach (MinecraftPlayerCape cape in appearance.Capes)
-    Console.WriteLine($"{cape.Alias}: {(cape.IsActive ? "使用中" : "未使用")}");
+| 现象 | 检查方向 |
+| --- | --- |
+| `invalid_client`、`AADSTS70002` | 应用是否支持个人账户，是否添加桌面平台并允许公共客户端流。 |
+| Microsoft 网页成功，Minecraft 阶段返回 403 | 应用是否获准访问 Minecraft API，不能只以网页成功判断完成。 |
+| `no_entitlement` | 账户没有可用 Java 版授权。 |
+| Xbox／XSTS 阶段拒绝 | 检查该阶段错误，可能与账户或家庭限制有关。 |
+| 主动取消 | 单独处理 `OperationCanceledException`，不当成登录故障。 |
 
-byte[] png = await File.ReadAllBytesAsync("my-skin.png");
-await skins.UploadSkinAsync(session.MinecraftAccessToken, png, "SLIM");
+短暂连接故障、HTTP 408、429、5xx 和部分异常响应会有限重试，明确授权失败不会重试。非 JSON 响应的错误会包含阶段、状态与长度，不附带完整响应正文。
 
-MinecraftPlayerCape? chosen = appearance.Capes.FirstOrDefault();
-await skins.SetActiveCapeAsync(session.MinecraftAccessToken, chosen?.Id);
-```
-
-上传皮肤使用 Minecraft 档案接口，`variant` 只能是 `CLASSIC` 或 `SLIM`。上传前应检查图片尺寸；ELCLC 只检查 PNG 签名和 2 MiB 大小限制，最终是否接受由服务端决定。修改现有皮肤的模型需要将皮肤 PNG 以新 `variant` 重新上传。调用 `SetActiveCapeAsync` 时应传入当前账户拥有的披风 ID，服务端会校验所有权；传入 `null` 会取消装备披风。操作成功后重新读取档案，才能拿到最新的启用状态。
-
-这些方法只发请求，不保存令牌、皮肤或披风，也不处理预览和文件选择。令牌刷新、图片缓存与界面由调用方负责。
+应用许可说明见 [Minecraft 帮助中心](https://help.minecraft.net/hc/en-us/articles/16254801392141) 与[申请入口](https://aka.ms/mce-reviewappid)。核心无法绕过服务端的应用审核。

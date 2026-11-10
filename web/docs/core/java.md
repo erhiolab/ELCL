@@ -1,52 +1,67 @@
-# 查找 Java
+# Java 发现
 
-`JavaDiscovery` 会从环境变量和常见安装位置寻找 Java，然后运行候选程序确认它是否真的可用。它不会从头到尾扫描每个磁盘。
+命名空间：`ErhioLab.Craft.Launcher.Core.Java`。
+
+返回的 `JavaInstallation` 包含可执行路径、完整版本、主版本号和架构。所有发现结果都会实际运行 Java 验证，不只是判断文件名。
+
+## `JavaDiscovery.FindAsync` {#javadiscovery-findasync}
+
+普通查找，适合初始化列表或用户点击刷新。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Java;
 
-var found = await JavaDiscovery.FindAsync();
-foreach (var java in found)
+CancellationToken cancellationToken = default;
+var installations = await JavaDiscovery.FindAsync(
+    additionalRoots: new[] { @"D:\Tools\Java" },
+    cancellationToken: cancellationToken);
+foreach (var java in installations)
     Console.WriteLine($"{java.Version} · {java.Architecture} · {java.Path}");
 ```
 
-如果你知道某个额外目录，可以传给 `additionalRoots`：
+`additionalRoots` 是额外的安装根目录，可省略。方法同时检查环境变量、系统登记和常见目录，使用有界扫描，不逐盘遍历。
+
+结果去重后按 Java 主版本降序、路径排序，不代表你的应用必须采用这个优先级。用户排序和持久化由调用方处理。
+
+## `JavaDiscovery.ProbeAsync` {#javadiscovery-probeasync}
+
+验证单个 Java 可执行文件，适合手动添加。
 
 ```csharp
-var extra = await JavaDiscovery.FindAsync(
-    additionalRoots: [@"D:\MyJdks"],
-    cancellationToken: cancellationToken);
+JavaInstallation? selected = await JavaDiscovery.ProbeAsync(
+    @"C:\Program Files\Java\jdk-21\bin\java.exe", cancellationToken);
+Console.WriteLine(selected is null ? "无法使用这个 Java。" : selected.Version);
 ```
 
-用户手动选择 `java.exe` 后，用 `JavaDiscovery.ProbeAsync(path)` 验证文件。返回 `null` 表示无法识别或运行。列表排序、兼容性选择、用户主动移除的记录，都由你的程序保存。Windows 注册表等平台专属线索也可以由你的程序读取后传入 `additionalRoots`。
+路径必须指向当前平台的 `java.exe` 或 `java`，不是安装根目录，也不是 `javaw.exe`。
 
-## 找不到时：全盘搜索
+方法运行 `-XshowSettings:properties -version`，读取版本与架构，单次探测有超时。无法执行或不符合要求时返回 `null`；调用方主动取消仍会停止操作。
 
-`FindExhaustiveAsync` 是最后的手段。默认会递归遍历所有就绪的本地磁盘（Windows 的固定盘和可移动盘；其他系统从根目录开始），寻找名为 `java.exe` 或 `java` 的文件，然后逐个运行版本命令验证。它没有普通搜索的目录数量和候选数量上限。目录链接会跳过，无法读取的目录也会跳过；所以“全盘”仍不能保证找出无权限访问的 Java。
+## `JavaDiscovery.FindExhaustiveAsync` {#javadiscovery-findexhaustiveasync}
+
+暴力搜索，只有普通查找不足时再考虑使用。
 
 ```csharp
-using ErhioLab.Craft.Launcher.Core.Java;
+using var cancellation = new CancellationTokenSource();
+var progress = new Progress<JavaDiscoveryProgress>(value =>
+    Console.WriteLine($"已扫描 {value.DirectoriesScanned} 个目录，候选 {value.CandidatesFound} 个"));
 
-using CancellationTokenSource stop = new();
-var progress = new Progress<JavaDiscoveryProgress>(state =>
-    Console.WriteLine($"已检查 {state.DirectoriesScanned} 个目录，找到 {state.CandidatesFound} 个候选"));
-
-// 可以把 stop.Token 接到界面的“取消”按钮。
-IReadOnlyList<JavaInstallation> all = await JavaDiscovery.FindExhaustiveAsync(
+var exhaustive = await JavaDiscovery.FindExhaustiveAsync(
+    roots: new[] { @"D:\Tools" },
     progress: progress,
-    cancellationToken: stop.Token);
+    cancellationToken: cancellation.Token);
 ```
 
-已经知道大概位置时，强烈建议限定范围：
+| 参数 | 含义 |
+| --- | --- |
+| `roots` | 可选，递归搜索的根目录。省略时 Windows 搜索所有就绪的本地固定／可移动磁盘，其他系统从当前目录所在根开始。 |
+| `progress` | 约每 256 个目录和扫描结束时报告一次，包含目录数、候选数和当前目录。 |
+| `cancellationToken` | 同时控制遍历与后续候选验证。 |
 
-```csharp
-var found = await JavaDiscovery.FindExhaustiveAsync(
-    roots: [@"D:\Games", @"E:\Tools"],
-    cancellationToken: stop.Token);
-```
+::: warning 此方法开销很大
+没有普通发现的目录数和深度上限。大量小文件、机械硬盘和多磁盘环境下，可能持续很久并产生明显磁盘 I/O。
 
-::: danger 这不是普通刷新
-全盘搜索可能读取数十万甚至数百万个目录，让机械硬盘长时间忙碌，也会拖慢其他程序。可移动盘同样会被扫描；其他系统从 `/` 开始时，还可能碰到挂载的文件系统。**更重要的是，验证会实际运行每一个匹配名称的可执行文件**：如果磁盘上有伪装成 `java.exe` 的恶意程序，它也可能被执行。不要在应用启动、后台定时任务或用户没有明确选择时调用它。提供取消按钮，优先让用户选择可信的搜索目录；对不可信磁盘不要使用此方法。
+找到候选文件后还会执行它来验证。应由用户明确发起，优先限制搜索根目录，提供取消入口；不要放进启动流程、定时任务或普通刷新按钮。
 :::
 
-进度只报告已扫描目录和候选数量；事先不知道目录总数，因此没有可靠的百分比。扫描完成后还需要时间逐个验证候选文件。取消时会抛出 `OperationCanceledException`，调用方应处理它。
+无权限目录会跳过，遍历子目录时跳过链接与重解析点以避免循环。它仍不能保证发现无权限位置中的 Java。

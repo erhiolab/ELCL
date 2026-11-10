@@ -1,6 +1,10 @@
 # 核心版本号
 
-启动器和核心库各有自己的版本号。想在“关于”页面或日志里显示当前加载的 Core 版本，可以直接读取：
+命名空间：`ErhioLab.Craft.Launcher.Core`。
+
+`CoreInfo` 提供当前加载程序集的名称和版本，适合“关于”页面、日志或故障报告。
+
+## 读取 `CoreInfo`
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core;
@@ -10,4 +14,10 @@ Console.WriteLine(CoreInfo.ShortName);
 Console.WriteLine(CoreInfo.Version);
 ```
 
-`ShortName` 是 `ELCLC`。版本号来自当前加载的 Core 程序集，不需要在你的项目里再手写一份。目前仓库中的 Core 项目版本为 `0.0.1`。
+| 属性 | 内容 |
+| --- | --- |
+| `ProductName` | `ErhioLab Craft Launcher Core`。 |
+| `ShortName` | `ELCLC`。 |
+| `Version` | 当前程序集的信息版本，缺失时回退到程序集版本。 |
+
+这些是属性，不需要创建实例或调用方法。核心与启动器分别维护版本，展示核心版本时不要复用自己的应用版本号。
