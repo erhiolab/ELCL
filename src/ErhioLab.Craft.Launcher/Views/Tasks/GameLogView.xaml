@@ -1,0 +1,435 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Tasks.GameLogView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Tasks"
+    xmlns:logs="clr-namespace:ErhioLab.Craft.Launcher.Launching"
+    Background="{DynamicResource InkBrush}">
+    <UserControl.Resources>
+        <Style
+            x:Key="LogMetadataTextStyle"
+            TargetType="TextBlock">
+            <Setter
+                Property="FontFamily"
+                Value="Consolas, Microsoft YaHei UI" />
+            <Setter
+                Property="FontSize"
+                Value="12" />
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextMutedBrush}" />
+            <Setter
+                Property="TextTrimming"
+                Value="CharacterEllipsis" />
+            <Setter
+                Property="VerticalAlignment"
+                Value="Top" />
+        </Style>
+        <Style
+            x:Key="LogMessageTextStyle"
+            TargetType="TextBlock">
+            <Setter
+                Property="FontFamily"
+                Value="Consolas, Microsoft YaHei UI" />
+            <Setter
+                Property="FontSize"
+                Value="12" />
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+            <Setter
+                Property="TextWrapping"
+                Value="NoWrap" />
+            <Style.Triggers>
+                <DataTrigger
+                    Binding="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                    Value="True">
+                    <Setter
+                        Property="TextWrapping"
+                        Value="Wrap" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style
+            x:Key="LogLevelTextStyle"
+            TargetType="TextBlock"
+            BasedOn="{StaticResource LogMetadataTextStyle}">
+            <Setter
+                Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition
+                            Binding="{Binding Level}"
+                            Value="Error" />
+                        <Condition
+                            Binding="{Binding ColorOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                            Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter
+                        Property="Foreground"
+                        Value="{DynamicResource DangerTextBrush}" />
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition
+                            Binding="{Binding Level}"
+                            Value="Warning" />
+                        <Condition
+                            Binding="{Binding ColorOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                            Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter
+                        Property="Foreground"
+                        Value="{DynamicResource WarningTextBrush}" />
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition
+                            Binding="{Binding Level}"
+                            Value="Debug" />
+                        <Condition
+                            Binding="{Binding ColorOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                            Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter
+                        Property="Foreground"
+                        Value="{DynamicResource TextMutedBrush}" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <Grid
+        Margin="{StaticResource FormPageContentMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="Auto" />
+                <ColumnDefinition
+                    Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="BackButton"
+                Width="34"
+                Height="34"
+                Margin="0,0,12,0"
+                Click="Back_Click"
+                Style="{StaticResource SecondaryActionStyle}"
+                ToolTip="{DynamicResource I18n.gameLogs.back}">
+                <Path
+                    Width="16"
+                    Height="16"
+                    Data="{x:Static icons:LauncherIcons.Back}"
+                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                    StrokeThickness="1.5"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round" />
+            </Button>
+            <StackPanel
+                Grid.Column="1">
+                <TextBlock
+                    x:Name="TitleText"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Foreground="{DynamicResource TextBrush}"
+                    TextTrimming="CharacterEllipsis" />
+                <TextBlock
+                    x:Name="StateText"
+                    Margin="0,3,0,0"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+        <WrapPanel
+            Grid.Row="1"
+            Margin="0,10,0,12">
+            <CheckBox
+                x:Name="AutoUpdateBox"
+                Margin="0,0,18,0"
+                Content="{DynamicResource I18n.gameLogs.autoUpdate}"
+                IsChecked="True"
+                Style="{StaticResource FormCheckBoxStyle}" />
+            <CheckBox
+                x:Name="AutoScrollBox"
+                Checked="AutoScroll_Checked"
+                Margin="0,0,18,0"
+                Content="{DynamicResource I18n.gameLogs.autoScroll}"
+                IsChecked="True"
+                Style="{StaticResource FormCheckBoxStyle}" />
+            <CheckBox
+                Margin="0,0,18,0"
+                Content="{DynamicResource I18n.gameLogs.wrap}"
+                IsChecked="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}, Mode=TwoWay}"
+                Style="{StaticResource FormCheckBoxStyle}" />
+            <CheckBox
+                Margin="0,0,18,0"
+                Content="{DynamicResource I18n.gameLogs.color}"
+                IsChecked="{Binding ColorOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}, Mode=TwoWay}"
+                Style="{StaticResource FormCheckBoxStyle}" />
+            <CheckBox
+                Margin="0,0,18,0"
+                Content="{DynamicResource I18n.gameLogs.raw}"
+                IsChecked="{Binding RawOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}, Mode=TwoWay}"
+                Style="{StaticResource FormCheckBoxStyle}" />
+            <Button
+                Margin="0,0,8,0"
+                Click="Copy_Click"
+                Content="{DynamicResource I18n.gameLogs.copy}"
+                Style="{StaticResource CompactActionButtonStyle}"
+                ToolTip="{DynamicResource I18n.gameLogs.copyHint}" />
+            <Button
+                Margin="0,0,8,0"
+                Click="OpenFile_Click"
+                Content="{DynamicResource I18n.gameLogs.openFile}"
+                Style="{StaticResource CompactActionButtonStyle}" />
+            <Button
+                Margin="0"
+                Click="Clear_Click"
+                Content="{DynamicResource I18n.gameLogs.clear}"
+                Style="{StaticResource CompactActionButtonStyle}" />
+        </WrapPanel>
+        <Grid
+            Grid.Row="2"
+            Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="170" />
+                <ColumnDefinition
+                    Width="*" />
+            </Grid.ColumnDefinitions>
+            <ComboBox
+                x:Name="SeverityBox"
+                SelectedIndex="0"
+                SelectionChanged="Severity_Changed"
+                Style="{StaticResource FormComboBoxStyle}">
+                <ComboBoxItem
+                    Content="{DynamicResource I18n.gameLogs.allLevels}" />
+                <ComboBoxItem
+                    Content="{DynamicResource I18n.gameLogs.warningsAndErrors}" />
+                <ComboBoxItem
+                    Content="{DynamicResource I18n.gameLogs.errorsOnly}" />
+            </ComboBox>
+            <TextBlock
+                x:Name="LevelStatsText"
+                Grid.Column="1"
+                Margin="14,0,0,0"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextMutedBrush}"
+                TextWrapping="Wrap" />
+        </Grid>
+        <Border
+            Grid.Row="3"
+            Padding="8"
+            Style="{StaticResource PanelCardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition
+                        Height="Auto" />
+                    <RowDefinition
+                        Height="*" />
+                </Grid.RowDefinitions>
+                <Grid
+                    Margin="6,2,20,8">
+                    <Grid.Style>
+                        <Style
+                            TargetType="Grid">
+                            <Style.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding RawOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                                    Value="True">
+                                    <Setter
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="96" />
+                        <ColumnDefinition
+                            Width="60" />
+                        <ColumnDefinition
+                            Width="134" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Text="{DynamicResource I18n.gameLogs.timeColumn}"
+                        Style="{StaticResource LogMetadataTextStyle}" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{DynamicResource I18n.gameLogs.levelColumn}"
+                        Style="{StaticResource LogMetadataTextStyle}" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Text="{DynamicResource I18n.gameLogs.threadColumn}"
+                        Style="{StaticResource LogMetadataTextStyle}" />
+                    <TextBlock
+                        Grid.Column="3"
+                        Text="{DynamicResource I18n.gameLogs.messageColumn}"
+                        Style="{StaticResource LogMetadataTextStyle}" />
+                </Grid>
+                <ListBox
+                    x:Name="LinesList"
+                    Grid.Row="1"
+                    Background="Transparent"
+                    SelectionMode="Extended"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.VirtualizationMode="Recycling"
+                    VirtualizingPanel.ScrollUnit="Pixel"
+                    ScrollViewer.CanContentScroll="True"
+                    ScrollViewer.ScrollChanged="Lines_ScrollChanged"
+                    PreviewMouseWheel="Lines_MouseWheel"
+                    PreviewKeyDown="Lines_KeyDown">
+                    <ListBox.Style>
+                        <Style
+                            TargetType="ListBox"
+                            BasedOn="{StaticResource {x:Type ListBox}}">
+                            <Setter
+                                Property="ScrollViewer.HorizontalScrollBarVisibility"
+                                Value="Auto" />
+                            <Style.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                                    Value="True">
+                                    <Setter
+                                        Property="ScrollViewer.HorizontalScrollBarVisibility"
+                                        Value="Disabled" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.Style>
+                    <ListBox.ItemContainerStyle>
+                        <Style
+                            TargetType="ListBoxItem"
+                            BasedOn="{StaticResource ConsoleListItemStyle}">
+                            <Style.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                                    Value="True">
+                                    <Setter
+                                        Property="MaxWidth"
+                                        Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollContentPresenter}}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate
+                            DataType="{x:Type logs:GameLogLine}">
+                            <Grid>
+                                <Grid
+                                    x:Name="StructuredRow">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition
+                                            Width="96" />
+                                        <ColumnDefinition
+                                            Width="60" />
+                                        <ColumnDefinition
+                                            Width="134" />
+                                        <ColumnDefinition
+                                            Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        Text="{Binding Time}"
+                                        Style="{StaticResource LogMetadataTextStyle}" />
+                                    <TextBlock
+                                        x:Name="LevelText"
+                                        Grid.Column="1"
+                                        Text="{Binding LevelLabel}"
+                                        Style="{StaticResource LogLevelTextStyle}" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Margin="0,0,10,0"
+                                        Text="{Binding Thread}"
+                                        ToolTip="{Binding Source}"
+                                        Style="{StaticResource LogMetadataTextStyle}" />
+                                    <TextBlock
+                                        x:Name="MessageText"
+                                        Grid.Column="3"
+                                        Text="{Binding Message}"
+                                        ToolTip="{Binding Logger}"
+                                        Style="{StaticResource LogMessageTextStyle}" />
+                                </Grid>
+                                <TextBlock
+                                    x:Name="RawText"
+                                    Text="{Binding RawText}"
+                                    Style="{StaticResource LogMessageTextStyle}"
+                                    Visibility="Collapsed" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding RawOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                                    Value="True">
+                                    <Setter
+                                        TargetName="StructuredRow"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                                    <Setter
+                                        TargetName="RawText"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock
+                    x:Name="EmptyText"
+                    Grid.Row="1"
+                    Margin="20"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    Text="{DynamicResource I18n.gameLogs.empty}"
+                    TextWrapping="Wrap"
+                    IsHitTestVisible="False" />
+            </Grid>
+        </Border>
+        <Grid
+            Grid.Row="4"
+            Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="*" />
+                <ColumnDefinition
+                    Width="Auto" />
+                <ColumnDefinition
+                    Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                x:Name="SearchBox"
+                MaxLength="1024"
+                KeyDown="Search_KeyDown"
+                Style="{StaticResource FormTextBoxStyle}"
+                ToolTip="{DynamicResource I18n.gameLogs.searchHint}" />
+            <Button
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                Click="Find_Click"
+                Content="{DynamicResource I18n.gameLogs.find}"
+                Style="{StaticResource CompactActionButtonStyle}" />
+            <Button
+                Grid.Column="2"
+                Margin="8,0,0,0"
+                Click="Tail_Click"
+                Content="{DynamicResource I18n.gameLogs.tail}"
+                Style="{StaticResource CompactActionButtonStyle}" />
+        </Grid>
+    </Grid>
+</UserControl>

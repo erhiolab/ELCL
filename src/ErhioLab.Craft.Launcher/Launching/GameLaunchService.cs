@@ -283,7 +283,7 @@ internal sealed class GameLaunchService
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
                 App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
                     runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
-                    game.TerminateAsync);
+                    game.TerminateAsync, logPath: game.LogPath);
                 handedOff = true;
                 running = null;
             }, isGameLaunch: true);

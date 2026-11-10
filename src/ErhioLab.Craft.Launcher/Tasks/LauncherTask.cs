@@ -56,6 +56,8 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     internal bool IsGameLaunch { get; init; }
     public bool IsRunningGame { get; init; }
     public int? ProcessId { get; init; }
+    public string? GameLogPath { get; init; }
+    public bool CanViewLog => IsRunningGame && GameLogPath is not null;
     public bool IsStopping
     {
         get => _isStopping;

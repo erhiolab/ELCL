@@ -256,6 +256,7 @@
                         CornerRadius="6"
                         Style="{StaticResource VersionListHoverStyle}" />
                     <controls:LocalVersionInfo
+                        Grid.Column="0"
                         Grid.ColumnSpan="2"
                         VerticalAlignment="Center"
                         Info="{Binding}" />

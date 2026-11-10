@@ -217,4 +217,48 @@
             </DataTrigger>
         </Style.Triggers>
     </Style>
+    <Style
+        x:Key="ConsoleListItemStyle"
+        TargetType="ListBoxItem">
+        <Setter
+            Property="Padding"
+            Value="6,2" />
+        <Setter
+            Property="HorizontalContentAlignment"
+            Value="Stretch" />
+        <Setter
+            Property="FocusVisualStyle"
+            Value="{x:Null}" />
+        <Setter
+            Property="Template">
+            <Setter.Value>
+                <ControlTemplate
+                    TargetType="ListBoxItem">
+                    <Border
+                        x:Name="Root"
+                        Padding="{TemplateBinding Padding}"
+                        Background="Transparent"
+                        CornerRadius="3">
+                        <Grid>
+                            <Border
+                                Background="{DynamicResource AccentHoverBrush}"
+                                CornerRadius="3"
+                                Style="{StaticResource HoverLayerStyle}" />
+                            <ContentPresenter />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger
+                            Property="IsSelected"
+                            Value="True">
+                            <Setter
+                                TargetName="Root"
+                                Property="Background"
+                                Value="{DynamicResource AccentMutedBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

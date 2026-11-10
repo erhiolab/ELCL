@@ -25,6 +25,7 @@ internal static class LauncherThemeManager
         Set("TextBrush", day ? "#FF1B2733" : "#FFF1F3F5");
         Set("TextMutedBrush", day ? "#FF647587" : "#FF7F8998");
         Set("DangerTextBrush", day ? "#FFBD2D37" : "#FFFF717D");
+        Set("WarningTextBrush", day ? "#FF916208" : "#FFE6BD6A");
         Set("AccentBrush", accent);
         double accentBrightness = (0.2126 * accent.R + 0.7152 * accent.G + 0.0722 * accent.B) / 255;
         Set("AccentForegroundBrush", accentBrightness > 0.54 ? "#FF0B0E12" : "#FFFFFFFF");

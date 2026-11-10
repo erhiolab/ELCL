@@ -5,15 +5,27 @@ using System.Windows;
 using ErhioLab.Craft.Launcher.Tasks;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Navigation;
 
 namespace ErhioLab.Craft.Launcher.Views.Tasks;
 
 /// <summary>展示所有下载和安装任务的统一入口.</summary>
 public partial class TaskManagerView
 {
+    private readonly UIElement _overview;
+    private readonly AnimatedPageHost _pageHost;
+    private readonly GameLogView _gameLog = new();
+    internal bool IsShowingGameLog { get; private set; }
+    internal event Action? GameLogClosed;
+
     public TaskManagerView()
     {
         InitializeComponent();
+        _overview = (UIElement)Content;
+        Content = null;
+        _pageHost = new AnimatedPageHost(_overview);
+        Content = _pageHost;
+        _gameLog.BackRequested += CloseGameLog;
         TaskList.DataContext = App.Tasks;
         IsVisibleChanged += (_, _) =>
         {
@@ -30,6 +42,23 @@ public partial class TaskManagerView
             task.PropertyChanged += Task_PropertyChanged;
         }
         UpdateSummary();
+    }
+
+    private void GameLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: LauncherTask { CanViewLog: true } task }) return;
+        _gameLog.ShowTask(task);
+        IsShowingGameLog = true;
+        _pageHost.Navigate(_gameLog);
+    }
+
+    internal void CloseGameLog()
+    {
+        if (!IsShowingGameLog) return;
+        IsShowingGameLog = false;
+        _pageHost.Navigate(_overview, back: true);
+        App.Logger.Information("GameLogs", "关闭实例日志并返回任务列表.");
+        GameLogClosed?.Invoke();
     }
 
     private void Tasks_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

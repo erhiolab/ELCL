@@ -234,11 +234,11 @@ internal sealed class LauncherTaskManager
 
     /// <summary>跟踪一次已启动的游戏; 终止回调绑定具体进程实例, 不按进程名查杀.</summary>
     internal LauncherTask TrackRunningGame(string name, string versionDirectory, int processId,
-        Func<LauncherTask, Task<int>> observe, Func<Task> stop)
+        Func<LauncherTask, Task<int>> observe, Func<Task> stop, string? logPath = null)
     {
         LauncherTask task = new(name, [], versionDirectory)
         {
-            IsGameLaunch = true, IsRunningGame = true, ProcessId = processId, StopAsync = stop, Status = LauncherTaskStatus.Running
+            IsGameLaunch = true, IsRunningGame = true, ProcessId = processId, GameLogPath = logPath, StopAsync = stop, Status = LauncherTaskStatus.Running
         };
         Tasks.Insert(0, task);
         App.Logger.Information("Tasks", $"开始跟踪运行中的游戏: {name}, PID={processId}.");

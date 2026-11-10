@@ -24,18 +24,21 @@ public partial class VersionSettingsView
     private string _gameDirectory = "";
     private int _generation;
     private readonly LaunchSettingsPage _launchSettingsPage;
+    private readonly VersionLogsPage _logsPage;
     internal event Action? BackRequested;
 
     public VersionSettingsView()
     {
         InitializeComponent();
         _launchSettingsPage = new LaunchSettingsPage();
+        _logsPage = new VersionLogsPage();
         PageHost.Content = null;
         var pageHost = new AnimatedPageHost(OverviewPage);
         PageHost.Content = pageHost;
         var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.GameVersions);
         var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
-        var sidebar = new SectionSidebarView(overview, settings);
+        var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);
+        var sidebar = new SectionSidebarView(overview, settings, logs);
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
@@ -45,6 +48,7 @@ public partial class VersionSettingsView
                 _launchSettingsPage.SetVersionContext(_gameDirectory, version);
                 pageHost.Navigate(_launchSettingsPage);
             }
+            else if (ReferenceEquals(item, logs)) pageHost.Navigate(_logsPage);
             else pageHost.Navigate(OverviewPage, back: true);
         };
         sidebar.ActionRequested += item =>
@@ -60,6 +64,7 @@ public partial class VersionSettingsView
         _launchSettingsPage.SetVersionContext(gameDirectory, version);
         _gameDirectory = Path.GetFullPath(gameDirectory);
         Version = version;
+        _logsPage.SetVersionDirectory(version.FolderPath);
         _generation++;
         ActionsPanel.IsEnabled = true;
         SidebarHost.IsEnabled = true;
@@ -67,6 +72,8 @@ public partial class VersionSettingsView
         DescriptionReveal.IsExpanded = false;
         RefreshSummary();
     }
+
+    internal bool TryCloseLog() => _logsPage.CloseLog();
 
     private void RefreshSummary()
     {

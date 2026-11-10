@@ -42,6 +42,9 @@
     <SolidColorBrush
         x:Key="DangerTextBrush"
         Color="#FFFF717D" />
+    <SolidColorBrush
+        x:Key="WarningTextBrush"
+        Color="#FFE6BD6A" />
     <!-- 主题色, 用于主按钮/选中状态和强调文字. -->
     <SolidColorBrush
         x:Key="AccentBrush"

@@ -380,6 +380,7 @@
                                 CornerRadius="5"
                                 Style="{StaticResource HoverLayerStyle}" />
                             <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center" />
                         </Grid>
@@ -552,5 +553,19 @@
         <Setter
             Property="BorderBrush"
             Value="{DynamicResource DangerTextBrush}" />
+    </Style>
+    <Style
+        x:Key="CompactActionButtonStyle"
+        TargetType="Button"
+        BasedOn="{StaticResource SecondaryActionStyle}">
+        <Setter
+            Property="Height"
+            Value="32" />
+        <Setter
+            Property="MinWidth"
+            Value="54" />
+        <Setter
+            Property="Padding"
+            Value="12,0" />
     </Style>
 </ResourceDictionary>

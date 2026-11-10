@@ -58,6 +58,7 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        TaskManagerPage.GameLogClosed += OnTasksChanged;
         ApplyContentOpacity(App.Settings.WindowOpacity);
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
@@ -292,7 +293,7 @@ public partial class MainWindow
     private void OnTasksChanged()
     {
         UpdateTaskManagerButton();
-        if (App.Tasks.Tasks.Count == 0 && TaskManagerPage.Visibility == Visibility.Visible)
+        if (App.Tasks.Tasks.Count == 0 && TaskManagerPage.Visibility == Visibility.Visible && !TaskManagerPage.IsShowingGameLog)
         {
             CloseTaskManager();
         }
@@ -321,7 +322,11 @@ public partial class MainWindow
         App.Logger.Information("Navigation", "打开任务管理.");
     }
 
-    private void CloseTaskManager_Click(object sender, RoutedEventArgs e) => CloseTaskManager();
+    private void CloseTaskManager_Click(object sender, RoutedEventArgs e)
+    {
+        if (TaskManagerPage.IsShowingGameLog) TaskManagerPage.CloseGameLog();
+        else CloseTaskManager();
+    }
 
     private void CloseTaskManager()
     {

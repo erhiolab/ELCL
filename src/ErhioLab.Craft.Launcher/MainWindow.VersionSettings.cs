@@ -80,7 +80,10 @@ public partial class MainWindow
             VersionSettingsTitleText.Text = string.Format(LocalizationManager.Get("versionSettings.title"), version.GameVersion ?? version.Id);
     }
 
-    private void CloseVersionSettings_Click(object sender, RoutedEventArgs e) => CloseVersionSettings();
+    private void CloseVersionSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (!VersionSettingsPage.TryCloseLog()) CloseVersionSettings();
+    }
 
     private void CloseVersionSettings()
     {

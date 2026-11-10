@@ -99,6 +99,8 @@
                                                 Width="Auto" />
                                             <ColumnDefinition
                                                 Width="Auto" />
+                                            <ColumnDefinition
+                                                Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Grid
                                             VerticalAlignment="Center">
@@ -159,7 +161,18 @@
                                             Foreground="{DynamicResource AccentBrush}"
                                             Text="{Binding ProgressText}" />
                                         <Button
+                                            x:Name="GameLogButton"
                                             Grid.Column="2"
+                                            Height="28"
+                                            Margin="8,0,0,0"
+                                            MinWidth="54"
+                                            Padding="12,0"
+                                            Click="GameLog_Click"
+                                            Content="{DynamicResource I18n.gameLogs.button}"
+                                            Style="{StaticResource SecondaryActionStyle}"
+                                            Visibility="Collapsed" />
+                                        <Button
+                                            Grid.Column="3"
                                             Width="54"
                                             Height="28"
                                             Margin="12,0,0,0"
@@ -216,6 +229,14 @@
                                 </StackPanel>
                             </Border>
                             <DataTemplate.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding CanViewLog}"
+                                    Value="True">
+                                    <Setter
+                                        TargetName="GameLogButton"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                </DataTrigger>
                                 <DataTrigger
                                     Binding="{Binding IsRunningGame}"
                                     Value="True">
