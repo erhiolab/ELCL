@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using ErhioLab.Craft.Launcher.Core.Storage;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Versions;
 
@@ -10,6 +11,7 @@ namespace ErhioLab.Craft.Launcher.Versions;
 internal sealed record VersionSettings
 {
     public string Description { get; init; } = "";
+    public VersionLaunchOptions? LaunchOptions { get; init; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? AdditionalData { get; init; }
 
@@ -23,9 +25,23 @@ internal sealed record VersionSettings
 internal sealed class VersionSettingsStore(string versionDirectory)
 {
     private readonly string _directory = Path.GetFullPath(versionDirectory);
-    private readonly JsonFileStore<VersionSettings> _store = new(Path.Combine(versionDirectory, "ELCL", "settings.json"));
+    private readonly JsonFileStore<VersionSettings> _store = new(Path.Combine(versionDirectory, "ELCL", "settings.json"), new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() }
+    });
 
     internal VersionSettings Load() => _store.Load(new VersionSettings());
+
+    internal VersionLaunchOptions SaveLaunchOptions(VersionLaunchOptions options, LauncherSettings global)
+    {
+        if (!Directory.Exists(_directory)) throw new DirectoryNotFoundException(_directory);
+        var current = Load();
+        var normalized = (options with { AdditionalData = current.LaunchOptions?.AdditionalData ?? options.AdditionalData }) .WithSettings(options.Apply(global), global);
+        _store.Save(current with { LaunchOptions = normalized.HasOverrides ? normalized : null });
+        return normalized;
+    }
 
     internal void SaveDescription(string description)
     {

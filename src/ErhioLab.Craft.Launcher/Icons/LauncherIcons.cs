@@ -49,6 +49,9 @@ public static class LauncherIcons
     /// <summary>重置.</summary>
     public static readonly Geometry Reset = Parse("M 3,7 A 6,6 0 1 1 5,13 M 3,3 L 3,7 L 7,7");
 
+    /// <summary>刷新.</summary>
+    public static readonly Geometry Refresh = Parse("M 2,8 A 7,7 0 0 1 14,4 L 16,6 M 16,2 V 6 H 12 M 16,10 A 7,7 0 0 1 4,14 L 2,12 M 2,16 V 12 H 6");
+
     /// <summary>展开或收起内容, 旋转后指向上方.</summary>
     public static readonly Geometry ChevronDown = Parse("M 3,6 L 9,12 L 15,6");
 

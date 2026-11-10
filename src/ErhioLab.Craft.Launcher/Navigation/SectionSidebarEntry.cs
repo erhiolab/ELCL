@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows.Media;
+using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Navigation;
@@ -32,6 +33,10 @@ internal sealed class SectionSidebarEntry : INotifyPropertyChanged
     /// <summary>是否显示悬浮操作按钮.</summary>
     public bool CanShowAction => Item.CanReset || Item.CanRefresh;
 
+    /// <summary>刷新和重置使用不同的操作图标.</summary>
+    public Geometry ActionIcon => Item.CanRefresh ? LauncherIcons.Refresh : LauncherIcons.Reset;
+
     /// <summary>操作按钮的提示文字.</summary>
-    public string ActionToolTip => Item.CanRefresh ? LocalizationManager.Get("sidebar.refresh") : string.Format(LocalizationManager.Get("sidebar.reset"), Title);
+    public string ActionToolTip => Item.ActionToolTipKey is { } key ? LocalizationManager.Get(key)
+        : Item.CanRefresh ? LocalizationManager.Get("sidebar.refresh") : string.Format(LocalizationManager.Get("sidebar.reset"), Title);
 }

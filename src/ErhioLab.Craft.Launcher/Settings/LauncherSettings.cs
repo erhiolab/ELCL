@@ -74,6 +74,9 @@ public sealed record LauncherSettings
     /// <summary>证书验证偏好; 仅应用于启动前账户请求, 不影响下载及皮肤客户端.</summary>
     public bool VerifyMicrosoftCertificates { get; init; } = true;
 
+    /// <summary>启动时仅检查文件是否存在, 不校验已有文件的大小或 SHA-1; 手动补全不受影响.</summary>
+    public bool SkipFileVerification { get; init; }
+
     /// <summary>是否根据可用物理内存自动估算游戏内存.</summary>
     public bool AutoAllocateMemory { get; init; } = true;
 

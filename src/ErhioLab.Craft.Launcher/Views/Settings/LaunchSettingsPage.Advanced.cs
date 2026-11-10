@@ -53,6 +53,7 @@ public partial class LaunchSettingsPage
         DisableLwjglAgentBox.IsChecked = settings.DisableLwjglUnsafeAgent;
         HighPerformanceGpuBox.IsChecked = settings.PreferHighPerformanceGpu;
         VerifyCertificatesBox.IsChecked = settings.VerifyMicrosoftCertificates;
+        SkipFileVerificationBox.IsChecked = settings.SkipFileVerification;
         GarbageCollectorBox.ItemsSource = new[]
         {
             LocalizationManager.Get("launchSettings.gcPreferZgc"),
@@ -67,6 +68,7 @@ public partial class LaunchSettingsPage
     private void LaunchText_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_initializingLaunchOptions) return;
+        _dirtyLaunchText.Add((TextBox)sender);
         _launchTextSaveTimer.Stop();
         _launchTextSaveTimer.Start();
         UpdateLaunchPreviews();
@@ -91,19 +93,20 @@ public partial class LaunchSettingsPage
     private bool CommitLaunchText()
     {
         _launchTextSaveTimer.Stop();
-        if (_initializingLaunchOptions) return true;
-        LauncherSettings settings = App.Settings;
-        if (settings.GameWindowTitle == GameWindowTitleBox.Text && settings.JvmArguments == JvmArgumentsBox.Text &&
-            settings.GameArguments == GameArgumentsBox.Text && settings.PreLaunchCommand == PreLaunchCommandBox.Text) return true;
+        if (_initializingLaunchOptions || _dirtyLaunchText.Count == 0) return true;
+        LauncherSettings settings = CurrentSettings;
+        LauncherSettings next = settings with
+        {
+            GameWindowTitle = _dirtyLaunchText.Contains(GameWindowTitleBox) ? GameWindowTitleBox.Text : settings.GameWindowTitle,
+            JvmArguments = _dirtyLaunchText.Contains(JvmArgumentsBox) ? JvmArgumentsBox.Text : settings.JvmArguments,
+            GameArguments = _dirtyLaunchText.Contains(GameArgumentsBox) ? GameArgumentsBox.Text : settings.GameArguments,
+            PreLaunchCommand = _dirtyLaunchText.Contains(PreLaunchCommandBox) ? PreLaunchCommandBox.Text : settings.PreLaunchCommand
+        };
+        _dirtyLaunchText.Clear();
+        if (next == settings) return true;
 
         // 参数和命令可能含用户自填的敏感信息, 日志只记录变更, 不输出文本内容.
-        bool saved = SaveLaunchOptions(settings with
-        {
-            GameWindowTitle = GameWindowTitleBox.Text,
-            JvmArguments = JvmArgumentsBox.Text,
-            GameArguments = GameArgumentsBox.Text,
-            PreLaunchCommand = PreLaunchCommandBox.Text
-        }, "游戏窗口标题及高级启动文本已保存.");
+        bool saved = SaveLaunchOptions(next, "游戏窗口标题及高级启动文本已保存.");
         UpdateLaunchPreviews();
         return saved;
     }
@@ -111,15 +114,19 @@ public partial class LaunchSettingsPage
     private void AdvancedChoice_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializingLaunchOptions || !CommitLaunchText()) return;
-        LauncherSettings next = App.Settings with
+        LauncherSettings settings = CurrentSettings;
+        bool enabled = ((CheckBox)sender).IsChecked == true;
+        LauncherSettings next = ((CheckBox)sender).Name switch
         {
-            WaitForPreLaunchCommand = WaitForCommandBox.IsChecked == true,
-            DisableJavaLaunchWrapper = DisableJavaWrapperBox.IsChecked == true,
-            DisableLwjglUnsafeAgent = DisableLwjglAgentBox.IsChecked == true,
-            PreferHighPerformanceGpu = HighPerformanceGpuBox.IsChecked == true,
-            VerifyMicrosoftCertificates = VerifyCertificatesBox.IsChecked == true
+            nameof(WaitForCommandBox) => settings with { WaitForPreLaunchCommand = enabled },
+            nameof(DisableJavaWrapperBox) => settings with { DisableJavaLaunchWrapper = enabled },
+            nameof(DisableLwjglAgentBox) => settings with { DisableLwjglUnsafeAgent = enabled },
+            nameof(HighPerformanceGpuBox) => settings with { PreferHighPerformanceGpu = enabled },
+            nameof(VerifyCertificatesBox) => settings with { VerifyMicrosoftCertificates = enabled },
+            nameof(SkipFileVerificationBox) => settings with { SkipFileVerification = enabled },
+            _ => settings
         };
-        if (next == App.Settings) return;
+        if (next == settings) return;
         SaveLaunchOptions(next, $"高级启动开关已保存: 等待命令={next.WaitForPreLaunchCommand}, 禁用 JLW={next.DisableJavaLaunchWrapper}, " + $"禁用 LUA={next.DisableLwjglUnsafeAgent}, 高性能显卡={next.PreferHighPerformanceGpu}, 验证证书={next.VerifyMicrosoftCertificates}.");
     }
 
@@ -127,18 +134,24 @@ public partial class LaunchSettingsPage
     {
         if (_initializingLaunchOptions || GarbageCollectorBox.SelectedIndex < 0 || !CommitLaunchText()) return;
         GameGarbageCollector gc = GarbageCollectorChoices[GarbageCollectorBox.SelectedIndex];
-        if (gc == App.Settings.GarbageCollector) return;
-        SaveLaunchOptions(App.Settings with { GarbageCollector = gc }, $"游戏内存管理预设已保存: {gc}.");
+        if (gc == CurrentSettings.GarbageCollector) return;
+        SaveLaunchOptions(CurrentSettings with { GarbageCollector = gc }, $"游戏内存管理预设已保存: {gc}.");
     }
 
     private void ResetJvmArguments_Click(object sender, RoutedEventArgs e)
     {
-        JvmArgumentsBox.Text = LauncherSettings.DefaultJvmArguments;
-        if (CommitLaunchText()) App.Logger.Information("Settings", "已还原默认附加 JVM 参数.");
+        JvmArgumentsBox.Text = IsVersionMode ? App.Settings.JvmArguments : LauncherSettings.DefaultJvmArguments;
+        if (CommitLaunchText()) App.Logger.Information("Settings", IsVersionMode ? "已还原全局附加 JVM 参数." : "已还原默认附加 JVM 参数.");
     }
 
     private async Task RefreshPlaceholderVersionAsync()
     {
+        if (IsVersionMode)
+        {
+            _placeholderVersion = _editingVersion;
+            UpdateLaunchPreviews();
+            return;
+        }
         string? selected = App.Settings.SelectedVersionPath;
         if (string.Equals(selected, _placeholderVersionFolder, StringComparison.OrdinalIgnoreCase)) return;
         _placeholderVersionFolder = selected;
@@ -167,10 +180,21 @@ public partial class LaunchSettingsPage
     private void UpdateLaunchPreviews()
     {
         if (_initializingLaunchOptions) return;
-        MinecraftLaunchPlaceholderContext context = LaunchPlaceholderPreview.Create(_placeholderVersion);
-        GameWindowTitlePreview.Text = string.IsNullOrWhiteSpace(GameWindowTitleBox.Text)
+        LauncherSettings previewSettings = CurrentSettings;
+        if (IsVersionMode) previewSettings = previewSettings with
+        {
+            SelectedGameFolderPath = _versionGameDirectory,
+            SelectedVersionPath = _versionDirectory,
+            SelectedVersionId = _editingVersion?.Id,
+            JavaInstallations = _versionOptions.UseSpecifiedJava
+                ? App.Settings.JavaInstallations.Where(java => string.Equals(java.Path, _versionOptions.JavaPath, StringComparison.OrdinalIgnoreCase)).ToArray()
+                : App.Settings.JavaInstallations
+        };
+        MinecraftLaunchPlaceholderContext context = LaunchPlaceholderPreview.Create(_placeholderVersion, previewSettings);
+        string title = GameWindowTitleBox.Text;
+        GameWindowTitlePreview.Text = string.IsNullOrWhiteSpace(title)
             ? LocalizationManager.Get("launchSettings.defaultWindowTitle")
-            : string.Format(LocalizationManager.Get("launchSettings.windowTitlePreview"), MinecraftLaunchPlaceholders.Expand(GameWindowTitleBox.Text, context));
+            : string.Format(LocalizationManager.Get("launchSettings.windowTitlePreview"), MinecraftLaunchPlaceholders.Expand(title, context));
         WaitForCommandReveal.IsExpanded = !string.IsNullOrWhiteSpace(PreLaunchCommandBox.Text);
         string template = _placeholderPreviewSource?.Text ?? "";
         bool show = template.Contains('{');

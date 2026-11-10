@@ -21,7 +21,7 @@
 | 路径 | 内容 |
 | --- | --- |
 | `versions/<名称>/<名称>.json`、同名 `.jar` | 已安装版本的启动元数据与客户端。 |
-| `versions/<名称>/ELCL/settings.json` | ELCL 的版本独立描述。 |
+| `versions/<名称>/ELCL/settings.json` | 版本描述及独立启动设置，未覆盖的项目跟随全局。 |
 | `versions/<名称>/ELCL/export-runtime/` | 导出脚本使用的本地库和补丁。 |
 | `versions/<名称>/saves`、`mods`、`config` 等 | 隔离后的游戏数据。 |
 | `libraries/`、`assets/` | 各版本共享的支持库与游戏资源。 |

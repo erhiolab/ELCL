@@ -32,7 +32,7 @@ public partial class LaunchSettingsPage
     {
         if (_initializingLaunchOptions) return;
         bool enabled = OptimizeMemoryBeforeLaunchBox.IsChecked == true;
-        if (enabled == App.Settings.OptimizeMemoryBeforeLaunch) return;
-        SaveLaunchOptions(App.Settings with { OptimizeMemoryBeforeLaunch = enabled }, $"启动前内存优化已保存: {enabled}.");
+        if (enabled == CurrentSettings.OptimizeMemoryBeforeLaunch) return;
+        SaveLaunchOptions(CurrentSettings with { OptimizeMemoryBeforeLaunch = enabled }, $"启动前内存优化已保存: {enabled}.");
     }
 }

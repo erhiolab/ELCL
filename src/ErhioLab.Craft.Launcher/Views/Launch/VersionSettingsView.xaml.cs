@@ -12,6 +12,7 @@ using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Versions;
 using ErhioLab.Craft.Launcher.Views.Shared;
+using ErhioLab.Craft.Launcher.Views.Settings;
 
 using Microsoft.Win32;
 
@@ -22,21 +23,46 @@ public partial class VersionSettingsView
     internal LocalMinecraftVersion? Version { get; private set; }
     private string _gameDirectory = "";
     private int _generation;
+    private readonly LaunchSettingsPage _launchSettingsPage;
     internal event Action? BackRequested;
 
     public VersionSettingsView()
     {
         InitializeComponent();
-        SidebarHost.Content = new SectionSidebarView(new SectionSidebarItem("versionSettings.overview", LauncherIcons.GameVersions));
+        _launchSettingsPage = new LaunchSettingsPage();
+        PageHost.Content = null;
+        var pageHost = new AnimatedPageHost(OverviewPage);
+        PageHost.Content = pageHost;
+        var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.GameVersions);
+        var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
+        var sidebar = new SectionSidebarView(overview, settings);
+        SidebarHost.Content = sidebar;
+        sidebar.SelectionChanged += item =>
+        {
+            _launchSettingsPage.FlushPendingChanges();
+            if (ReferenceEquals(item, settings) && Version is { } version)
+            {
+                _launchSettingsPage.SetVersionContext(_gameDirectory, version);
+                pageHost.Navigate(_launchSettingsPage);
+            }
+            else pageHost.Navigate(OverviewPage, back: true);
+        };
+        sidebar.ActionRequested += item =>
+        {
+            if (ReferenceEquals(item, settings)) _launchSettingsPage.ResetVersionOptions();
+        };
+        Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
         LocalizationManager.Changed += (_, _) => RefreshSummary();
     }
 
     internal void SetVersion(string gameDirectory, LocalMinecraftVersion version)
     {
+        _launchSettingsPage.SetVersionContext(gameDirectory, version);
         _gameDirectory = Path.GetFullPath(gameDirectory);
         Version = version;
         _generation++;
         ActionsPanel.IsEnabled = true;
+        SidebarHost.IsEnabled = true;
         RenameReveal.IsExpanded = false;
         DescriptionReveal.IsExpanded = false;
         RefreshSummary();
@@ -194,6 +220,7 @@ public partial class VersionSettingsView
     {
         int generation = _generation;
         ActionsPanel.IsEnabled = false;
+        SidebarHost.IsEnabled = false;
         try
         {
             await operation();
@@ -205,7 +232,7 @@ public partial class VersionSettingsView
         }
         finally
         {
-            if (generation == _generation) ActionsPanel.IsEnabled = true;
+            if (generation == _generation) ActionsPanel.IsEnabled = SidebarHost.IsEnabled = true;
         }
     }
 

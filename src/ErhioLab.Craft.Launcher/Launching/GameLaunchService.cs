@@ -16,6 +16,7 @@ using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Tasks;
+using ErhioLab.Craft.Launcher.Versions;
 
 namespace ErhioLab.Craft.Launcher.Launching;
 
@@ -61,6 +62,19 @@ internal sealed class GameLaunchService
             && string.Equals(task.TargetPath, versionDirectory, StringComparison.OrdinalIgnoreCase)))
         {
             LauncherToasts.Information(L("gameLaunch.installRunning"));
+            return;
+        }
+
+        VersionLaunchOptions versionOptions;
+        try
+        {
+            versionOptions = (new VersionSettingsStore(versionDirectory).Load().LaunchOptions ?? new()).Normalize();
+            settings = versionOptions.Apply(settings);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+        {
+            App.Logger.Error("Launch", $"无法读取版本启动设置: {versionDirectory}.", error);
+            LauncherToasts.Error(L("versionLaunch.readFailed"));
             return;
         }
 
@@ -151,20 +165,13 @@ internal sealed class GameLaunchService
                 }) } : Array.Empty<LauncherTaskStage>()),
                 Stage("gameLaunch.java", async task =>
                 {
-                    if (App.Settings.JavaInstallations.Count == 0) await App.JavaCatalog.InitializeIfEmptyAsync();
-                    foreach (var candidate in App.Settings.JavaInstallations)
+                    IReadOnlyList<JavaInstallation> candidates = settings.JavaInstallations;
+                    if (!versionOptions.UseSpecifiedJava && candidates.Count == 0)
                     {
-                        task.CancellationToken.ThrowIfCancellationRequested();
-                        if (!version!.IsJavaCompatible(candidate.MajorVersion)) continue;
-                        var probed = await JavaDiscovery.ProbeAsync(candidate.Path, task.CancellationToken);
-                        if (probed is not null && version.IsJavaCompatible(probed.MajorVersion))
-                        {
-                            java = probed;
-                            break;
-                        }
+                        await App.JavaCatalog.InitializeIfEmptyAsync();
+                        candidates = App.Settings.JavaInstallations;
                     }
-
-                    if (java is null) throw new InvalidOperationException(string.Format(L("gameLaunch.noJava"), version!.JavaMajorVersion));
+                    java = await LaunchJavaSelector.SelectAsync(version!, versionOptions, candidates, task.CancellationToken);
                     var snapshot = GameMemoryAllocation.ReadPhysicalMemory();
                     ulong allocatedBytes = GameMemoryAllocation.CalculateBytes(snapshot.ClampedAvailableBytes, settings.AutoAllocateMemory,
                         settings.CustomMemoryPercent, settings.MemoryUnit);
@@ -177,13 +184,13 @@ internal sealed class GameLaunchService
                 {
                     var environment = MinecraftLaunchEnvironment.Current with { Architecture = JavaArchitecture(java!) };
                     files = MinecraftLaunchFiles.Plan(version!, source, environment);
-                    await VerifyAndDownloadAsync(files.Files, downloads, task, name);
+                    await VerifyAndDownloadAsync(files.Files, downloads, task, name, settings.SkipFileVerification);
                 }),
                 Stage("gameLaunch.assets", async task =>
                 {
                     string indexJson = await File.ReadAllTextAsync(files!.AssetIndex.DestinationPath, task.CancellationToken);
                     var assets = MinecraftVanillaDownloadPlanner.ParseAssets(indexJson, gameDirectory, source);
-                    await VerifyAndDownloadAsync(assets, downloads, task, name);
+                    await VerifyAndDownloadAsync(assets, downloads, task, name, settings.SkipFileVerification);
                     await Task.Run(() => MinecraftLaunchFiles.MaterializeLegacyAssetsAsync(indexJson, gameDirectory, versionDirectory, files.AssetIndexId, task.CancellationToken), task.CancellationToken);
                 }),
                 Stage("gameLaunch.prepare", async task =>
@@ -354,15 +361,28 @@ internal sealed class GameLaunchService
     }
 
     internal static async Task VerifyAndDownloadAsync(IReadOnlyList<DownloadFileRequest> all, DownloadOptions options,
-        LauncherTaskContext task, string name)
+        LauncherTaskContext task, string name, bool skipVerification = false)
     {
-        var missing = await Task.Run(() => MinecraftVanillaDownloadPlanner.MissingFilesAsync(all, task.CancellationToken), task.CancellationToken);
+        var missing = await FindRequiredDownloadsAsync(all, skipVerification, task.CancellationToken);
         if (missing.FirstOrDefault(file => file.Sources.Count == 0) is { } local)
             throw new FileNotFoundException(string.Format(L("gameLaunch.localLibraryMissing"), local.DestinationPath));
         task.ConfigureDownloadPlan(all, missing, preserveStageWeight: true);
-        App.Logger.Information("Launch", $"文件完整性检查完成: 总数={all.Count}, 需补全={missing.Count}.");
+        App.Logger.Information("Launch", $"文件检查完成: 跳过已有文件校验={skipVerification}, 总数={all.Count}, 需补全={missing.Count}.");
         if (missing.Count > 0) await task.DownloadAsync(new DownloadTaskRequest(name, missing), options);
     }
+
+    internal static Task<IReadOnlyList<DownloadFileRequest>> FindRequiredDownloadsAsync(
+        IReadOnlyList<DownloadFileRequest> files, bool skipVerification, CancellationToken cancellationToken) => Task.Run(async () =>
+    {
+        if (!skipVerification) return await MinecraftVanillaDownloadPlanner.MissingFilesAsync(files, cancellationToken);
+        List<DownloadFileRequest> missing = [];
+        foreach (var file in files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!File.Exists(file.DestinationPath)) missing.Add(file);
+        }
+        return missing;
+    }, cancellationToken);
 
     internal static async Task<string> FetchParentAsync(string id, MinecraftManifestSource source, DownloadOptions options,
         LauncherTaskContext task, CancellationToken cancellationToken)

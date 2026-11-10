@@ -7,12 +7,87 @@
     xmlns:java="clr-namespace:ErhioLab.Craft.Launcher.Core.Java;assembly=ErhioLab.Craft.Launcher.Core"
     Background="{DynamicResource InkBrush}">
     <ScrollViewer
+        HorizontalScrollBarVisibility="Disabled"
         VerticalScrollBarVisibility="Auto">
         <StackPanel
             Margin="{StaticResource FormPageContentMargin}">
             <controls:LauncherCard
                 Header="{DynamicResource I18n.launchSettings.launchOptions}">
                 <StackPanel>
+                    <StackPanel
+                        x:Name="VersionJavaPanel"
+                        Margin="0,0,0,14"
+                        Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="155" />
+                                <ColumnDefinition
+                                    Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Text="Java" />
+                            <ComboBox
+                                x:Name="JavaModeBox"
+                                Grid.Column="1"
+                                SelectionChanged="JavaModeBox_SelectionChanged"
+                                Style="{StaticResource FormComboBoxStyle}" />
+                        </Grid>
+                        <controls:AnimatedReveal
+                            x:Name="SpecifiedJavaReveal">
+                            <StackPanel
+                                Margin="155,12,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition
+                                            Width="*" />
+                                        <ColumnDefinition
+                                            Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox
+                                        x:Name="SpecifiedJavaBox"
+                                        SelectedValuePath="Path"
+                                        SelectionChanged="SpecifiedJavaBox_SelectionChanged"
+                                        Style="{StaticResource FormComboBoxStyle}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate
+                                                DataType="{x:Type java:JavaInstallation}">
+                                                <TextBlock
+                                                    Text="{Binding Path}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip="{Binding Path}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <Button
+                                        x:Name="RefreshVersionJavaButton"
+                                        Grid.Column="1"
+                                        Width="36"
+                                        Height="36"
+                                        Margin="8,0,0,0"
+                                        Click="RefreshButton_Click"
+                                        Style="{StaticResource SecondaryActionStyle}"
+                                        ToolTip="{DynamicResource I18n.launchSettings.searchAgain}">
+                                        <Path
+                                            Width="16"
+                                            Height="16"
+                                            Data="{x:Static icons:LauncherIcons.Refresh}"
+                                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                            StrokeThickness="1.5"
+                                            StrokeStartLineCap="Round"
+                                            StrokeEndLineCap="Round"
+                                            Stretch="Uniform" />
+                                    </Button>
+                                </Grid>
+                                <TextBlock
+                                    Margin="0,6,0,0"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    Text="{DynamicResource I18n.versionLaunch.forcedJavaHint}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </controls:AnimatedReveal>
+                    </StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
@@ -57,16 +132,6 @@
                             Grid.Column="1"
                             SelectionChanged="WindowModeBox_SelectionChanged"
                             Style="{StaticResource FormComboBoxStyle}">
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.launchSettings.windowFullscreen}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.launchSettings.windowDefault}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.launchSettings.windowMatchLauncher}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.launchSettings.windowCustom}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.launchSettings.windowMaximized}" />
                         </ComboBox>
                     </Grid>
                     <controls:AnimatedReveal
@@ -90,6 +155,7 @@
                                 <TextBox
                                     x:Name="GameWindowWidthBox"
                                     MaxLength="5"
+                                    TextChanged="WindowSizeBox_TextChanged"
                                     KeyDown="WindowSizeBox_KeyDown"
                                     LostFocus="WindowSizeBox_LostFocus"
                                     Style="{StaticResource FormTextBoxStyle}" />
@@ -104,6 +170,7 @@
                                 <TextBox
                                     x:Name="GameWindowHeightBox"
                                     MaxLength="5"
+                                    TextChanged="WindowSizeBox_TextChanged"
                                     KeyDown="WindowSizeBox_KeyDown"
                                     LostFocus="WindowSizeBox_LostFocus"
                                     Style="{StaticResource FormTextBoxStyle}" />
@@ -136,12 +203,6 @@
                         Margin="155,5,0,0"
                         FontSize="{DynamicResource CaptionFontSize}"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        Margin="0,14,0,0"
-                        FontSize="{DynamicResource LabelFontSize}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.launchSettings.gameOptionsHint}"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </controls:LauncherCard>
@@ -217,12 +278,12 @@
                     </Grid>
                     <CheckBox
                         x:Name="OptimizeMemoryBeforeLaunchBox"
-                        Margin="0,8,0,0"
-                        Content="{DynamicResource I18n.memoryOptimization.beforeLaunch}"
                         Checked="OptimizeMemoryBeforeLaunch_Changed"
                         Unchecked="OptimizeMemoryBeforeLaunch_Changed"
-                        Style="{StaticResource FormCheckBoxStyle}"
-                        ToolTip="{DynamicResource I18n.memoryOptimization.hint}" />
+                        Margin="0,8,0,0"
+                        Content="{DynamicResource I18n.memoryOptimization.beforeLaunch}"
+                        ToolTip="{DynamicResource I18n.memoryOptimization.hint}"
+                        Style="{StaticResource FormCheckBoxStyle}" />
                     <TextBlock
                         x:Name="MemoryModeHintText"
                         Margin="0,10,0,0"
@@ -273,6 +334,7 @@
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
+                x:Name="JavaCatalogCard"
                 Margin="0,14,0,0">
                 <controls:LauncherCard.Header>
                     <Grid>
@@ -562,10 +624,10 @@
                                 x:Name="WaitForCommandReveal">
                                 <CheckBox
                                     x:Name="WaitForCommandBox"
-                                    Margin="155,8,0,0"
-                                    Content="{DynamicResource I18n.launchSettings.waitForCommand}"
                                     Checked="AdvancedChoice_Changed"
                                     Unchecked="AdvancedChoice_Changed"
+                                    Margin="155,8,0,0"
+                                    Content="{DynamicResource I18n.launchSettings.waitForCommand}"
                                     Style="{StaticResource FormCheckBoxStyle}" />
                             </controls:AnimatedReveal>
                             <Grid
@@ -590,33 +652,41 @@
                                 Margin="0,8,0,0">
                                 <CheckBox
                                     x:Name="DisableJavaWrapperBox"
-                                    Content="{DynamicResource I18n.launchSettings.disableJavaWrapper}"
                                     Checked="AdvancedChoice_Changed"
                                     Unchecked="AdvancedChoice_Changed"
-                                    Style="{StaticResource FormCheckBoxStyle}"
-                                    ToolTip="{DynamicResource I18n.launchSettings.disableJavaWrapperHint}" />
+                                    Content="{DynamicResource I18n.launchSettings.disableJavaWrapper}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.disableJavaWrapperHint}"
+                                    Style="{StaticResource FormCheckBoxStyle}" />
                                 <CheckBox
                                     x:Name="DisableLwjglAgentBox"
-                                    Content="{DynamicResource I18n.launchSettings.disableLwjglAgent}"
                                     Checked="AdvancedChoice_Changed"
                                     Unchecked="AdvancedChoice_Changed"
-                                    Style="{StaticResource FormCheckBoxStyle}"
-                                    ToolTip="{DynamicResource I18n.launchSettings.disableLwjglAgentHint}" />
+                                    Content="{DynamicResource I18n.launchSettings.disableLwjglAgent}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.disableLwjglAgentHint}"
+                                    Style="{StaticResource FormCheckBoxStyle}" />
                                 <CheckBox
                                     x:Name="HighPerformanceGpuBox"
-                                    Content="{DynamicResource I18n.launchSettings.highPerformanceGpu}"
                                     Checked="AdvancedChoice_Changed"
                                     Unchecked="AdvancedChoice_Changed"
-                                    Style="{StaticResource FormCheckBoxStyle}"
-                                    ToolTip="{DynamicResource I18n.launchSettings.highPerformanceGpuHint}" />
+                                    Content="{DynamicResource I18n.launchSettings.highPerformanceGpu}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.highPerformanceGpuHint}"
+                                    Style="{StaticResource FormCheckBoxStyle}" />
                                 <CheckBox
                                     x:Name="VerifyCertificatesBox"
-                                    Content="{DynamicResource I18n.launchSettings.verifyCertificates}"
                                     Checked="AdvancedChoice_Changed"
                                     Unchecked="AdvancedChoice_Changed"
-                                    Style="{StaticResource FormCheckBoxStyle}"
-                                    ToolTip="{DynamicResource I18n.launchSettings.verifyCertificatesHint}" />
+                                    Content="{DynamicResource I18n.launchSettings.verifyCertificates}"
+                                    ToolTip="{DynamicResource I18n.launchSettings.verifyCertificatesHint}"
+                                    Style="{StaticResource FormCheckBoxStyle}" />
                             </StackPanel>
+                            <CheckBox
+                                x:Name="SkipFileVerificationBox"
+                                Margin="0,8,0,0"
+                                Content="{DynamicResource I18n.versionLaunch.skipVerification}"
+                                Checked="AdvancedChoice_Changed"
+                                Unchecked="AdvancedChoice_Changed"
+                                ToolTip="{DynamicResource I18n.versionLaunch.skipVerificationHint}"
+                                Style="{StaticResource FormCheckBoxStyle}" />
                             <controls:AnimatedReveal
                                 x:Name="PlaceholderPreviewReveal">
                                 <StackPanel

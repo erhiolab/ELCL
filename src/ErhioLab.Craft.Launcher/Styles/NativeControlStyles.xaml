@@ -1,6 +1,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
     <Style
         TargetType="Button"
@@ -207,6 +208,20 @@
     </Style>
     <Style
         TargetType="ToolTip">
+        <Setter
+            Property="ContentTemplateSelector">
+            <Setter.Value>
+                <controls:ToolTipContentTemplateSelector>
+                    <controls:ToolTipContentTemplateSelector.TextTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Text="{Binding}"
+                                TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </controls:ToolTipContentTemplateSelector.TextTemplate>
+                </controls:ToolTipContentTemplateSelector>
+            </Setter.Value>
+        </Setter>
         <Setter
             Property="FontFamily"
             Value="{StaticResource TextFont}" />

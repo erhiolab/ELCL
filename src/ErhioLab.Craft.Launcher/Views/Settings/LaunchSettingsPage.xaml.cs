@@ -27,6 +27,8 @@ public partial class LaunchSettingsPage
     private int _expansionVersion;
     private bool _initializingLaunchOptions = true;
     private bool _memoryFailureLogged;
+    private bool _memoryPercentDirty;
+    private readonly HashSet<TextBox> _dirtyWindowSize = [];
     private PhysicalMemorySnapshot? _memorySnapshot;
     private readonly DispatcherTimer _memoryRefreshTimer = new(DispatcherPriority.Background)
     {
@@ -36,10 +38,13 @@ public partial class LaunchSettingsPage
     public LaunchSettingsPage()
     {
         InitializeComponent();
+        string memoryGroup = $"GameMemoryMode_{Guid.NewGuid():N}";
+        AutoMemoryButton.GroupName = CustomMemoryButton.GroupName = memoryGroup;
         MoreJavaList.ItemTemplate = JavaList.ItemTemplate;
         App.JavaCatalog.Changed += () =>
         {
             RefreshControls();
+            RefreshSpecifiedJava();
             UpdateLaunchPreviews();
         };
         InitializeAdvancedControls();
@@ -53,6 +58,7 @@ public partial class LaunchSettingsPage
         Loaded += (_, _) =>
         {
             RefreshLaunchOptions();
+            RefreshSpecifiedJava();
             UpdateMemoryTimer();
         };
         IsVisibleChanged += (_, _) => UpdateMemoryTimer();
@@ -87,7 +93,8 @@ public partial class LaunchSettingsPage
                 DisableJavaLaunchWrapper = defaults.DisableJavaLaunchWrapper,
                 DisableLwjglUnsafeAgent = defaults.DisableLwjglUnsafeAgent,
                 PreferHighPerformanceGpu = defaults.PreferHighPerformanceGpu,
-                VerifyMicrosoftCertificates = defaults.VerifyMicrosoftCertificates
+                VerifyMicrosoftCertificates = defaults.VerifyMicrosoftCertificates,
+                SkipFileVerification = defaults.SkipFileVerification
             })) return;
 
         App.Logger.Information("Settings", "启动选项和内存分配已重置, 继续重置并重新获取 Java 列表.");
@@ -100,7 +107,7 @@ public partial class LaunchSettingsPage
         _initializingLaunchOptions = true;
         try
         {
-            LauncherSettings settings = App.Settings;
+            LauncherSettings settings = CurrentSettings;
             ProcessPriorityBox.ItemsSource = new[]
             {
                 LocalizationManager.Get("launchSettings.priorityHigh"),
@@ -108,6 +115,7 @@ public partial class LaunchSettingsPage
                 LocalizationManager.Get("launchSettings.priorityLow")
             };
             ProcessPriorityBox.SelectedIndex = Array.IndexOf(PriorityChoices, settings.GamePriority);
+            WindowModeBox.ItemsSource = new[] { "windowFullscreen", "windowDefault", "windowMatchLauncher", "windowCustom", "windowMaximized" }.Select(key => LocalizationManager.Get("launchSettings." + key)).ToArray();
             WindowModeBox.SelectedIndex = Array.IndexOf(WindowChoices, settings.WindowMode);
             GameWindowWidthBox.Text = settings.GameWindowWidth.ToString(CultureInfo.CurrentCulture);
             GameWindowHeightBox.Text = settings.GameWindowHeight.ToString(CultureInfo.CurrentCulture);
@@ -119,16 +127,22 @@ public partial class LaunchSettingsPage
             OptimizeMemoryBeforeLaunchBox.IsChecked = settings.OptimizeMemoryBeforeLaunch;
             RefreshMemoryOptimizationControls();
             RefreshAdvancedControls(settings);
+            RefreshVersionControls();
+            _dirtyLaunchText.Clear();
+            _dirtyWindowSize.Clear();
+            _memoryPercentDirty = false;
         }
         finally
         {
             _initializingLaunchOptions = false;
         }
         RefreshMemoryUsage();
+        UpdateLaunchPreviews();
     }
 
     private bool SaveLaunchOptions(LauncherSettings settings, string message)
     {
+        if (IsVersionMode) return SaveVersionOptions(_versionOptions.WithSettings(settings, App.Settings));
         if (App.UpdateSettings(settings))
         {
             App.Logger.Information("Settings", message);
@@ -142,16 +156,16 @@ public partial class LaunchSettingsPage
     {
         if (_initializingLaunchOptions || ProcessPriorityBox.SelectedIndex < 0) return;
         GameProcessPriority priority = PriorityChoices[ProcessPriorityBox.SelectedIndex];
-        if (priority == App.Settings.GamePriority) return;
-        SaveLaunchOptions(App.Settings with { GamePriority = priority }, $"游戏进程优先级已保存(待启动功能接入): {priority}.");
+        if (priority == CurrentSettings.GamePriority) return;
+        SaveLaunchOptions(CurrentSettings with { GamePriority = priority }, $"游戏进程优先级已保存: {priority}.");
     }
 
     private void WindowModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_initializingLaunchOptions || WindowModeBox.SelectedIndex < 0) return;
         GameWindowMode mode = WindowChoices[WindowModeBox.SelectedIndex];
-        if (mode == App.Settings.WindowMode) return;
-        if (SaveLaunchOptions(App.Settings with { WindowMode = mode }, $"游戏窗口模式已保存(待启动功能接入): {mode}."))
+        if (mode == CurrentSettings.WindowMode) return;
+        if (SaveLaunchOptions(CurrentSettings with { WindowMode = mode }, $"游戏窗口模式已保存: {mode}."))
             CustomSizeReveal.IsExpanded = mode == GameWindowMode.Custom;
     }
 
@@ -165,8 +179,11 @@ public partial class LaunchSettingsPage
 
     private void WindowSizeBox_LostFocus(object sender, RoutedEventArgs e)
     {
-        if (_initializingLaunchOptions) return;
-        if (!int.TryParse(GameWindowWidthBox.Text, out int width) || !int.TryParse(GameWindowHeightBox.Text, out int height) ||
+        if (_initializingLaunchOptions || _dirtyWindowSize.Count == 0) return;
+        var settings = CurrentSettings;
+        int width = settings.GameWindowWidth, height = settings.GameWindowHeight;
+        if ((_dirtyWindowSize.Contains(GameWindowWidthBox) && !int.TryParse(GameWindowWidthBox.Text, out width)) ||
+            (_dirtyWindowSize.Contains(GameWindowHeightBox) && !int.TryParse(GameWindowHeightBox.Text, out height)) ||
             width is < 1 or > 16384 || height is < 1 or > 16384)
         {
             App.Logger.Warning("Settings", $"自定义游戏窗口尺寸无效: {GameWindowWidthBox.Text}, {GameWindowHeightBox.Text}.");
@@ -174,9 +191,15 @@ public partial class LaunchSettingsPage
             RefreshLaunchOptions();
             return;
         }
-        if (width == App.Settings.GameWindowWidth && height == App.Settings.GameWindowHeight) return;
-        SaveLaunchOptions(App.Settings with { GameWindowWidth = width, GameWindowHeight = height },
-            $"自定义游戏窗口尺寸已保存(待启动功能接入): {width} x {height}.");
+        _dirtyWindowSize.Clear();
+        if (width == settings.GameWindowWidth && height == settings.GameWindowHeight) return;
+        SaveLaunchOptions(settings with { GameWindowWidth = width, GameWindowHeight = height },
+            $"自定义游戏窗口尺寸已保存: {width} x {height}.");
+    }
+
+    private void WindowSizeBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!_initializingLaunchOptions) _dirtyWindowSize.Add((TextBox)sender);
     }
 
     private void MemoryMode_Checked(object sender, RoutedEventArgs e)
@@ -184,9 +207,9 @@ public partial class LaunchSettingsPage
         if (_initializingLaunchOptions) return;
         bool automatic = AutoMemoryButton.IsChecked == true;
         int percent = (int)Math.Round(MemoryPercentSlider.Value);
-        if (automatic == App.Settings.AutoAllocateMemory && percent == App.Settings.CustomMemoryPercent) return;
-        SaveLaunchOptions(App.Settings with { AutoAllocateMemory = automatic, CustomMemoryPercent = percent },
-            $"游戏内存分配模式已保存(待启动功能接入): 自动={automatic}, 自定义可用内存占比={percent}%.");
+        if (automatic == CurrentSettings.AutoAllocateMemory) return;
+        SaveLaunchOptions(CurrentSettings with { AutoAllocateMemory = automatic },
+            $"游戏内存分配模式已保存: 自动={automatic}, 自定义可用内存占比={percent}%.");
         UpdateMemoryDisplay();
     }
 
@@ -194,7 +217,11 @@ public partial class LaunchSettingsPage
     {
         if (MemoryPercentText is not null)
             MemoryPercentText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryPercent"), (int)Math.Round(e.NewValue));
-        if (!_initializingLaunchOptions) UpdateMemoryDisplay();
+        if (!_initializingLaunchOptions)
+        {
+            _memoryPercentDirty = true;
+            UpdateMemoryDisplay();
+        }
     }
 
     private void MemoryPercentSlider_Commit(object sender, RoutedEventArgs e) => CommitMemoryPercentage();
@@ -203,10 +230,11 @@ public partial class LaunchSettingsPage
 
     private void CommitMemoryPercentage()
     {
-        if (_initializingLaunchOptions) return;
+        if (_initializingLaunchOptions || !_memoryPercentDirty || (IsVersionMode && CustomMemoryButton.IsChecked != true)) return;
+        _memoryPercentDirty = false;
         int percent = (int)Math.Round(MemoryPercentSlider.Value);
-        if (percent == App.Settings.CustomMemoryPercent) return;
-        SaveLaunchOptions(App.Settings with { CustomMemoryPercent = percent }, $"自定义游戏内存占比已保存: 可用内存的 {percent}%.");
+        if (percent == CurrentSettings.CustomMemoryPercent) return;
+        SaveLaunchOptions(CurrentSettings with { CustomMemoryPercent = percent }, $"自定义游戏内存占比已保存: 可用内存的 {percent}%.");
     }
 
     private void UpdateMemoryTimer()

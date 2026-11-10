@@ -20,150 +20,156 @@
                 HorizontalContentAlignment="Stretch"
                 VerticalContentAlignment="Stretch" />
         </Border>
-        <ScrollViewer
+        <ContentControl
+            x:Name="PageHost"
             Grid.Column="1"
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                Margin="{StaticResource FormPageContentMargin}">
-                <Border
-                    Margin="0,0,0,14"
-                    Padding="16"
-                    Style="{StaticResource PanelCardStyle}">
-                    <controls:LocalVersionInfo
-                        x:Name="VersionSummary" />
-                </Border>
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch">
+            <ScrollViewer
+                x:Name="OverviewPage"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
                 <StackPanel
-                    x:Name="ActionsPanel">
-                    <controls:LauncherCard
+                    Margin="{StaticResource FormPageContentMargin}">
+                    <Border
                         Margin="0,0,0,14"
-                        Header="{DynamicResource I18n.versionSettings.personalization}">
-                        <StackPanel>
+                        Padding="16"
+                        Style="{StaticResource PanelCardStyle}">
+                        <controls:LocalVersionInfo
+                            x:Name="VersionSummary" />
+                    </Border>
+                    <StackPanel
+                        x:Name="ActionsPanel">
+                        <controls:LauncherCard
+                            Margin="0,0,0,14"
+                            Header="{DynamicResource I18n.versionSettings.personalization}">
+                            <StackPanel>
+                                <WrapPanel>
+                                    <Button
+                                        Click="Rename_Click"
+                                        Content="{DynamicResource I18n.versionSettings.rename}"
+                                        Style="{StaticResource PageActionButtonStyle}" />
+                                    <Button
+                                        Click="Description_Click"
+                                        Content="{DynamicResource I18n.versionSettings.editDescription}"
+                                        Style="{StaticResource PageActionButtonStyle}" />
+                                </WrapPanel>
+                                <controls:AnimatedReveal
+                                    x:Name="RenameReveal">
+                                    <StackPanel
+                                        Margin="0,4,0,0">
+                                        <TextBox
+                                            x:Name="NameEditor"
+                                            MaxLength="128"
+                                            KeyDown="NameEditor_KeyDown"
+                                            Style="{StaticResource FormTextBoxStyle}" />
+                                        <WrapPanel
+                                            Margin="0,12,0,0">
+                                            <Button
+                                                Click="ConfirmRename_Click"
+                                                Content="{DynamicResource I18n.dialog.confirm}"
+                                                Style="{StaticResource PageActionButtonStyle}" />
+                                            <Button
+                                                Click="CancelRename_Click"
+                                                Content="{DynamicResource I18n.common.cancel}"
+                                                Style="{StaticResource PageActionButtonStyle}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </controls:AnimatedReveal>
+                                <controls:AnimatedReveal
+                                    x:Name="DescriptionReveal">
+                                    <StackPanel
+                                        Margin="0,4,0,0">
+                                        <TextBlock
+                                            Margin="0,0,0,8"
+                                            Foreground="{DynamicResource TextMutedBrush}"
+                                            Text="{DynamicResource I18n.versionSettings.descriptionHint}"
+                                            TextWrapping="Wrap" />
+                                        <TextBox
+                                            x:Name="DescriptionEditor"
+                                            MaxLength="256"
+                                            KeyDown="DescriptionEditor_KeyDown"
+                                            Style="{StaticResource FormTextBoxStyle}" />
+                                        <WrapPanel
+                                            Margin="0,12,0,0">
+                                            <Button
+                                                Click="SaveDescription_Click"
+                                                Content="{DynamicResource I18n.dialog.confirm}"
+                                                Style="{StaticResource PageActionButtonStyle}" />
+                                            <Button
+                                                Click="CancelDescription_Click"
+                                                Content="{DynamicResource I18n.common.cancel}"
+                                                Style="{StaticResource PageActionButtonStyle}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </controls:AnimatedReveal>
+                            </StackPanel>
+                        </controls:LauncherCard>
+                        <controls:LauncherCard
+                            Margin="0,0,0,14"
+                            Header="{DynamicResource I18n.versionSettings.shortcuts}">
                             <WrapPanel>
                                 <Button
-                                    Click="Rename_Click"
-                                    Content="{DynamicResource I18n.versionSettings.rename}"
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.versionFolder}"
+                                    Tag=""
                                     Style="{StaticResource PageActionButtonStyle}" />
                                 <Button
-                                    Click="Description_Click"
-                                    Content="{DynamicResource I18n.versionSettings.editDescription}"
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.saves}"
+                                    Tag="saves"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    x:Name="ModsButton"
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.mods}"
+                                    Tag="mods"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.screenshots}"
+                                    Tag="screenshots"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.shaderpacks}"
+                                    Tag="shaderpacks"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.resourcepacks}"
+                                    Tag="resourcepacks"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    Click="OpenFolder_Click"
+                                    Content="{DynamicResource I18n.versionSettings.logs}"
+                                    Tag="logs"
                                     Style="{StaticResource PageActionButtonStyle}" />
                             </WrapPanel>
-                            <controls:AnimatedReveal
-                                x:Name="RenameReveal">
-                                <StackPanel
-                                    Margin="0,4,0,0">
-                                    <TextBox
-                                        x:Name="NameEditor"
-                                        MaxLength="128"
-                                        KeyDown="NameEditor_KeyDown"
-                                        Style="{StaticResource FormTextBoxStyle}" />
-                                    <WrapPanel
-                                        Margin="0,12,0,0">
-                                        <Button
-                                            Click="ConfirmRename_Click"
-                                            Content="{DynamicResource I18n.dialog.confirm}"
-                                            Style="{StaticResource PageActionButtonStyle}" />
-                                        <Button
-                                            Click="CancelRename_Click"
-                                            Content="{DynamicResource I18n.common.cancel}"
-                                            Style="{StaticResource PageActionButtonStyle}" />
-                                    </WrapPanel>
-                                </StackPanel>
-                            </controls:AnimatedReveal>
-                            <controls:AnimatedReveal
-                                x:Name="DescriptionReveal">
-                                <StackPanel
-                                    Margin="0,4,0,0">
-                                    <TextBlock
-                                        Margin="0,0,0,8"
-                                        Foreground="{DynamicResource TextMutedBrush}"
-                                        Text="{DynamicResource I18n.versionSettings.descriptionHint}"
-                                        TextWrapping="Wrap" />
-                                    <TextBox
-                                        x:Name="DescriptionEditor"
-                                        MaxLength="256"
-                                        KeyDown="DescriptionEditor_KeyDown"
-                                        Style="{StaticResource FormTextBoxStyle}" />
-                                    <WrapPanel
-                                        Margin="0,12,0,0">
-                                        <Button
-                                            Click="SaveDescription_Click"
-                                            Content="{DynamicResource I18n.dialog.confirm}"
-                                            Style="{StaticResource PageActionButtonStyle}" />
-                                        <Button
-                                            Click="CancelDescription_Click"
-                                            Content="{DynamicResource I18n.common.cancel}"
-                                            Style="{StaticResource PageActionButtonStyle}" />
-                                    </WrapPanel>
-                                </StackPanel>
-                            </controls:AnimatedReveal>
-                        </StackPanel>
-                    </controls:LauncherCard>
-                    <controls:LauncherCard
-                        Margin="0,0,0,14"
-                        Header="{DynamicResource I18n.versionSettings.shortcuts}">
-                        <WrapPanel>
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.versionFolder}"
-                                Tag=""
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.saves}"
-                                Tag="saves"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                x:Name="ModsButton"
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.mods}"
-                                Tag="mods"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.screenshots}"
-                                Tag="screenshots"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.shaderpacks}"
-                                Tag="shaderpacks"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.resourcepacks}"
-                                Tag="resourcepacks"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="OpenFolder_Click"
-                                Content="{DynamicResource I18n.versionSettings.logs}"
-                                Tag="logs"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                        </WrapPanel>
-                    </controls:LauncherCard>
-                    <controls:LauncherCard
-                        Header="{DynamicResource I18n.versionSettings.management}">
-                        <WrapPanel>
-                            <Button
-                                x:Name="ExportButton"
-                                Click="Export_Click"
-                                Content="{DynamicResource I18n.versionSettings.export}"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                x:Name="RepairButton"
-                                Click="Repair_Click"
-                                Content="{DynamicResource I18n.versionSettings.repair}"
-                                Style="{StaticResource PageActionButtonStyle}" />
-                            <Button
-                                Click="Delete_Click"
-                                Foreground="{DynamicResource DangerTextBrush}"
-                                Content="{DynamicResource I18n.versionSelector.deleteVersion}"
-                                Style="{StaticResource PageDangerActionButtonStyle}" />
-                        </WrapPanel>
-                    </controls:LauncherCard>
+                        </controls:LauncherCard>
+                        <controls:LauncherCard
+                            Header="{DynamicResource I18n.versionSettings.management}">
+                            <WrapPanel>
+                                <Button
+                                    x:Name="ExportButton"
+                                    Click="Export_Click"
+                                    Content="{DynamicResource I18n.versionSettings.export}"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    x:Name="RepairButton"
+                                    Click="Repair_Click"
+                                    Content="{DynamicResource I18n.versionSettings.repair}"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
+                                    Click="Delete_Click"
+                                    Foreground="{DynamicResource DangerTextBrush}"
+                                    Content="{DynamicResource I18n.versionSelector.deleteVersion}"
+                                    Style="{StaticResource PageDangerActionButtonStyle}" />
+                            </WrapPanel>
+                        </controls:LauncherCard>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+        </ContentControl>
     </Grid>
 </UserControl>
