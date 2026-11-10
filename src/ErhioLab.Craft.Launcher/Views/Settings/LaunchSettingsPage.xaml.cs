@@ -256,9 +256,10 @@ public partial class LaunchSettingsPage
         ulong gameBytes = GameMemoryAllocation.CalculateBytes(memory.ClampedAvailableBytes, automatic, percent, unit);
         ulong freeBytes = memory.ClampedAvailableBytes - gameBytes;
         MemoryUsageBar.SetValues(memory.UsedBytes, gameBytes, freeBytes, transition ?? TimeSpan.FromMilliseconds(140));
-        string symbol = GameMemoryAllocation.LargeUnitSymbol(unit);
-        UsedMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryUsedValue"), memory.Used(unit), memory.Total(unit), symbol);
-        GameMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryGameValue"), GameMemoryAllocation.ToLargeUnits(gameBytes, unit), symbol);
+        var gameUnit = DataSizeFormatter.SelectUnit(gameBytes, unit);
+        UsedMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryUsedValue"),
+            DataSizeFormatter.Format(memory.UsedBytes, unit), DataSizeFormatter.Format(memory.TotalBytes, unit));
+        GameMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryGameValue"), gameUnit.Convert(gameBytes), gameUnit.Symbol);
     }
 
     private void MemoryUsageBar_FirstBoundaryChanged(object? sender, EventArgs e) => PositionGameMemoryLabels();

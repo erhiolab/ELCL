@@ -115,7 +115,11 @@ public partial class PerformancePage
     private void RefreshUsage()
     {
         var unit = App.Settings.MemoryUnit;
-        string Capacity(double bytes) => string.Format(L("performance.capacityValue"), GameMemoryAllocation.ToLargeUnits(bytes, unit), GameMemoryAllocation.LargeUnitSymbol(unit));
+        string Capacity(double bytes)
+        {
+            var displayUnit = DataSizeFormatter.SelectUnit(bytes, unit);
+            return string.Format(L("performance.capacityValue"), displayUnit.Convert(bytes), displayUnit.Symbol);
+        }
         var animation = TimeSpan.FromMilliseconds(Math.Min(600, App.Settings.PerformanceRefreshMilliseconds));
         Sample("CPU", () =>
         {

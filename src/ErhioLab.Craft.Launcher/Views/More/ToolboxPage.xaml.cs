@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.SystemTools;
 
 using Microsoft.Win32;
@@ -80,7 +81,8 @@ public partial class ToolboxPage
                 (path, error) => App.Logger.Error("Toolbox", $"无法清理文件: {path}.", error)));
             App.Logger.Information("Toolbox", $"清理完成: bytes={result.Bytes}, files={result.Files}, skipped={result.Skipped}, failed={result.Failed}.");
             cleaned = true;
-            LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupRestarting"), result.Files, result.Bytes / 1048576d));
+            LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupRestarting"), result.Files,
+                DataSizeFormatter.Format(result.Bytes, App.Settings.MemoryUnit, "0.00", minimumPower: 2)));
             await Task.Delay(600);
             App.Restart(result);
         }

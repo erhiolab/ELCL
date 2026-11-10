@@ -7,10 +7,6 @@ internal readonly record struct PhysicalMemorySnapshot(ulong TotalBytes, ulong A
 {
     internal ulong ClampedAvailableBytes => Math.Min(AvailableBytes, TotalBytes);
     internal ulong UsedBytes => TotalBytes - ClampedAvailableBytes;
-
-    internal double Total(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(TotalBytes, unit);
-    internal double Available(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(ClampedAvailableBytes, unit);
-    internal double Used(MemoryUnitSystem unit) => GameMemoryAllocation.ToLargeUnits(UsedBytes, unit);
 }
 
 /// <summary>读取当前物理内存并估算设置页中的游戏内存分配, 不预占或清理系统内存.</summary>
@@ -38,17 +34,14 @@ internal static class GameMemoryAllocation
             return availableBytes / 100 * percent + availableBytes % 100 * percent / 100;
         }
 
-        var bytesPerUnit = BytesPerLargeUnit(unit);
+        var bytesPerUnit = BytesPerAllocationUnit(unit);
         var allocationBytes = CalculateAutomatic(availableBytes / bytesPerUnit) * bytesPerUnit;
         // 在转换回整数之前封顶, 保证预览和启动值都不超过实际可用内存.
         return allocationBytes >= availableBytes ? availableBytes : (ulong)Math.Floor(allocationBytes);
     }
 
-    internal static double ToLargeUnits(double bytes, MemoryUnitSystem unit) => bytes / BytesPerLargeUnit(unit);
-
-    internal static string LargeUnitSymbol(MemoryUnitSystem unit) => unit == MemoryUnitSystem.Decimal ? "GB" : "GiB";
-
-    private static double BytesPerLargeUnit(MemoryUnitSystem unit) => unit == MemoryUnitSystem.Decimal ? BytesPerGb : BytesPerGiB;
+    // 自动分配的预算始终按 GB/GiB 计算, 不随显示单位升档改变.
+    private static double BytesPerAllocationUnit(MemoryUnitSystem unit) => unit == MemoryUnitSystem.Decimal ? BytesPerGb : BytesPerGiB;
 
     private static double CalculateAutomatic(double available)
     {

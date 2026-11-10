@@ -68,11 +68,7 @@ public partial class TaskManagerView
             gamesOnly ? "I18n.gameTask.runningSummary" : "I18n.taskManager.overallProgress");
         OverallProgressText.Text = gamesOnly ? runningGames.ToString() : $"{progress:0.0}%";
         long speed = active.Sum(task => task.SpeedBytesPerSecond);
-        var binary = App.Settings.MemoryUnit != MemoryUnitSystem.Decimal;
-        var unitBase = binary ? 1024d : 1000d;
-        SpeedText.Text = speed >= unitBase * unitBase
-            ? $"{speed / (unitBase * unitBase):0.##} {(binary ? "MiB/s" : "MB/s")}"
-            : $"{speed / unitBase:0.##} {(binary ? "KiB/s" : "KB/s")}";
+        SpeedText.Text = DataSizeFormatter.Format(speed, App.Settings.MemoryUnit, "0.##", minimumPower: 1) + "/s";
         RemainingFilesText.Text = active.Sum(task => task.RemainingFiles).ToString();
         EmptyText.Visibility = App.Tasks.Tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }

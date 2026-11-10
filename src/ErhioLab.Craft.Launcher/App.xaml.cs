@@ -178,7 +178,7 @@ public partial class App
         _ = _analytics.LauncherOpenedAsync();
         if (cleanupResult is { } cleaned)
             Dispatcher.BeginInvoke(() => Notifications.LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupCompleted"),
-                cleaned.Files, cleaned.Bytes / 1048576d, cleaned.Skipped, cleaned.Failed)), System.Windows.Threading.DispatcherPriority.ContextIdle);
+                cleaned.Files, DataSizeFormatter.Format(cleaned.Bytes, Settings.MemoryUnit, "0.00", minimumPower: 2), cleaned.Skipped, cleaned.Failed)), System.Windows.Threading.DispatcherPriority.ContextIdle);
     }
 
     /// <summary>保存并立即应用新设置.</summary>

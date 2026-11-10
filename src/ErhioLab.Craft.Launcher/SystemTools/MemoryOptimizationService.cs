@@ -45,16 +45,15 @@ internal sealed class MemoryOptimizationService
             if (showNotifications) LauncherToasts.Information(LocalizationManager.Get("memoryOptimization.started"));
             MemoryOptimizationResult result = await Task.Run(() => _optimize(excluded, cancellationToken), cancellationToken);
             MemoryUnitSystem unit = App.Settings.MemoryUnit;
-            string symbol = GameMemoryAllocation.LargeUnitSymbol(unit);
-            double increase = GameMemoryAllocation.ToLargeUnits(result.AvailableIncreaseBytes, unit);
-            double before = result.Before.Available(unit);
-            double after = result.After.Available(unit);
-            App.Logger.Information("Memory", $"内存优化完成: 检查={result.InspectedProcesses}, 成功={result.TrimmedProcesses}, 跳过={result.SkippedProcesses}, 失败={result.FailedProcesses}, " + $"可用内存={before:0.00}→{after:0.00} {symbol}, 用时={result.Duration.TotalMilliseconds:0} ms.");
+            string increase = DataSizeFormatter.Format(result.AvailableIncreaseBytes, unit, "0.00", minimumPower: 2);
+            string before = DataSizeFormatter.Format(result.Before.ClampedAvailableBytes, unit, "0.00");
+            string after = DataSizeFormatter.Format(result.After.ClampedAvailableBytes, unit, "0.00");
+            App.Logger.Information("Memory", $"内存优化完成: 检查={result.InspectedProcesses}, 成功={result.TrimmedProcesses}, 跳过={result.SkippedProcesses}, 失败={result.FailedProcesses}, " + $"可用内存={before}→{after}, 用时={result.Duration.TotalMilliseconds:0} ms.");
             if (showNotifications)
             {
                 string message = result.AvailableIncreaseBytes > 0.01 * 1024 * 1024 * 1024
-                    ? string.Format(LocalizationManager.Get("memoryOptimization.completed"), increase, after, symbol)
-                    : string.Format(LocalizationManager.Get("memoryOptimization.noIncrease"), after, symbol);
+                    ? string.Format(LocalizationManager.Get("memoryOptimization.completed"), increase, after)
+                    : string.Format(LocalizationManager.Get("memoryOptimization.noIncrease"), after);
                 LauncherToasts.Success(message);
             }
 
