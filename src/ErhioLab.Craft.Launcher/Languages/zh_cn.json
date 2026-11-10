@@ -583,7 +583,7 @@
         "versionSelector.rename": "重命名",
         "versionSelector.snapshotType": "快照版",
         "versionSelector.versionList": "版本列表",
-        "versionSettings.title": "版本选择 - {0}",
+        "versionSettings.title": "版本设置 - {0}",
         "versionSettings.overview": "概览",
         "versionSettings.personalization": "个性化",
         "versionSettings.editDescription": "修改版本描述",
