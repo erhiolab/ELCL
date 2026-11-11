@@ -30,9 +30,11 @@ public partial class DownloadSettingsPage
                 VersionListSource = VersionListSource.OfficialFirst,
                 FileDownloadSource = VersionListSource.OfficialFirst,
                 DownloadMaxConnections = 8,
+                ZeroDownloadThreadsEggShown = false,
                 DownloadSpeedLimitMiBPerSecond = 0
             }))
         {
+            _zeroThreadEasterEggShown = false;
             App.Logger.Information("Settings", "下载设置已重置为默认值.");
         }
 
