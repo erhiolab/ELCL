@@ -145,6 +145,7 @@ pnpm dev
 
 - [PCL](https://github.com/Meloong-Git/PCL)：界面设计与部分代码参考。
 - [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher)：部分代码参考。
+- [HMCL](https://github.com/HMCL-dev/HMCL)：部分代码参考及优化补丁 JAR 来源。
 - [BMCLAPI](https://bmclapidoc.bangbang93.com/)：游戏与加载器的版本信息、下载镜像。
 - [Minecraft Wiki](https://zh.minecraft.wiki/)：游戏版本信息与更新说明。
 

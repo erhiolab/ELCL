@@ -18,6 +18,7 @@
     <Resource Include="Assets/Brand/ELCL.png" />
     <Resource Include="Assets/Credits/Pcl.png" />
     <Resource Include="Assets/Credits/PrismLauncher.png" />
+    <Resource Include="Assets/Credits/Hmcl.png" />
     <Resource Include="Assets/Credits/Bmclapi.jpg" />
     <Resource Include="Assets/Credits/MinecraftWiki.png" />
   </ItemGroup>

@@ -207,6 +207,7 @@
         "about.elclDeveloperDescription": "ELCL 和 ELCLC 的开发者。",
         "about.erhai": "洱海",
         "about.githubRepository": "GitHub 仓库",
+        "about.hmclDescription": "部分代码参考及优化补丁 JAR 的来源。",
         "about.launcherVersion": "启动器版本：{0}",
         "about.layoutAndCodeReference": "为界面设计与部分功能提供代码参考。",
         "about.mirrorDescription": "提供游戏和加载器的版本信息与下载镜像。",
