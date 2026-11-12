@@ -1,6 +1,5 @@
 using System.Globalization;
 
-using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Settings;
@@ -92,7 +91,7 @@ public sealed record LauncherSettings
     public bool OptimizeMemoryBeforeLaunch { get; init; }
 
     /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
-    public IReadOnlyList<JavaInstallation> JavaInstallations { get; init; } = [];
+    public IReadOnlyList<LauncherJavaInstallation> JavaInstallations { get; init; } = [];
 
     /// <summary>用户主动移除的路径, 自动刷新时不会重新加入.</summary>
     public IReadOnlyList<string> IgnoredJavaPaths { get; init; } = [];
@@ -177,7 +176,7 @@ public sealed record LauncherSettings
 
     private static string NormalizeAccent(string? color) => color?.Trim() ?? string.Empty;
 
-    private static IEnumerable<JavaInstallation> ValidJavaInstallations(IEnumerable<JavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
+    private static IEnumerable<LauncherJavaInstallation> ValidJavaInstallations(IEnumerable<LauncherJavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
 
     private static IEnumerable<GameFolderSetting> ValidGameFolders(IEnumerable<GameFolderSetting?>? values)
     {

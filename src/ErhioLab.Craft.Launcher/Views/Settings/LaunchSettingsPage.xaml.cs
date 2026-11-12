@@ -8,7 +8,6 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Settings;
@@ -307,7 +306,7 @@ public partial class LaunchSettingsPage
 
     private void RefreshControls()
     {
-        IReadOnlyList<JavaInstallation> installed = App.Settings.JavaInstallations;
+        IReadOnlyList<LauncherJavaInstallation> installed = App.Settings.JavaInstallations;
         JavaList.ItemsSource = installed.Take(PreviewCount).ToArray();
         MoreJavaList.ItemsSource = installed.Skip(PreviewCount).ToArray();
         JavaList.Visibility = installed.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -395,7 +394,7 @@ public partial class LaunchSettingsPage
         }
     }
 
-    private static JavaInstallation? Entry(object sender) => (sender as Button)?.Tag as JavaInstallation;
+    private static LauncherJavaInstallation? Entry(object sender) => (sender as Button)?.Tag as LauncherJavaInstallation;
 
     private void MoveUp_Click(object sender, RoutedEventArgs e)
     {
@@ -422,6 +421,11 @@ public partial class LaunchSettingsPage
     private void Remove_Click(object sender, RoutedEventArgs e)
     {
         if (Entry(sender) is { } java) App.JavaCatalog.Remove(java);
+    }
+
+    private async void DeleteInstalledJava_Click(object sender, RoutedEventArgs e)
+    {
+        if (Entry(sender) is { } java) await App.JavaCatalog.DeleteInstalledAsync(java);
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)

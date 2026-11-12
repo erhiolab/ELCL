@@ -20,6 +20,14 @@
 - [`JavaDiscovery.ProbeAsync`](java.md#javadiscovery-probeasync)
 - [`JavaDiscovery.FindExhaustiveAsync`](java.md#javadiscovery-findexhaustiveasync)
 
+## Java 发行版本
+
+[阅读本篇](java-downloads.md)
+
+- [`JavaDistributionClient.GetMajorVersionsAsync`](java-downloads.md#javadistributionclient-getmajorversionsasync)
+- [`JavaDistributionClient.GetVersionsAsync`](java-downloads.md#javadistributionclient-getversionsasync)
+- [`JavaDistributionClient.GetPackageAsync`](java-downloads.md#javadistributionclient-getpackageasync)
+
 ## 启动模板替换标记
 
 [阅读本篇](launch-placeholders.md)

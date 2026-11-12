@@ -1,5 +1,7 @@
 # Java 发现
 
+如果需要获取可以下载的 Java，请看[Java 发行版本](java-downloads.md)。本篇只处理本机已经存在的 Java。
+
 命名空间：`ErhioLab.Craft.Launcher.Core.Java`。
 
 返回的 `JavaInstallation` 包含可执行路径、完整版本、主版本号和架构。所有发现结果都会实际运行 Java 验证，不只是判断文件名。

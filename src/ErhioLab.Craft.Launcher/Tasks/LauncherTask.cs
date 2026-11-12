@@ -52,6 +52,7 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     internal Func<Task>? CleanupOnRemove { get; set; }
     internal Action? OnCompleted { get; init; }
     internal Func<Task>? StopAsync { get; init; }
+    internal string? JavaExecutablePath { get; set; }
     /// <summary>游戏启动准备或运行任务, 不独占整个版本目录.</summary>
     internal bool IsGameLaunch { get; init; }
     public bool IsRunningGame { get; init; }
@@ -117,6 +118,7 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
     private long _plannedTotalBytes;
     private long _alreadyCompleteBytes;
     internal CancellationToken CancellationToken => task.Cancellation.Token;
+    internal void SetJavaExecutablePath(string? path) => task.JavaExecutablePath = path;
 
     internal void ReportProgress(double value)
     {

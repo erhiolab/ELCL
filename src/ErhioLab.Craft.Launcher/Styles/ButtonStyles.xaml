@@ -1,6 +1,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls">
     <Style
         x:Key="VersionActionStyle"
         TargetType="Button">
@@ -418,6 +419,48 @@
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style
+        TargetType="controls:IconButton"
+        BasedOn="{StaticResource SecondaryActionStyle}">
+        <Setter
+            Property="Width"
+            Value="32" />
+        <Setter
+            Property="Height"
+            Value="32" />
+        <Setter
+            Property="Padding"
+            Value="0" />
+        <Setter
+            Property="VerticalAlignment"
+            Value="Center" />
+        <Setter
+            Property="SnapsToDevicePixels"
+            Value="True" />
+        <Setter
+            Property="Content"
+            Value="{Binding Icon, RelativeSource={RelativeSource Self}}" />
+        <Setter
+            Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Path
+                        Width="16"
+                        Height="16"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Data="{Binding}"
+                        Fill="{x:Null}"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.5"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"
+                        Stretch="Uniform" />
+                </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>

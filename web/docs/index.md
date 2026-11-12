@@ -51,7 +51,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/launch-settings">
         <span class="feature-number">04 / 启动</span>
         <h3>把运行环境安排好</h3>
-        <p>查找并排序 Java，选择窗口大小、进程优先级和内存分配。启动前检查账户与游戏文件。</p>
+        <p>下载、查找并排序 Java，选择窗口大小、进程优先级和内存分配。启动前检查账户与游戏文件。</p>
         <span class="home-feature-link">调整启动设置</span>
       </a>
       <a class="home-feature" href="./launcher/tasks">

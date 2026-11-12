@@ -54,6 +54,8 @@
 
 核心还提供[暴力搜索 API](../core/java.md#javadiscovery-findexhaustiveasync)，它不用于普通自动刷新。
 
+缺少 Java 时可以到[下载 → Java](java-downloads.md)选择发行版本安装。通过 ELCL 下载的项目带有 **ELCL 安装** 标识，悬浮时额外提供垃圾桶按钮；确认后删除安装文件夹及列表项。普通的叉号只从列表移除，手动添加或扫描发现的 Java 不会因此被删除。
+
 ## 高级选项与重置
 
 Java 下方的高级选项包括 JVM 参数、游戏参数、启动前命令、垃圾回收策略与兼容设置，详见[高级启动选项](advanced-options.md)。

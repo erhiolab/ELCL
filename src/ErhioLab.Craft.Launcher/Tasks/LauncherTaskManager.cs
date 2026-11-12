@@ -143,6 +143,7 @@ internal sealed class LauncherTaskManager
                             if (await JavaDiscovery.ProbeAsync(java.Path, context.CancellationToken) is { } found) { javaPath = found.Path; break; }
                         }
                         if (javaPath is null) throw new InvalidOperationException(LocalizationManager.Get("install.noInstallerJava"));
+                        context.SetJavaExecutablePath(javaPath);
                     }
                     await loaderInstaller.RunProcessorsAsync(loaderPlan, javaPath, InstallerProcessRunner.RunAsync,
                         new Progress<double>(context.ReportProgress), context.CancellationToken);

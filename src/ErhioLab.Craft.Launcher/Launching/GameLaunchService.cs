@@ -165,13 +165,14 @@ internal sealed class GameLaunchService
                 }) } : Array.Empty<LauncherTaskStage>()),
                 Stage("gameLaunch.java", async task =>
                 {
-                    IReadOnlyList<JavaInstallation> candidates = settings.JavaInstallations;
+                    IReadOnlyList<JavaInstallation> candidates = settings.JavaInstallations.Select(candidate => candidate.ToJava()).ToArray();
                     if (!versionOptions.UseSpecifiedJava && candidates.Count == 0)
                     {
                         await App.JavaCatalog.InitializeIfEmptyAsync();
-                        candidates = App.Settings.JavaInstallations;
+                        candidates = App.Settings.JavaInstallations.Select(candidate => candidate.ToJava()).ToArray();
                     }
                     java = await LaunchJavaSelector.SelectAsync(version!, versionOptions, candidates, task.CancellationToken);
+                    task.SetJavaExecutablePath(java.Path);
                     var snapshot = GameMemoryAllocation.ReadPhysicalMemory();
                     ulong allocatedBytes = GameMemoryAllocation.CalculateBytes(snapshot.ClampedAvailableBytes, settings.AutoAllocateMemory,
                         settings.CustomMemoryPercent, settings.MemoryUnit);
@@ -281,9 +282,10 @@ internal sealed class GameLaunchService
             {
                 if (exportPath is not null) return;
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
-                App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
+                var runningTask = App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
                     runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
                     game.TerminateAsync, logPath: game.LogPath);
+                runningTask.JavaExecutablePath = java?.Path;
                 handedOff = true;
                 running = null;
             }, isGameLaunch: true);

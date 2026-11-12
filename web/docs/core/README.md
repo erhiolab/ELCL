@@ -33,6 +33,7 @@ ELCLC 是可单独使用的 .NET 10 类库，提供 Minecraft Java 版启动器�
 | 要做什么 | 文档 |
 | --- | --- |
 | 查找 Java 或验证一个可执行文件 | [Java 发现](java.md) |
+| 查询各发行方的 Java 版本、下载地址与校验信息 | [Java 发行版本](java-downloads.md) |
 | 多文件、多连接下载，报告进度或取消 | [下载器](downloader.md) |
 | 查询 Wiki 摘要、正文和实际语言链接 | [Minecraft Wiki](wiki.md) |
 | 写分级日志、轮换会话文件 | [日志](logging.md) |

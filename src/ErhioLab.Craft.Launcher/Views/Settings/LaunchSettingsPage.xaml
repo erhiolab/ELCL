@@ -5,6 +5,7 @@
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:java="clr-namespace:ErhioLab.Craft.Launcher.Core.Java;assembly=ErhioLab.Craft.Launcher.Core"
+    xmlns:settings="clr-namespace:ErhioLab.Craft.Launcher.Settings"
     Background="{DynamicResource InkBrush}">
     <ScrollViewer
         HorizontalScrollBarVisibility="Disabled"
@@ -395,7 +396,7 @@
                         Margin="0,12,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate
-                                DataType="{x:Type java:JavaInstallation}">
+                                DataType="{x:Type settings:LauncherJavaInstallation}">
                                 <Border
                                     x:Name="JavaRow"
                                     Style="{StaticResource InsetListRowStyle}">
@@ -429,6 +430,14 @@
                                                     Margin="10,0,0,0"
                                                     Foreground="{DynamicResource TextMutedBrush}"
                                                     Text="{Binding Architecture}" />
+                                                <TextBlock
+                                                    x:Name="ManagedJavaLabel"
+                                                    Margin="10,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="12"
+                                                    Foreground="{DynamicResource AccentBrush}"
+                                                    Text="{DynamicResource I18n.java.managed}"
+                                                    Visibility="Collapsed" />
                                             </StackPanel>
                                             <TextBlock
                                                 Margin="0,4,8,0"
@@ -444,58 +453,56 @@
                                             Orientation="Horizontal"
                                             Style="{StaticResource VersionListActionsStyle}"
                                             VerticalAlignment="Center">
-                                            <Button
-                                                Width="30"
-                                                Height="30"
+                                            <controls:IconButton
                                                 Margin="3,0"
                                                 Click="MoveUp_Click"
-                                                Content="↑"
-                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Icon="{x:Static icons:LauncherIcons.ArrowUp}"
                                                 Tag="{Binding}"
                                                 ToolTip="{DynamicResource I18n.launchSettings.moveUp}" />
-                                            <Button
-                                                Width="30"
-                                                Height="30"
+                                            <controls:IconButton
                                                 Margin="3,0"
                                                 Click="MoveDown_Click"
-                                                Content="↓"
-                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Icon="{x:Static icons:LauncherIcons.ArrowDown}"
                                                 Tag="{Binding}"
                                                 ToolTip="{DynamicResource I18n.launchSettings.moveDown}" />
-                                            <Button
-                                                Width="30"
-                                                Height="30"
+                                            <controls:IconButton
                                                 Margin="3,0"
                                                 Click="OpenFolder_Click"
-                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Icon="{x:Static icons:LauncherIcons.Folder}"
                                                 Tag="{Binding}"
-                                                ToolTip="{DynamicResource I18n.launchSettings.openContainingFolder}">
-                                                <Path
-                                                    Width="15"
-                                                    Height="15"
-                                                    Data="{x:Static icons:LauncherIcons.Folder}"
-                                                    Stroke="{DynamicResource TextBrush}"
-                                                    StrokeThickness="1.6"
-                                                    StrokeLineJoin="Round" />
-                                            </Button>
-                                            <Button
-                                                Width="30"
-                                                Height="30"
+                                                ToolTip="{DynamicResource I18n.launchSettings.openContainingFolder}" />
+                                            <controls:IconButton
                                                 Margin="3,0"
                                                 Click="Remove_Click"
-                                                Style="{StaticResource SecondaryActionStyle}"
+                                                Icon="{x:Static icons:LauncherIcons.Close}"
                                                 Tag="{Binding}"
-                                                ToolTip="{DynamicResource I18n.common.removeFromList}">
-                                                <Path
-                                                    Width="12"
-                                                    Height="12"
-                                                    Data="{x:Static icons:LauncherIcons.Close}"
-                                                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                    StrokeThickness="1.5" />
-                                            </Button>
+                                                ToolTip="{DynamicResource I18n.common.removeFromList}" />
+                                            <controls:IconButton
+                                                x:Name="DeleteJavaButton"
+                                                Margin="3,0"
+                                                Click="DeleteInstalledJava_Click"
+                                                Foreground="{DynamicResource DangerTextBrush}"
+                                                Icon="{x:Static icons:LauncherIcons.Delete}"
+                                                Tag="{Binding}"
+                                                ToolTip="{DynamicResource I18n.java.deleteTitle}"
+                                                Visibility="Collapsed" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger
+                                        Binding="{Binding InstalledByLauncher}"
+                                        Value="True">
+                                        <Setter
+                                            TargetName="ManagedJavaLabel"
+                                            Property="Visibility"
+                                            Value="Visible" />
+                                        <Setter
+                                            TargetName="DeleteJavaButton"
+                                            Property="Visibility"
+                                            Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

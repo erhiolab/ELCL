@@ -35,6 +35,7 @@ export default defineConfig({
                         { text: "皮肤与披风", link: "/launcher/appearance" },
                         { text: "版本选择", link: "/launcher/versions" },
                         { text: "下载与安装", link: "/launcher/download" },
+                        { text: "下载 Java", link: "/launcher/java-downloads" },
                         { text: "启动游戏", link: "/launcher/launch" }
                     ]
                 },
@@ -88,6 +89,7 @@ export default defineConfig({
                 {
                     text: "通用工具", items: [
                         { text: "Java 发现", link: "/core/java" },
+                        { text: "Java 发行版本", link: "/core/java-downloads" },
                         { text: "下载器", link: "/core/downloader" },
                         { text: "Minecraft Wiki", link: "/core/wiki" },
                         { text: "日志", link: "/core/logging" },

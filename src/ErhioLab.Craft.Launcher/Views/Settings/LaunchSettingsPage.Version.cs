@@ -93,7 +93,7 @@ public partial class LaunchSettingsPage
         bool initializing = _initializingLaunchOptions;
         _initializingLaunchOptions = true;
         // 已移除的指定路径仍保留显示, 避免刷新列表时静默改用其他 Java.
-        List<JavaInstallation> choices = App.Settings.JavaInstallations.ToList();
+        List<JavaInstallation> choices = App.Settings.JavaInstallations.Select(java => java.ToJava()).ToList();
         if (_versionOptions.JavaPath is { } path && !choices.Any(java => string.Equals(java.Path, path, StringComparison.OrdinalIgnoreCase)))
             choices.Add(new JavaInstallation(path, "", 0, ""));
         SpecifiedJavaBox.ItemsSource = choices;

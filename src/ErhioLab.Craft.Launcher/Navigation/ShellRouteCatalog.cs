@@ -19,10 +19,12 @@ internal static class ShellRouteCatalog
     /// <returns>按顶部导航项索引的页面路由.</returns>
     internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create()
     {
-        // 下载页当前只提供原版游戏版本列表.
+        // 游戏与 Java 下载共用侧栏和缓动页面容器.
         SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.GameVersions, CanRefresh: true);
-        SectionSidebarView downloadSidebar = new(vanillaItem);
+        SectionSidebarItem javaItem = new("javaDownload.title", LauncherIcons.Java, CanRefresh: true);
+        SectionSidebarView downloadSidebar = new(vanillaItem, javaItem);
         VanillaVersionsPage versionList = new();
+        JavaDownloadPage javaDownloads = new();
         AnimatedPageHost downloadContent = new(versionList);
         versionList.VersionSelected += version =>
         {
@@ -30,7 +32,12 @@ internal static class ShellRouteCatalog
             details.BackRequested += () => downloadContent.Navigate(versionList, back: true);
             downloadContent.Navigate(details);
         };
-        downloadSidebar.ActionRequested += _ => versionList.RefreshVersions();
+        downloadSidebar.SelectionChanged += item => downloadContent.Navigate(ReferenceEquals(item, javaItem) ? javaDownloads : versionList, back: !ReferenceEquals(item, javaItem));
+        downloadSidebar.ActionRequested += item =>
+        {
+            if (ReferenceEquals(item, javaItem)) javaDownloads.RefreshCatalogs();
+            else versionList.RefreshVersions();
+        };
 
         // 设置
         LaunchSettingsPage launchSettingsPage = new();
