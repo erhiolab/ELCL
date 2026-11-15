@@ -57,6 +57,8 @@ public partial class ModDetailsPage
     {
         if (_loaded) return;
         _loaded = true;
+        var enrichment = _row.EnrichAsync();
+        foreach (var dependency in _groups.SelectMany(group => group.Dependencies ?? [])) _ = dependency.EnrichAsync();
         if (_filesReady)
         {
             foreach (var group in _groups.Where(group => group.IsExpanded)) _ = LoadDependenciesAsync(group);
@@ -64,7 +66,7 @@ public partial class ModDetailsPage
         }
 
         var files = LoadFilesAsync();
-        await _row.EnrichAsync();
+        await enrichment;
         await files;
     }
 

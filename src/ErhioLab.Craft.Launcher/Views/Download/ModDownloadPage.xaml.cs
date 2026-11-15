@@ -57,6 +57,8 @@ public partial class ModDownloadPage
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        if (ResultsList.ItemsSource is IEnumerable<ModProjectRow> rows)
+            foreach (var row in rows) _ = row.EnrichAsync();
         if (_initialized && (_explicitContext || _context?.VersionDirectory == App.Settings.SelectedVersionPath)) return;
         _initialized = true;
         // 元数据扫描在后台执行, 不阻塞导航动画.
@@ -159,7 +161,7 @@ public partial class ModDownloadPage
         App.Logger.Information("Mods", $"查询模组: 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
         try
         {
-            if (query.Any(character => character is >= '\u4e00' and <= '\u9fff'))
+            if (CommunityMods.IsTranslationEnabled && query.Any(character => character is >= '\u4e00' and <= '\u9fff'))
             {
                 var translation = await CommunityMods.TranslationAsync(query);
                 cancellation.Token.ThrowIfCancellationRequested();

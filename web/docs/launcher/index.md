@@ -23,7 +23,7 @@ ELCL 是 Minecraft Java 版启动器。第一次使用，按下面三步就能�
 | 功能 | 可以做什么 |
 | --- | --- |
 | [下载与安装](download.md) | 安装原版，以及 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine。 |
-| [模组](mods.md) | 按相关性或下载量搜索 CurseForge 与 Modrinth、查看文件版本与前置模组、手动选择下载，以及按版本导入、启用、禁用和批量删除模组。 |
+| [模组](mods.md) | 按相关性或下载量搜索 CurseForge 与 Modrinth、查看文件版本与前置模组、手动选择下载，以及按版本导入、启用、禁用和批量删除模组。中文界面可选择开启模组汉化。 |
 | [下载 Java](java-downloads.md) | 选择发行平台与主版本，下载、校验和安装适用于当前设备的 Java，标记来源并支持删除安装。 |
 | [任务管理](tasks.md) | 查看进度、按进程查看实时 Minecraft 日志、取消任务、移除失败任务、结束指定游戏进程。 |
 | [启动设置](launch-settings.md) | 设置窗口、优先级、内存和 Java 顺序，执行内存优化。 |

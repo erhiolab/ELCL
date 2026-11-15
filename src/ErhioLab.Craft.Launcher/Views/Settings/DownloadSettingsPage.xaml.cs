@@ -51,7 +51,8 @@ public partial class DownloadSettingsPage
         VersionListSourceBox.SelectedIndex = App.Settings.VersionListSource == VersionListSource.MirrorFirst ? 1 : 0;
         FileDownloadSourceBox.SelectedIndex = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst ? 1 : 0;
         CommunitySourceBox.SelectedIndex = (int)App.Settings.CommunityDownloadSource;
-        ModFileNameBox.SelectedIndex = (int)App.Settings.ModFileNameFormat;
+        ModFileNameBox.IsEnabled = ModLocalization.IsEnabled(App.Settings);
+        ModFileNameBox.SelectedIndex = (int)ModLocalization.FileNameFormat(App.Settings);
         ThreadCountSlider.Value = App.Settings.DownloadMaxConnections;
         ThreadCountText.Text = App.Settings.DownloadMaxConnections.ToString(CultureInfo.InvariantCulture);
         SpeedLimitBox.Text = App.Settings.DownloadSpeedLimitMiBPerSecond.ToString("0.##", CultureInfo.InvariantCulture);
@@ -64,10 +65,13 @@ public partial class DownloadSettingsPage
         if (!App.UpdateSettings(App.Settings with
         {
             CommunityDownloadSource = (VersionListSource)CommunitySourceBox.SelectedIndex,
-            ModFileNameFormat = (ModFileNameFormat)ModFileNameBox.SelectedIndex
+            ModFileNameFormat = ModLocalization.IsEnabled(App.Settings)
+                ? (ModFileNameFormat)ModFileNameBox.SelectedIndex : App.Settings.ModFileNameFormat
         })) RefreshControls();
         else App.Logger.Information("Settings", "已保存社区资源来源与模组文件名格式.");
     }
+
+    private void DownloadSettingsPage_Loaded(object sender, RoutedEventArgs e) => RefreshControls();
 
     private void FileDownloadSourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

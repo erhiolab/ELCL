@@ -5,6 +5,7 @@
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     Background="{DynamicResource InkBrush}"
+    Loaded="PersonalizationPage_Loaded"
     Unloaded="PersonalizationPage_Unloaded">
     <UserControl.Resources>
         <!-- 选项卡的悬停层覆盖整个卡片, 不挤占内容空间. -->
@@ -313,27 +314,39 @@
             <controls:LauncherCard
                 Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.mods.communitySettings}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-                            Width="155" />
-                        <ColumnDefinition
-                            Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Text="{DynamicResource I18n.mods.listPresentation}" />
-                    <ComboBox
-                        x:Name="ModPresentationBox"
-                        Grid.Column="1"
-                        Style="{StaticResource FormComboBoxStyle}"
-                        SelectionChanged="ModPresentationBox_SelectionChanged">
-                        <ComboBoxItem
-                            Content="{DynamicResource I18n.mods.nameFirst}" />
-                        <ComboBoxItem
-                            Content="{DynamicResource I18n.mods.fileFirst}" />
-                    </ComboBox>
-                </Grid>
+                <StackPanel>
+                    <CheckBox
+                        x:Name="ModTranslationBox"
+                        MinHeight="36"
+                        Content="{DynamicResource I18n.mods.translation}"
+                        Style="{StaticResource FormCheckBoxStyle}"
+                        ToolTip="{DynamicResource I18n.mods.translationHint}"
+                        ToolTipService.ShowOnDisabled="True"
+                        Checked="ModTranslation_Changed"
+                        Unchecked="ModTranslation_Changed" />
+                    <Grid
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.mods.listPresentation}" />
+                        <ComboBox
+                            x:Name="ModPresentationBox"
+                            Grid.Column="1"
+                            Style="{StaticResource FormComboBoxStyle}"
+                            SelectionChanged="ModPresentationBox_SelectionChanged">
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.nameFirst}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.fileFirst}" />
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
             </controls:LauncherCard>
         </StackPanel>
     </ScrollViewer>

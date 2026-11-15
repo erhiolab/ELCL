@@ -37,7 +37,7 @@ internal static class ModInstallTasks
                 foreach (var item in plan)
                 {
                     if (item.File.Sha1 is { } sha && existing.Any(local => local.Enabled && local.Sha1.Equals(sha, StringComparison.OrdinalIgnoreCase))) continue;
-                    var translation = App.Settings.ModFileNameFormat == Settings.ModFileNameFormat.Original ? null : await CommunityMods.TranslationAsync(item.Project.Name, item.Project);
+                    var translation = Settings.ModLocalization.FileNameFormat(App.Settings) == Settings.ModFileNameFormat.Original ? null : await CommunityMods.TranslationAsync(item.Project.Name, item.Project);
                     string name = CommunityMods.FileName(item.File, translation?.ChineseName);
                     string destination = Path.Combine(directory, name);
                     if (File.Exists(destination) || File.Exists(destination + ".disabled") || File.Exists(destination + ".disable")) throw new IOException(string.Format(CommunityMods.L("fileExists"), name));

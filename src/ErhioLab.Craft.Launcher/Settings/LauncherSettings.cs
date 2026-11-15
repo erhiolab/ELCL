@@ -38,6 +38,8 @@ public sealed record LauncherSettings
     public VersionListSource CommunityDownloadSource { get; init; } = VersionListSource.OfficialFirst;
     public ModFileNameFormat ModFileNameFormat { get; init; } = ModFileNameFormat.Original;
     public ModListPresentation ModListPresentation { get; init; } = ModListPresentation.NameFirst;
+    /// <summary>在中文界面使用百科译名, 非中文界面保留偏好但不启用.</summary>
+    public bool ModTranslationEnabled { get; init; } = true;
 
     /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
     public int DownloadMaxConnections { get; init; } = 8;

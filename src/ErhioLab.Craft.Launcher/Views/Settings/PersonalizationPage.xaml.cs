@@ -51,6 +51,7 @@ public partial class PersonalizationPage
                 Language = LocalizationManager.DefaultLanguage,
                 MemoryUnit = MemoryUnitSystem.Binary,
                 ModListPresentation = ModListPresentation.NameFirst,
+                ModTranslationEnabled = true,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
                 TitleBarMode = TitleBarMode.Default,
@@ -77,6 +78,7 @@ public partial class PersonalizationPage
         LanguageComboBox.SelectedValue = App.Settings.Language;
         MemoryUnitBox.SelectedIndex = Array.IndexOf(MemoryUnitChoices, App.Settings.MemoryUnit);
         ModPresentationBox.SelectedIndex = (int)App.Settings.ModListPresentation;
+        RefreshModTranslationControls();
         NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
         DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
@@ -157,6 +159,34 @@ public partial class PersonalizationPage
         if (_initializing || LanguageComboBox.SelectedValue is not string language || language == App.Settings.Language)
             return;
         if (!App.UpdateSettings(App.Settings with { Language = language })) RefreshControls();
+        else
+        {
+            _initializing = true;
+            RefreshModTranslationControls();
+            _initializing = false;
+        }
+    }
+
+    private void PersonalizationPage_Loaded(object sender, RoutedEventArgs e) => RefreshControls();
+
+    private void RefreshModTranslationControls()
+    {
+        ModTranslationBox.IsEnabled = ModLocalization.SupportsLanguage(App.Settings.Language);
+        ModTranslationBox.IsChecked = ModLocalization.IsEnabled(App.Settings);
+    }
+
+    private void ModTranslation_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || !ModLocalization.SupportsLanguage(App.Settings.Language)) return;
+        bool enabled = ModTranslationBox.IsChecked == true;
+        if (enabled == App.Settings.ModTranslationEnabled) return;
+        App.Logger.Information("Settings", $"开始设置模组汉化: {enabled}.");
+        if (!App.UpdateSettings(App.Settings with { ModTranslationEnabled = enabled }))
+        {
+            RefreshControls();
+            return;
+        }
+        App.Logger.Information("Settings", $"模组汉化偏好已保存: {enabled}.");
     }
 
     private void MemoryUnitBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

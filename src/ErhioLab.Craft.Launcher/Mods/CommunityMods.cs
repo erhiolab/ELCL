@@ -50,6 +50,7 @@ internal static class CommunityMods
     private static readonly string Cache = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "community");
     internal static event Action<string>? Installed;
     internal static string L(string key) => LocalizationManager.Get("mods." + key);
+    internal static bool IsTranslationEnabled => ModLocalization.IsEnabled(App.Settings);
     internal static CommunitySource Source => App.Settings.CommunityDownloadSource == VersionListSource.MirrorFirst ? CommunitySource.MirrorFirst : CommunitySource.OfficialFirst;
     internal static ModRepositoryClient Client() => new(Http, ServiceConfiguration.CurseForgeApiKey, Source);
     internal static string? Loader(string? value) => value?.Split([',', '+', ' '], StringSplitOptions.RemoveEmptyEntries).Select(part => part.ToLowerInvariant()).FirstOrDefault(part => part is "forge" or "neoforge" or "fabric" or "quilt" or "liteloader");
@@ -122,6 +123,7 @@ internal static class CommunityMods
 
     internal static Task<McModTranslation?> TranslationAsync(string name, ModProject? project = null)
     {
+        if (!IsTranslationEnabled) return Task.FromResult<McModTranslation?>(null);
         string key = project is null ? "query:" + name : project.Platform + ":" + project.Id;
         if (Translations.TryGetValue(key, out var previous) && previous.IsCompletedSuccessfully && previous.Result is null) Translations.TryRemove(key, out _);
         return Translations.GetOrAdd(key, _ => TranslateAsync(name, project));
@@ -132,6 +134,7 @@ internal static class CommunityMods
         await Enrichment.WaitAsync();
         try
         {
+            if (!IsTranslationEnabled) return null;
             string path = CachePath("translations-v2", project is null ? name : project.Platform + ":" + project.Id, ".json");
             if (File.Exists(path))
             {
@@ -253,12 +256,13 @@ internal static class CommunityMods
         if (string.IsNullOrWhiteSpace(original) || original != file.FileName || original.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
             || original.Length > 220 || !(original.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) || original.EndsWith(".litemod", StringComparison.OrdinalIgnoreCase)))
             throw new InvalidDataException(L("invalidFile"));
-        if (string.IsNullOrWhiteSpace(translated) || App.Settings.ModFileNameFormat == ModFileNameFormat.Original) return original;
+        ModFileNameFormat format = ModLocalization.FileNameFormat(App.Settings);
+        if (string.IsNullOrWhiteSpace(translated) || format == ModFileNameFormat.Original) return original;
         string name = string.Concat(translated.Select(value => Path.GetInvalidFileNameChars().Contains(value) ? '_' : value));
         name = name[..Math.Min(48, name.Length)].Trim().TrimEnd('.');
         string stem = Path.GetFileNameWithoutExtension(original), extension = Path.GetExtension(original);
 
-        string Format(string value) => App.Settings.ModFileNameFormat switch
+        string Format(string value) => format switch
         {
             ModFileNameFormat.ChineseBrackets => $"【{name}】 {value}{extension}",
             ModFileNameFormat.SquareBrackets => $"[{name}] {value}{extension}",
@@ -292,7 +296,7 @@ public sealed class ModProjectRow : INotifyPropertyChanged
 {
     internal ModProject Project { get; }
     internal McModTranslation? Translation { get; private set; }
-    public string Name => Translation is { ChineseName.Length: > 0 } translated ? translated.ChineseName : Project.Name;
+    public string Name => CommunityMods.IsTranslationEnabled && Translation is { ChineseName.Length: > 0 } translated ? translated.ChineseName : Project.Name;
     public string OriginalName => Name == Project.Name ? "" : Project.Name;
     public string OriginalNameLabel => OriginalName.Length == 0 ? "" : "  |  " + OriginalName;
     public string VersionLabel => "";
@@ -300,6 +304,8 @@ public sealed class ModProjectRow : INotifyPropertyChanged
     public string Summary => Project.Summary;
     public Uri WikiUri => Translation?.Website ?? new Uri("https://search.mcmod.cn/s?filter=1&key=" + Uri.EscapeDataString(Project.Name));
     public string WikiHint => CommunityMods.L(Translation is null ? "searchWiki" : "openWiki");
+    public System.Windows.Visibility WikiVisibility => ModLocalization.SupportsLanguage(App.Settings.Language)
+        ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public IReadOnlyList<string> CategoryLabels => Project.Categories.Select(ModPresentation.CategoryName).Distinct().Take(3).ToArray();
     public string LoadersText => Project.Loaders.Count == 0 ? CommunityMods.L("anyLoader") : string.Join(" / ", Project.Loaders.OrderBy(ModPresentation.LoaderOrder).Select(ModPresentation.LoaderName));
     public string PlatformText => Project.Platform.ToString();
@@ -324,9 +330,10 @@ public sealed class ModProjectRow : INotifyPropertyChanged
     public string Metadata => $"{Project.Platform} · {string.Format(CommunityMods.L("downloads"), Project.Downloads)}";
     public ImageSource? Icon { get; private set; }
     public event PropertyChangedEventHandler? PropertyChanged;
-    private Task? _enrichment;
+    private Task? _iconEnrichment;
+    private int _translationVersion;
     internal ModProjectRow(ModProject project) => Project = project;
-    internal Task EnrichAsync() => _enrichment ??= Task.WhenAll(LoadIconAsync(), LoadTranslationAsync());
+    internal Task EnrichAsync() => Task.WhenAll(_iconEnrichment ??= LoadIconAsync(), LoadTranslationAsync());
 
     private async Task LoadIconAsync()
     {
@@ -336,12 +343,16 @@ public sealed class ModProjectRow : INotifyPropertyChanged
 
     private async Task LoadTranslationAsync()
     {
-        Translation = await CommunityMods.TranslationAsync(Project.Name, Project);
+        int version = ++_translationVersion;
+        var translation = await CommunityMods.TranslationAsync(Project.Name, Project);
+        if (version != _translationVersion) return;
+        Translation = translation;
         PropertyChanged?.Invoke(this, new(nameof(Name)));
         PropertyChanged?.Invoke(this, new(nameof(OriginalName)));
         PropertyChanged?.Invoke(this, new(nameof(OriginalNameLabel)));
         PropertyChanged?.Invoke(this, new(nameof(HeadingToolTip)));
         PropertyChanged?.Invoke(this, new(nameof(WikiUri)));
         PropertyChanged?.Invoke(this, new(nameof(WikiHint)));
+        PropertyChanged?.Invoke(this, new(nameof(WikiVisibility)));
     }
 }

@@ -444,7 +444,7 @@ public sealed class LocalModRow : INotifyPropertyChanged
     public bool CanViewDetails => !IsParsing;
     private string? _translated;
     internal ModProject? Project { get; private set; }
-    private string DisplayName => _translated ?? Project?.Name ?? Mod.Name;
+    private string DisplayName => (CommunityMods.IsTranslationEnabled ? _translated : null) ?? Project?.Name ?? Mod.Name;
     private bool FileNameFirst => App.Settings.ModListPresentation == ModListPresentation.FileNameFirst;
     private string OriginalName => Project?.Name ?? Mod.Name;
     private string Description => (string.IsNullOrWhiteSpace(Mod.Description) ? Project?.Summary ?? "" : Mod.Description).ReplaceLineEndings(" ");
