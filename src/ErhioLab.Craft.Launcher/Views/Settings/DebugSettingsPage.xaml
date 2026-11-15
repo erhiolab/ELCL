@@ -45,7 +45,7 @@
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
-                Margin="0,14,0,0"
+                Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.debug.notifications}">
                 <StackPanel>
                     <TextBlock

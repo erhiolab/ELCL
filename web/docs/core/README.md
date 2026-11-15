@@ -16,6 +16,7 @@ ELCLC 是可单独使用的 .NET 10 类库，提供 Minecraft Java 版启动器�
 | 查询六种加载器、补充日期、判断组合 | [模组加载器版本](loaders.md) |
 | 生成并执行原版安装所需的下载计划 | [安装原版](vanilla-installation.md) |
 | 安装 Forge、NeoForge、Fabric、Quilt、LiteLoader 或 OptiFine | [安装模组加载器](loader-installation.md) |
+| 查询模组、解析必需依赖、识别和管理本地模组、读取百科译名 | [社区模组](mods.md) |
 
 ## 账户与启动
 

@@ -1,0 +1,229 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionModsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
+    Foreground="{DynamicResource TextBrush}"
+    Background="{DynamicResource InkBrush}"
+    AllowDrop="True"
+    PreviewDragEnter="Page_DragOver"
+    PreviewDragOver="Page_DragOver"
+    PreviewDrop="Page_Drop"
+    IsVisibleChanged="Page_IsVisibleChanged"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <Grid
+        Margin="{StaticResource FormPageContentMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
+        </Grid.RowDefinitions>
+        <controls:LauncherCard
+            Header="{DynamicResource I18n.mods.manage}"
+            Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock
+                    Text="{DynamicResource I18n.mods.importHint}"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextWrapping="Wrap"
+                    Margin="0,0,0,12" />
+                <WrapPanel>
+                    <Button
+                        Content="{DynamicResource I18n.mods.downloadMods}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Browse_Click"
+                        Margin="0,0,8,8" />
+                    <Button
+                        Content="{DynamicResource I18n.mods.installFromFile}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Import_Click"
+                        Margin="0,0,8,8" />
+                    <Button
+                        Content="{DynamicResource I18n.mods.openFolder}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Folder_Click"
+                        Margin="0,0,8,8" />
+                    <Button
+                        Content="{DynamicResource I18n.mods.refresh}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Refresh_Click"
+                        Margin="0,0,8,8" />
+                    <Button
+                        Content="{DynamicResource I18n.mods.selectAll}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="SelectAll_Click"
+                        Margin="0,0,0,8" />
+                </WrapPanel>
+                <TextBox
+                    x:Name="SearchBox"
+                    Style="{StaticResource FormTextBoxStyle}"
+                    ToolTip="{DynamicResource I18n.mods.localSearch}"
+                    TextChanged="Search_Changed" />
+            </StackPanel>
+        </controls:LauncherCard>
+        <Border
+            Grid.Row="1"
+            Padding="12"
+            Style="{StaticResource PanelCardStyle}">
+            <Grid>
+                <ListBox
+                    x:Name="ModsList"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    SelectionMode="Extended"
+                    SelectionChanged="Selection_Changed"
+                    MouseDoubleClick="Mod_DoubleClick"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style
+                            TargetType="ListBoxItem"
+                            BasedOn="{StaticResource SelectableListRowStyle}">
+                            <Setter
+                                Property="Height"
+                                Value="72" />
+                            <Setter
+                                Property="HorizontalContentAlignment"
+                                Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate
+                            DataType="{x:Type local:LocalModRow}">
+                            <Border
+                                Background="Transparent">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition
+                                            Width="54" />
+                                        <ColumnDefinition
+                                            Width="*" />
+                                        <ColumnDefinition
+                                            Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid
+                                        Width="38"
+                                        Height="38"
+                                        HorizontalAlignment="Left">
+                                        <Path
+                                            Data="{Binding StatusIcon}"
+                                            Stroke="{DynamicResource TextMutedBrush}"
+                                            StrokeThickness="1.5"
+                                            Width="25"
+                                            Height="25"
+                                            Stretch="Uniform">
+                                            <Path.Style>
+                                                <Style
+                                                    TargetType="Path">
+                                                    <Setter
+                                                        Property="Visibility"
+                                                        Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger
+                                                            Binding="{Binding Icon}"
+                                                            Value="{x:Null}">
+                                                            <Setter
+                                                                Property="Visibility"
+                                                                Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
+                                        <Image
+                                            Source="{Binding Icon}"
+                                            Opacity="{Binding IconOpacity}" />
+                                    </Grid>
+                                    <controls:ModIdentityText
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,12,0"
+                                        Opacity="{Binding IconOpacity}"
+                                        ToolTip="{Binding ToolTip}" />
+                                    <StackPanel
+                                        Grid.Column="2"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource VersionListActionsStyle}">
+                                        <controls:IconButton
+                                            Icon="{x:Static icons:LauncherIcons.Info}"
+                                            IsEnabled="{Binding CanViewDetails}"
+                                            ToolTip="{DynamicResource I18n.mods.details}"
+                                            Tag="{Binding}"
+                                            Click="Details_Click" />
+                                        <controls:IconButton
+                                            Icon="{x:Static icons:LauncherIcons.Folder}"
+                                            ToolTip="{DynamicResource I18n.mods.reveal}"
+                                            Tag="{Binding}"
+                                            Click="Reveal_Click" />
+                                        <controls:IconButton
+                                            Icon="{Binding ToggleIcon}"
+                                            ToolTip="{Binding ToggleLabel}"
+                                            Tag="{Binding}"
+                                            Click="Toggle_Click" />
+                                        <controls:IconButton
+                                            Icon="{x:Static icons:LauncherIcons.Delete}"
+                                            ToolTip="{DynamicResource I18n.mods.delete}"
+                                            Tag="{Binding}"
+                                            Click="Delete_Click" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock
+                    x:Name="EmptyText"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextWrapping="Wrap"
+                    Text="{DynamicResource I18n.mods.noLocalMods}"
+                    IsHitTestVisible="False" />
+            </Grid>
+        </Border>
+        <controls:AnimatedReveal
+            x:Name="SelectionReveal"
+            Grid.Row="2">
+            <Border
+                Padding="16,12"
+                Margin="0,12,0,0"
+                Style="{StaticResource PanelCardStyle}">
+                <DockPanel>
+                    <TextBlock
+                        x:Name="SelectionText"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource AccentBrush}" />
+                    <WrapPanel
+                        HorizontalAlignment="Right">
+                        <Button
+                            Content="{DynamicResource I18n.mods.enable}"
+                            Click="EnableSelected_Click"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Margin="8,0,0,0" />
+                        <Button
+                            Content="{DynamicResource I18n.mods.disable}"
+                            Click="DisableSelected_Click"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Margin="8,0,0,0" />
+                        <Button
+                            Content="{DynamicResource I18n.mods.delete}"
+                            Click="DeleteSelected_Click"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Margin="8,0,0,0" />
+                        <Button
+                            Content="{DynamicResource I18n.mods.deselect}"
+                            Click="Deselect_Click"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Margin="8,0,0,0" />
+                    </WrapPanel>
+                </DockPanel>
+            </Border>
+        </controls:AnimatedReveal>
+    </Grid>
+</UserControl>

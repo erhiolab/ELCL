@@ -7,6 +7,8 @@ using System.Windows.Input;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Icons;
+using ErhioLab.Craft.Launcher.Mods;
+using ErhioLab.Craft.Launcher.Views.Download;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Notifications;
@@ -25,6 +27,9 @@ public partial class VersionSettingsView
     private int _generation;
     private readonly LaunchSettingsPage _launchSettingsPage;
     private readonly VersionLogsPage _logsPage;
+    private readonly VersionModsPage _modsPage;
+    private readonly AnimatedPageHost _pageHost;
+    private readonly Stack<FrameworkElement> _modHistory = new();
     internal event Action? BackRequested;
 
     public VersionSettingsView()
@@ -33,30 +38,58 @@ public partial class VersionSettingsView
         _launchSettingsPage = new LaunchSettingsPage();
         _logsPage = new VersionLogsPage();
         PageHost.Content = null;
-        var pageHost = new AnimatedPageHost(OverviewPage);
-        PageHost.Content = pageHost;
+        _pageHost = new AnimatedPageHost(OverviewPage);
+        PageHost.Content = _pageHost;
+        _modsPage = new VersionModsPage();
+        _modsPage.BrowseRequested += context =>
+        {
+            var browser = new ModDownloadPage();
+            browser.SetContext(context);
+            browser.ProjectSelected += (row, selectedContext) => OpenModDetails(row, selectedContext, browser);
+            _modHistory.Push(_modsPage);
+            _pageHost.Navigate(browser);
+        };
+        _modsPage.DetailsRequested += (row, context) => OpenModDetails(row, context, _modsPage);
+        Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
+        LocalizationManager.Changed += (_, _) => RefreshSummary();
+    }
+
+    private void OpenModDetails(ModProjectRow row, ModBrowserContext context, FrameworkElement parent)
+    {
+        var details = new ModDetailsPage(row, context);
+        details.BackRequested += () => CloseModPage();
+        details.ProjectRequested += (project, selectedContext) => OpenModDetails(project, selectedContext, details);
+        _modHistory.Push(parent);
+        _pageHost.Navigate(details);
+    }
+
+    private void RefreshSidebar()
+    {
         var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.GameVersions);
         var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
+        var mods = new SectionSidebarItem("mods.manage", LauncherIcons.ModsAndResources);
         var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);
-        var sidebar = new SectionSidebarView(overview, settings, logs);
+        var sidebar = Version is { } current && CommunityMods.HasLoader(current)
+            ? new SectionSidebarView(overview, settings, mods, logs) : new SectionSidebarView(overview, settings, logs);
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
             _launchSettingsPage.FlushPendingChanges();
+            _modHistory.Clear();
             if (ReferenceEquals(item, settings) && Version is { } version)
             {
                 _launchSettingsPage.SetVersionContext(_gameDirectory, version);
-                pageHost.Navigate(_launchSettingsPage);
+                _pageHost.Navigate(_launchSettingsPage);
             }
-            else if (ReferenceEquals(item, logs)) pageHost.Navigate(_logsPage);
-            else pageHost.Navigate(OverviewPage, back: true);
+            else if (ReferenceEquals(item, logs)) _pageHost.Navigate(_logsPage);
+            else if (ReferenceEquals(item, mods)) _pageHost.Navigate(_modsPage);
+            else _pageHost.Navigate(OverviewPage, back: true);
         };
         sidebar.ActionRequested += item =>
         {
             if (ReferenceEquals(item, settings)) _launchSettingsPage.ResetVersionOptions();
         };
-        Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
-        LocalizationManager.Changed += (_, _) => RefreshSummary();
+        _pageHost.Navigate(OverviewPage, back: true);
     }
 
     internal void SetVersion(string gameDirectory, LocalMinecraftVersion version)
@@ -64,6 +97,9 @@ public partial class VersionSettingsView
         _launchSettingsPage.SetVersionContext(gameDirectory, version);
         _gameDirectory = Path.GetFullPath(gameDirectory);
         Version = version;
+        _modsPage.SetContext(new ModBrowserContext(version.GameVersion, CommunityMods.Loader(version.Loader), version.FolderPath));
+        _modHistory.Clear();
+        RefreshSidebar();
         _logsPage.SetVersionDirectory(version.FolderPath);
         _generation++;
         ActionsPanel.IsEnabled = true;
@@ -73,7 +109,17 @@ public partial class VersionSettingsView
         RefreshSummary();
     }
 
-    internal bool TryCloseLog() => _logsPage.CloseLog();
+    internal bool TryCloseLog()
+    {
+        return CloseModPage() || _logsPage.CloseLog();
+    }
+
+    private bool CloseModPage()
+    {
+        if (!_modHistory.TryPop(out var parent)) return false;
+        _pageHost.Navigate(parent, back: true);
+        return true;
+    }
 
     private void RefreshSummary()
     {

@@ -4,3 +4,9 @@ logo/
 .vs/
 *.user
 *.suo
+
+# Local MCMod index maintenance tools
+/tools/mcmod/update-mcmod-index.py
+/tools/mcmod/mcmod_index.py
+
+__pycache__/

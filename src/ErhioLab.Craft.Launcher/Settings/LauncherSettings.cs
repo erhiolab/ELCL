@@ -35,6 +35,10 @@ public sealed record LauncherSettings
     /// <summary>游戏文件下载的优先来源, 另一来源在失败时回退.</summary>
     public VersionListSource FileDownloadSource { get; init; } = VersionListSource.OfficialFirst;
 
+    public VersionListSource CommunityDownloadSource { get; init; } = VersionListSource.OfficialFirst;
+    public ModFileNameFormat ModFileNameFormat { get; init; } = ModFileNameFormat.Original;
+    public ModListPresentation ModListPresentation { get; init; } = ModListPresentation.NameFirst;
+
     /// <summary>单个下载任务最多同时使用的连接数, 范围为 1 到 256.</summary>
     public int DownloadMaxConnections { get; init; } = 8;
     /// <summary>是否已触发零下载线程彩蛋, 触发后滑块最低为 1.</summary>
@@ -142,6 +146,9 @@ public sealed record LauncherSettings
             TitleBarText = titleText[..Math.Min(titleText.Length, 40)],
             VersionListSource = Enum.IsDefined(VersionListSource) ? VersionListSource : VersionListSource.OfficialFirst,
             FileDownloadSource = Enum.IsDefined(FileDownloadSource) ? FileDownloadSource : VersionListSource.OfficialFirst,
+            CommunityDownloadSource = Enum.IsDefined(CommunityDownloadSource) ? CommunityDownloadSource : VersionListSource.OfficialFirst,
+            ModFileNameFormat = Enum.IsDefined(ModFileNameFormat) ? ModFileNameFormat : ModFileNameFormat.Original,
+            ModListPresentation = Enum.IsDefined(ModListPresentation) ? ModListPresentation : ModListPresentation.NameFirst,
             DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
             DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
             GamePriority = Enum.IsDefined(GamePriority) ? GamePriority : GameProcessPriority.Normal,

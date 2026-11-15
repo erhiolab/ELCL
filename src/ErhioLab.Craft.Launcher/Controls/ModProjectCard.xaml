@@ -1,0 +1,177 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Controls.ModProjectCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons">
+    <Grid
+        Margin="0,6">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition
+                Width="58" />
+            <ColumnDefinition
+                Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border
+            Width="46"
+            Height="46"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            CornerRadius="6"
+            Background="{DynamicResource InkBrush}">
+            <Grid>
+                <Path
+                    Width="24"
+                    Height="24"
+                    Data="{x:Static icons:LauncherIcons.ModsAndResources}"
+                    Stroke="{DynamicResource TextMutedBrush}"
+                    StrokeThickness="1.5"
+                    Stretch="Uniform">
+                    <Path.Style>
+                        <Style
+                            TargetType="Path">
+                            <Setter
+                                Property="Visibility"
+                                Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding Icon}"
+                                    Value="{x:Null}">
+                                    <Setter
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Path.Style>
+                </Path>
+                <Image
+                    Source="{Binding Icon}"
+                    Stretch="Uniform" />
+            </Grid>
+        </Border>
+        <StackPanel
+            Grid.Column="1"
+            VerticalAlignment="Center">
+            <controls:ModIdentityText
+                x:Name="Identity" />
+            <Grid
+                Margin="0,2,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="1.25*" />
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid
+                    Grid.Column="0"
+                    Margin="0,0,8,0"
+                    ToolTip="{Binding LoadersText}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="15" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path
+                        Width="11"
+                        Height="11"
+                        Data="{x:Static icons:LauncherIcons.ModsAndResources}"
+                        Stroke="{DynamicResource TextMutedBrush}"
+                        StrokeThickness="1.4"
+                        Stretch="Uniform"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding LoadersText}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource SmallFontSize}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+                <Grid
+                    Grid.Column="1"
+                    Margin="0,0,8,0"
+                    ToolTip="{Binding Metadata}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="15" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path
+                        Width="11"
+                        Height="11"
+                        Data="{x:Static icons:LauncherIcons.Download}"
+                        Stroke="{DynamicResource TextMutedBrush}"
+                        StrokeThickness="1.4"
+                        Stretch="Uniform"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding DownloadCountText}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource SmallFontSize}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+                <Grid
+                    Grid.Column="2"
+                    Margin="0,0,8,0"
+                    ToolTip="{Binding UpdatedToolTip}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="15" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path
+                        Width="11"
+                        Height="11"
+                        Data="{x:Static icons:LauncherIcons.Clock}"
+                        Stroke="{DynamicResource TextMutedBrush}"
+                        StrokeThickness="1.4"
+                        Stretch="Uniform"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding UpdatedText}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource SmallFontSize}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+                <Grid
+                    Grid.Column="3"
+                    Margin="0,0,8,0"
+                    ToolTip="{Binding PlatformText}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="15" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path
+                        Width="11"
+                        Height="11"
+                        Data="{x:Static icons:LauncherIcons.Globe}"
+                        Stroke="{DynamicResource TextMutedBrush}"
+                        StrokeThickness="1.4"
+                        Stretch="Uniform"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding PlatformText}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource SmallFontSize}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</UserControl>

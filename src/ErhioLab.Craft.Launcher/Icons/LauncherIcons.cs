@@ -91,6 +91,18 @@ public static class LauncherIcons
     /// <summary>已选中.</summary>
     public static readonly Geometry Check = Parse("M 3,9 L 7,13 L 15,4");
 
+    /// <summary>禁用.</summary>
+    public static readonly Geometry Disable = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 4,4 L 14,14");
+
+    /// <summary>时间.</summary>
+    public static readonly Geometry Clock = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 9,5 V 9 L 12,11");
+
+    /// <summary>网站和网络来源.</summary>
+    public static readonly Geometry Globe = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 2,9 H 16 M 9,2 C 4,6 4,12 9,16 M 9,2 C 14,6 14,12 9,16");
+
+    /// <summary>实验性版本.</summary>
+    public static readonly Geometry Experimental = Parse("M 10,2 L 16,8 M 11,3 L 3,11 A 3,3 0 0 0 7,15 L 15,7 M 6,8 L 10,12 M 4,12 L 7,12");
+
     /// <summary>顶部导航的四宫格图标.</summary>
     public static readonly Geometry More = Parse("M 0,0 H 5 V 5 H 0 Z M 8,0 H 13 V 5 H 8 Z M 0,8 H 5 V 13 H 0 Z M 8,8 H 13 V 13 H 8 Z");
 

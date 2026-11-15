@@ -163,3 +163,24 @@
 - [`MinecraftWikiClient.GetLanguagesAsync`](wiki.md#minecraftwikiclient-getlanguagesasync)
 - [`MinecraftWikiClient.GetPageUrlAsync`](wiki.md#minecraftwikiclient-getpageurlasync)
 - [`MinecraftWikiClient.GetPageUrl`](wiki.md#minecraftwikiclient-getpageurl)
+
+## 社区模组
+
+[阅读本篇](mods.md)
+
+- [`ModRepositoryClient.SearchAsync`](mods.md#modrepositoryclient-searchasync)
+- [`ModSearchRequest.SortOrder` 与 `ModSortOrder`](mods.md#modrepositoryclient-searchasync)
+- [`ModRepositoryClient.GetProjectAsync`](mods.md#modrepositoryclient-getprojectasync)
+- [`ModRepositoryClient.GetFilesAsync`](mods.md#modrepositoryclient-getfilesasync)
+- [`ModRepositoryClient.GetAllFilesAsync`](mods.md#modrepositoryclient-getallfilesasync)
+- [`ModRepositoryClient.IdentifyAsync`](mods.md#modrepositoryclient-identifyasync)
+- [`ModRepositoryClient.GetDependenciesAsync`](mods.md#modrepositoryclient-getdependenciesasync)
+- [`ModRepositoryClient.CreateDownloadPlanAsync`](mods.md#modrepositoryclient-createdownloadplanasync)
+- [`ModRepositoryClient.DownloadSources`](mods.md#modrepositoryclient-downloadsources)
+- [`McModTranslationClient.FindAsync`](mods.md#mcmodtranslationclient-findasync)
+- [`LocalModManager.EnumerateFiles`](mods.md#localmodmanager-enumeratefiles)
+- [`LocalModManager.ScanAsync`](mods.md#localmodmanager-scanasync)
+- [`LocalModManager.ReadAsync`](mods.md#localmodmanager-readasync)
+- [`LocalModManager.InstallAsync`](mods.md#localmodmanager-installasync)
+- [`LocalModManager.SetEnabled`](mods.md#localmodmanager-setenabled)
+- [`LocalModManager.Delete`](mods.md#localmodmanager-delete)

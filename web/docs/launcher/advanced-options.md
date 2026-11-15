@@ -54,8 +54,8 @@
 | 选项 | 启动时的行为 |
 | --- | --- |
 | 垃圾回收策略 | 尽量使用 ZGC、尽量使用分代 ZGC、标准 G1GC、调优 G1GC，或不指定并自行填写参数。默认标准 G1GC。 |
-| 禁用 Java 启动兼容补丁 | 跳过命令行编码兼容补丁，默认不禁用。用户配置其他 `-javaagent` 时也会自动跳过。 |
-| 禁用 LWJGL 性能补丁 | 跳过 LWJGL 3.4.1 的兼容补丁，默认不禁用；其他 LWJGL 版本不会加载它。 |
+| 禁用 Java 启动兼容补丁 | 跳过 00ll00 提供的 [Java Launch Wrapper](https://github.com/00ll00/java_launch_wrapper) 命令行编码兼容补丁，默认不禁用。用户配置其他 `-javaagent` 时也会自动跳过。 |
+| 禁用 LWJGL 性能补丁 | 跳过 HMCL-dev 提供的 [LWJGL Unsafe Agent](https://github.com/HMCL-dev/lwjgl-unsafe-agent)，用于 LWJGL 3.4.1 的兼容处理，默认不禁用；其他 LWJGL 版本不会加载它。 |
 | 使用高性能显卡 | 为选中的 Java 写入 Windows 高性能显卡偏好，默认开启。关闭时清除该 Java 的显卡偏好，由系统选择。相同 Java 的其他程序也会受到这个系统设置影响。 |
 | 登录时验证安全证书 | 默认开启。关闭仅影响启动前的 Microsoft 账户检查和刷新请求；下载、账户管理和皮肤请求仍验证证书。 |
 | 关闭文件校验 | 默认关闭。开启后不检查已有文件的大小和 SHA-1，仍下载缺失文件并校验新下载文件。手动“补全文件”仍执行完整检查。 |

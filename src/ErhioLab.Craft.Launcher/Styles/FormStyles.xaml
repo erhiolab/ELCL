@@ -10,6 +10,26 @@
         24,24,24,36
     </Thickness>
 
+    <Thickness
+        x:Key="FormSectionSpacing">
+        0,14,0,0
+    </Thickness>
+    <Style
+        x:Key="FormSettingRowStyle"
+        TargetType="Grid">
+        <Setter
+            Property="MinHeight"
+            Value="36" />
+    </Style>
+    <Style
+        x:Key="FormFollowingSettingRowStyle"
+        TargetType="Grid"
+        BasedOn="{StaticResource FormSettingRowStyle}">
+        <Setter
+            Property="Margin"
+            Value="{StaticResource FormSectionSpacing}" />
+    </Style>
+
     <Style
         TargetType="ToolTip"
         BasedOn="{StaticResource {x:Type ToolTip}}">

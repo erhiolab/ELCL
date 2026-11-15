@@ -89,7 +89,8 @@
                             </StackPanel>
                         </controls:AnimatedReveal>
                     </StackPanel>
-                    <Grid>
+                    <Grid
+                        Style="{StaticResource FormSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -118,7 +119,7 @@
                         </ComboBox>
                     </Grid>
                     <Grid
-                        Margin="0,14,0,0">
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -179,7 +180,7 @@
                         </Grid>
                     </controls:AnimatedReveal>
                     <Grid
-                        Margin="0,14,0,0">
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -208,7 +209,7 @@
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
-                Margin="0,14,0,0">
+                Margin="{StaticResource FormSectionSpacing}">
                 <controls:LauncherCard.Header>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -336,7 +337,7 @@
             </controls:LauncherCard>
             <controls:LauncherCard
                 x:Name="JavaCatalogCard"
-                Margin="0,14,0,0">
+                Margin="{StaticResource FormSectionSpacing}">
                 <controls:LauncherCard.Header>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -526,7 +527,7 @@
                 </StackPanel>
             </controls:LauncherCard>
             <Border
-                Margin="0,14,0,0"
+                Margin="{StaticResource FormSectionSpacing}"
                 Padding="0"
                 Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
@@ -584,7 +585,7 @@
                                     ToolTip="{DynamicResource I18n.launchSettings.jvmArgumentsHint}" />
                             </Grid>
                             <Grid
-                                Margin="0,14,0,0">
+                                Margin="{StaticResource FormSectionSpacing}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition
                                         Width="155" />
@@ -606,7 +607,7 @@
                                     ToolTip="{DynamicResource I18n.launchSettings.gameArgumentsHint}" />
                             </Grid>
                             <Grid
-                                Margin="0,14,0,0">
+                                Margin="{StaticResource FormSectionSpacing}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition
                                         Width="155" />
@@ -638,7 +639,7 @@
                                     Style="{StaticResource FormCheckBoxStyle}" />
                             </controls:AnimatedReveal>
                             <Grid
-                                Margin="0,14,0,0">
+                                Margin="{StaticResource FormSectionSpacing}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition
                                         Width="155" />
@@ -697,7 +698,7 @@
                             <controls:AnimatedReveal
                                 x:Name="PlaceholderPreviewReveal">
                                 <StackPanel
-                                    Margin="0,14,0,0">
+                                    Margin="{StaticResource FormSectionSpacing}">
                                     <TextBlock
                                         Margin="0,0,0,6"
                                         FontSize="{DynamicResource LabelFontSize}"

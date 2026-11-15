@@ -19,8 +19,14 @@
     <Resource Include="Assets/Credits/Pcl.png" />
     <Resource Include="Assets/Credits/PrismLauncher.png" />
     <Resource Include="Assets/Credits/Hmcl.png" />
+    <Resource Include="Assets/Credits/Mcmod.png" />
+    <Resource Include="Assets/Credits/00ll00.png" />
     <Resource Include="Assets/Credits/Bmclapi.jpg" />
     <Resource Include="Assets/Credits/MinecraftWiki.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.156.0" />
   </ItemGroup>
 </Project>
 

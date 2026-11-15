@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="ErhioLab.Craft.Launcher.Views.Settings.PersonalizationPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -76,7 +76,8 @@
                 <StackPanel>
 
                     <Grid
-                        Height="42">
+                        Style="{StaticResource FormSettingRowStyle}"
+                        MinHeight="42">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -116,12 +117,10 @@
                             TextAlignment="Right" />
                     </Grid>
 
-                    <Border
-                        Height="1"
-                        Margin="0,10"
-                        Background="{DynamicResource LineSoftBrush}" />
+
                     <Grid
-                        Height="54">
+                        Style="{StaticResource FormFollowingSettingRowStyle}"
+                        MinHeight="54">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -186,12 +185,10 @@
                         </StackPanel>
                     </Grid>
 
-                    <Border
-                        Height="1"
-                        Margin="0,10"
-                        Background="{DynamicResource LineSoftBrush}" />
+
                     <Grid
-                        Height="38">
+                        Style="{StaticResource FormFollowingSettingRowStyle}"
+                        MinHeight="38">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -207,61 +204,37 @@
                             Grid.Column="1"
                             VerticalAlignment="Center" />
                     </Grid>
+
+                    <Grid
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="{DynamicResource LabelFontSize}"
+                            Text="{DynamicResource I18n.personalization.interfaceLanguage}" />
+                        <ComboBox
+                            x:Name="LanguageComboBox"
+                            Grid.Column="1"
+                            Width="220"
+                            Height="34"
+                            HorizontalAlignment="Left"
+                            DisplayMemberPath="Value"
+                            SelectedValuePath="Key"
+                            SelectionChanged="LanguageComboBox_SelectionChanged" />
+                    </Grid>
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
-                Margin="0,14,0,0"
-                Header="{DynamicResource I18n.personalization.language}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-                            Width="155" />
-                        <ColumnDefinition
-                            Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="{DynamicResource LabelFontSize}"
-                        Text="{DynamicResource I18n.personalization.interfaceLanguage}" />
-                    <ComboBox
-                        x:Name="LanguageComboBox"
-                        Grid.Column="1"
-                        Width="220"
-                        Height="34"
-                        HorizontalAlignment="Left"
-                        DisplayMemberPath="Value"
-                        SelectedValuePath="Key"
-                        SelectionChanged="LanguageComboBox_SelectionChanged" />
-                </Grid>
-            </controls:LauncherCard>
-            <controls:LauncherCard
-                Margin="0,14,0,0"
-                Header="{DynamicResource I18n.personalization.memoryUnit}">
-                <StackPanel>
-                    <ComboBox
-                        x:Name="MemoryUnitBox"
-                        HorizontalAlignment="Stretch"
-                        SelectionChanged="MemoryUnitBox_SelectionChanged"
-                        Style="{StaticResource FormComboBoxStyle}">
-                        <ComboBoxItem
-                            Content="{DynamicResource I18n.personalization.memoryUnitBinary}" />
-                        <ComboBoxItem
-                            Content="{DynamicResource I18n.personalization.memoryUnitDecimal}" />
-                    </ComboBox>
-                    <TextBlock
-                        Margin="0,8,0,0"
-                        FontSize="{DynamicResource LabelFontSize}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.personalization.memoryUnitHint}"
-                        TextWrapping="Wrap" />
-                </StackPanel>
-            </controls:LauncherCard>
-            <controls:LauncherCard
-                Margin="0,14,0,0"
+                Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.personalization.titleBar}">
                 <StackPanel>
                     <Grid
-                        Height="32">
+                        Style="{StaticResource FormSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="*" />
@@ -293,11 +266,11 @@
                     </Grid>
                     <Grid
                         x:Name="TitleTextRow"
-                        Margin="0,10,0,0"
+                        Style="{StaticResource FormFollowingSettingRowStyle}"
                         Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
-                                Width="96" />
+                                Width="155" />
                             <ColumnDefinition
                                 Width="*" />
                         </Grid.ColumnDefinitions>
@@ -314,6 +287,53 @@
                             TextChanged="TitleTextBox_TextChanged" />
                     </Grid>
                 </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.personalization.memoryUnit}">
+                <StackPanel>
+                    <ComboBox
+                        x:Name="MemoryUnitBox"
+                        HorizontalAlignment="Stretch"
+                        SelectionChanged="MemoryUnitBox_SelectionChanged"
+                        Style="{StaticResource FormComboBoxStyle}">
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.personalization.memoryUnitBinary}" />
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.personalization.memoryUnitDecimal}" />
+                    </ComboBox>
+                    <TextBlock
+                        Margin="0,8,0,0"
+                        FontSize="{DynamicResource LabelFontSize}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.personalization.memoryUnitHint}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.mods.communitySettings}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="155" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Text="{DynamicResource I18n.mods.listPresentation}" />
+                    <ComboBox
+                        x:Name="ModPresentationBox"
+                        Grid.Column="1"
+                        Style="{StaticResource FormComboBoxStyle}"
+                        SelectionChanged="ModPresentationBox_SelectionChanged">
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.mods.nameFirst}" />
+                        <ComboBoxItem
+                            Content="{DynamicResource I18n.mods.fileFirst}" />
+                    </ComboBox>
+                </Grid>
             </controls:LauncherCard>
         </StackPanel>
     </ScrollViewer>

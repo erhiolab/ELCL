@@ -11,7 +11,8 @@
             <controls:LauncherCard
                 Header="{DynamicResource I18n.downloadSettings.sources}">
                 <StackPanel>
-                    <Grid>
+                    <Grid
+                        Style="{StaticResource FormSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -36,7 +37,7 @@
                         </ComboBox>
                     </Grid>
                     <Grid
-                        Margin="0,14,0,0">
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -60,14 +61,40 @@
                                 Content="{DynamicResource I18n.downloadSettings.preferMirror}" />
                         </ComboBox>
                     </Grid>
+                    <Grid
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="{DynamicResource LabelFontSize}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
+                            Text="{DynamicResource I18n.mods.communitySource}" />
+                        <ComboBox
+                            x:Name="CommunitySourceBox"
+                            ToolTip="{DynamicResource I18n.downloadSettings.fallbackDescription}"
+                            Grid.Column="1"
+                            Style="{StaticResource FormComboBoxStyle}"
+                            SelectionChanged="CommunityOption_Changed">
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.downloadSettings.preferOfficial}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.downloadSettings.preferMirror}" />
+                        </ComboBox>
+                    </Grid>
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard
-                Margin="0,14,0,0"
+                Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.downloadSettings.multithreadedDownload}">
                 <StackPanel>
                     <Grid
-                        Height="38">
+                        Style="{StaticResource FormSettingRowStyle}"
+                        MinHeight="38">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -115,12 +142,10 @@
                                 Text="8" />
                         </Grid>
                     </Grid>
-                    <Border
-                        Height="1"
-                        Margin="0,10"
-                        Background="{DynamicResource LineSoftBrush}" />
+
                     <Grid
-                        Height="38">
+                        Style="{StaticResource FormFollowingSettingRowStyle}"
+                        MinHeight="38">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition
                                 Width="155" />
@@ -145,6 +170,40 @@
                             Style="{StaticResource FormTextBoxStyle}"
                             LostFocus="DownloadValueBox_LostFocus"
                             KeyDown="DownloadValueBox_KeyDown" />
+                    </Grid>
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.mods.communitySettings}">
+                <StackPanel>
+                    <Grid
+                        Style="{StaticResource FormSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.mods.fileFormat}" />
+                        <ComboBox
+                            x:Name="ModFileNameBox"
+                            Grid.Column="1"
+                            Style="{StaticResource FormComboBoxStyle}"
+                            SelectionChanged="CommunityOption_Changed">
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.formatOriginal}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.formatChinese}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.formatSquare}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.formatPrefix}" />
+                            <ComboBoxItem
+                                Content="{DynamicResource I18n.mods.formatSuffix}" />
+                        </ComboBox>
                     </Grid>
                 </StackPanel>
             </controls:LauncherCard>

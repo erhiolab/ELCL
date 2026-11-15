@@ -39,6 +39,8 @@ public partial class AboutPage
             new CreditEntry("P", "PCL2", LocalizationManager.Get("about.layoutAndCodeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/Meloong-Git/PCL/", LoadAvatar("Pcl.png")),
             new CreditEntry("PL", "Prism Launcher", LocalizationManager.Get("about.codeReference"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/PrismLauncher/PrismLauncher", LoadAvatar("PrismLauncher.png")),
             new CreditEntry("H", "HMCL", LocalizationManager.Get("about.hmclDescription"), LocalizationManager.Get("about.projectHomepage"), "https://github.com/HMCL-dev/HMCL", LoadAvatar("Hmcl.png")),
+            new CreditEntry("00", "00ll00", LocalizationManager.Get("about.javaWrapperDescription"), LocalizationManager.Get("about.githubRepository"), "https://github.com/00ll00/java_launch_wrapper", LoadAvatar("00ll00.png")),
+            new CreditEntry("MC", LocalizationManager.Get("about.mcmodName"), LocalizationManager.Get("about.mcmodDescription"), LocalizationManager.Get("about.openEncyclopedia"), "https://www.mcmod.cn/", LoadAvatar("Mcmod.png")),
             new CreditEntry("BM", "BMCLAPI", LocalizationManager.Get("about.mirrorDescription"), LocalizationManager.Get("about.sponsorMirror"), "https://afdian.com/a/bangbang93", LoadAvatar("Bmclapi.jpg")),
             new CreditEntry("MC", "Minecraft Wiki", LocalizationManager.Get("about.wikiDescription"), LocalizationManager.Get("about.openWiki"), "https://zh.minecraft.wiki/", LoadAvatar("MinecraftWiki.png"))
         };

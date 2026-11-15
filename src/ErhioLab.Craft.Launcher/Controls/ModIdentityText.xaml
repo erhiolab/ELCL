@@ -1,0 +1,66 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Controls.ModIdentityText"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock
+            FontSize="{DynamicResource LabelFontSize}"
+            TextTrimming="CharacterEllipsis"
+            ToolTip="{Binding HeadingToolTip}">
+            <Run
+                Text="{Binding Name, Mode=OneWay}"
+                Foreground="{DynamicResource TextBrush}"
+                FontWeight="SemiBold" />
+            <Run
+                Text="{Binding OriginalNameLabel, Mode=OneWay}"
+                Foreground="{DynamicResource TextMutedBrush}"
+                FontSize="{DynamicResource SmallFontSize}" />
+            <Run
+                Text="{Binding VersionLabel, Mode=OneWay}"
+                Foreground="{DynamicResource TextMutedBrush}"
+                FontSize="{DynamicResource SmallFontSize}" />
+        </TextBlock>
+        <Grid
+            x:Name="SummaryLine"
+            Margin="0,3,0,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="Auto" />
+                <ColumnDefinition
+                    Width="*" />
+            </Grid.ColumnDefinitions>
+            <ItemsControl
+                ItemsSource="{Binding CategoryLabels}"
+                MaxWidth="190"
+                ClipToBounds="True">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel
+                            Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Background="{DynamicResource AccentMutedBrush}"
+                            CornerRadius="3"
+                            Padding="4,0"
+                            Margin="0,0,5,0">
+                            <TextBlock
+                                Text="{Binding}"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextMutedBrush}" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock
+                Grid.Column="1"
+                Text="{Binding Summary}"
+                FontSize="{DynamicResource SmallFontSize}"
+                Foreground="{DynamicResource TextMutedBrush}"
+                TextTrimming="CharacterEllipsis"
+                ToolTip="{Binding Summary}" />
+        </Grid>
+    </StackPanel>
+</UserControl>

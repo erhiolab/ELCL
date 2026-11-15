@@ -22,9 +22,11 @@ internal static class ShellRouteCatalog
         // 游戏与 Java 下载共用侧栏和缓动页面容器.
         SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.GameVersions, CanRefresh: true);
         SectionSidebarItem javaItem = new("javaDownload.title", LauncherIcons.Java, CanRefresh: true);
-        SectionSidebarView downloadSidebar = new(vanillaItem, javaItem);
+        SectionSidebarItem modsItem = new("mods.title", LauncherIcons.ModsAndResources, CanRefresh: true);
+        SectionSidebarView downloadSidebar = new(vanillaItem, modsItem, javaItem);
         VanillaVersionsPage versionList = new();
         JavaDownloadPage javaDownloads = new();
+        ModDownloadPage modDownloads = new();
         AnimatedPageHost downloadContent = new(versionList);
         versionList.VersionSelected += version =>
         {
@@ -32,10 +34,20 @@ internal static class ShellRouteCatalog
             details.BackRequested += () => downloadContent.Navigate(versionList, back: true);
             downloadContent.Navigate(details);
         };
-        downloadSidebar.SelectionChanged += item => downloadContent.Navigate(ReferenceEquals(item, javaItem) ? javaDownloads : versionList, back: !ReferenceEquals(item, javaItem));
+        void OpenModDetails(Mods.ModProjectRow row, Mods.ModBrowserContext context, FrameworkElement parent)
+        {
+            ModDetailsPage details = new(row, context);
+            details.BackRequested += () => downloadContent.Navigate(parent, back: true);
+            details.ProjectRequested += (dependency, selectedContext) => OpenModDetails(dependency, selectedContext, details);
+            downloadContent.Navigate(details);
+        }
+        modDownloads.ProjectSelected += (row, context) => OpenModDetails(row, context, modDownloads);
+        downloadSidebar.SelectionChanged += item => downloadContent.Navigate(ReferenceEquals(item, javaItem) ? javaDownloads
+            : ReferenceEquals(item, modsItem) ? modDownloads : versionList, back: ReferenceEquals(item, vanillaItem));
         downloadSidebar.ActionRequested += item =>
         {
             if (ReferenceEquals(item, javaItem)) javaDownloads.RefreshCatalogs();
+            else if (ReferenceEquals(item, modsItem)) modDownloads.Refresh();
             else versionList.RefreshVersions();
         };
 

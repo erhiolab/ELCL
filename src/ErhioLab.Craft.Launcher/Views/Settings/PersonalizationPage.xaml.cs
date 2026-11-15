@@ -8,7 +8,7 @@ using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>提供窗口外观/语言/内存单位和标题栏设置.</summary>
+/// <summary>提供窗口外观/语言/容量单位/标题栏和社区资源显示设置.</summary>
 public partial class PersonalizationPage
 {
     private static readonly MemoryUnitSystem[] MemoryUnitChoices = [MemoryUnitSystem.Binary, MemoryUnitSystem.Decimal];
@@ -50,6 +50,7 @@ public partial class PersonalizationPage
                 Theme = LauncherTheme.Day,
                 Language = LocalizationManager.DefaultLanguage,
                 MemoryUnit = MemoryUnitSystem.Binary,
+                ModListPresentation = ModListPresentation.NameFirst,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
                 TitleBarMode = TitleBarMode.Default,
@@ -75,6 +76,7 @@ public partial class PersonalizationPage
         AccentPicker.SetColor(App.Settings.AccentColor);
         LanguageComboBox.SelectedValue = App.Settings.Language;
         MemoryUnitBox.SelectedIndex = Array.IndexOf(MemoryUnitChoices, App.Settings.MemoryUnit);
+        ModPresentationBox.SelectedIndex = (int)App.Settings.ModListPresentation;
         NoTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.None;
         DefaultTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Default;
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
@@ -170,6 +172,19 @@ public partial class PersonalizationPage
         }
 
         App.Logger.Information("Settings", $"内存单位已保存: {unit}.");
+    }
+
+    private void ModPresentationBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || ModPresentationBox.SelectedIndex < 0) return;
+        var selected = (ModListPresentation)ModPresentationBox.SelectedIndex;
+        if (selected == App.Settings.ModListPresentation) return;
+        if (!App.UpdateSettings(App.Settings with { ModListPresentation = selected }))
+        {
+            RefreshControls();
+            return;
+        }
+        App.Logger.Information("Settings", $"模组列表样式已保存: {selected}.");
     }
 
     private void AccentPicker_ColorSelected(string color)

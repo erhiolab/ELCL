@@ -27,38 +27,26 @@
                 Value="Top" />
         </Style>
         <Style
-            x:Key="LogMessageTextStyle"
-            TargetType="TextBlock">
-            <Setter
-                Property="FontFamily"
-                Value="Consolas, Microsoft YaHei UI" />
-            <Setter
-                Property="FontSize"
-                Value="12" />
-            <Setter
-                Property="Foreground"
-                Value="{DynamicResource TextBrush}" />
-            <Setter
-                Property="TextWrapping"
-                Value="NoWrap" />
-            <Style.Triggers>
-                <DataTrigger
-                    Binding="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
-                    Value="True">
-                    <Setter
-                        Property="TextWrapping"
-                        Value="Wrap" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style
-            x:Key="LogLevelTextStyle"
+            x:Key="LogColorTextStyle"
             TargetType="TextBlock"
             BasedOn="{StaticResource LogMetadataTextStyle}">
             <Setter
                 Property="Foreground"
                 Value="{DynamicResource TextBrush}" />
             <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition
+                            Binding="{Binding Level}"
+                            Value="Info" />
+                        <Condition
+                            Binding="{Binding ColorOutput, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                            Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter
+                        Property="Foreground"
+                        Value="{DynamicResource AccentTextBrush}" />
+                </MultiDataTrigger>
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
                         <Condition
@@ -98,6 +86,36 @@
                         Property="Foreground"
                         Value="{DynamicResource TextMutedBrush}" />
                 </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style
+            x:Key="LogLevelTextStyle"
+            TargetType="TextBlock"
+            BasedOn="{StaticResource LogColorTextStyle}" />
+        <Style
+            x:Key="LogMessageTextStyle"
+            TargetType="TextBlock"
+            BasedOn="{StaticResource LogColorTextStyle}">
+            <Setter
+                Property="TextTrimming"
+                Value="None" />
+            <Setter
+                Property="FontFamily"
+                Value="Consolas, Microsoft YaHei UI" />
+            <Setter
+                Property="FontSize"
+                Value="12" />
+            <Setter
+                Property="TextWrapping"
+                Value="NoWrap" />
+            <Style.Triggers>
+                <DataTrigger
+                    Binding="{Binding WrapLines, RelativeSource={RelativeSource AncestorType=local:GameLogView}}"
+                    Value="True">
+                    <Setter
+                        Property="TextWrapping"
+                        Value="Wrap" />
+                </DataTrigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>

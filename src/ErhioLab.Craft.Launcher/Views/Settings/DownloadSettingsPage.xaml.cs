@@ -29,6 +29,8 @@ public partial class DownloadSettingsPage
             {
                 VersionListSource = VersionListSource.OfficialFirst,
                 FileDownloadSource = VersionListSource.OfficialFirst,
+                CommunityDownloadSource = VersionListSource.OfficialFirst,
+                ModFileNameFormat = ModFileNameFormat.Original,
                 DownloadMaxConnections = 8,
                 ZeroDownloadThreadsEggShown = false,
                 DownloadSpeedLimitMiBPerSecond = 0
@@ -48,10 +50,23 @@ public partial class DownloadSettingsPage
         ThreadCountSlider.Minimum = _zeroThreadEasterEggShown ? 1 : 0;
         VersionListSourceBox.SelectedIndex = App.Settings.VersionListSource == VersionListSource.MirrorFirst ? 1 : 0;
         FileDownloadSourceBox.SelectedIndex = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst ? 1 : 0;
+        CommunitySourceBox.SelectedIndex = (int)App.Settings.CommunityDownloadSource;
+        ModFileNameBox.SelectedIndex = (int)App.Settings.ModFileNameFormat;
         ThreadCountSlider.Value = App.Settings.DownloadMaxConnections;
         ThreadCountText.Text = App.Settings.DownloadMaxConnections.ToString(CultureInfo.InvariantCulture);
         SpeedLimitBox.Text = App.Settings.DownloadSpeedLimitMiBPerSecond.ToString("0.##", CultureInfo.InvariantCulture);
         _initializing = false;
+    }
+
+    private void CommunityOption_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || CommunitySourceBox.SelectedIndex < 0 || ModFileNameBox.SelectedIndex < 0) return;
+        if (!App.UpdateSettings(App.Settings with
+        {
+            CommunityDownloadSource = (VersionListSource)CommunitySourceBox.SelectedIndex,
+            ModFileNameFormat = (ModFileNameFormat)ModFileNameBox.SelectedIndex
+        })) RefreshControls();
+        else App.Logger.Information("Settings", "已保存社区资源来源与模组文件名格式.");
     }
 
     private void FileDownloadSourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

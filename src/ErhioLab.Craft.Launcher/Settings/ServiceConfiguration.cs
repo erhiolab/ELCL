@@ -1,9 +1,12 @@
 namespace ErhioLab.Craft.Launcher.Settings;
 
-/// <summary>随程序分发的公开客户端配置, 不包含服务端管理密钥.</summary>
+/// <summary>随程序分发的公开客户端配置.</summary>
 internal static class ServiceConfiguration
 {
     internal const string DefaultMicrosoftClientId = "f443b610-70eb-465d-a6af-86cca2a46b35";
+
+    internal const string DefaultCurseForgeApiKey = "$2a$10$ybWIMmysH4kxR2saHhoW0uMosEpKVG61ts0GTKKIr6puCz3QZaQui";
+    internal static string CurseForgeApiKey => Environment.GetEnvironmentVariable("ELCL_CURSEFORGE_API_KEY") is { } value && !string.IsNullOrWhiteSpace(value) ? value.Trim() : DefaultCurseForgeApiKey;
 
     internal const string PostHogProjectToken = "phc_wC3EwZtaxTY7W9cPzpX39WyHjTEh68xPyDeDsqhgTf9Y";
 

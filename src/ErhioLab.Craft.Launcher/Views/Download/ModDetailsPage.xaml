@@ -1,0 +1,299 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Download.ModDetailsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:mods="clr-namespace:ErhioLab.Craft.Launcher.Mods"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Download"
+    Foreground="{DynamicResource TextBrush}"
+    Background="{DynamicResource InkBrush}"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <UserControl.Resources>
+        <DataTemplate
+            DataType="{x:Type mods:ModFileGroup}">
+            <Border
+                Style="{StaticResource PanelCardStyle}"
+                Margin="{Binding HeaderMargin}"
+                CornerRadius="{Binding HeaderCorners}">
+                <ToggleButton
+                    IsChecked="{Binding IsExpanded, Mode=TwoWay}">
+                    <ToggleButton.Style>
+                        <Style
+                            TargetType="ToggleButton"
+                            BasedOn="{StaticResource CardExpanderHeaderStyle}">
+                            <Setter
+                                Property="Height"
+                                Value="52" />
+                            <Setter
+                                Property="Padding"
+                                Value="16,0" />
+                            <Setter
+                                Property="FontSize"
+                                Value="14" />
+                        </Style>
+                    </ToggleButton.Style>
+                    <Grid
+                        Margin="0,0,8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Text="{Binding Title}"
+                            TextTrimming="CharacterEllipsis"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{Binding CountText}"
+                            Margin="12,0,0,0"
+                            FontSize="{DynamicResource SmallFontSize}"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            VerticalAlignment="Center" />
+                    </Grid>
+                </ToggleButton>
+            </Border>
+        </DataTemplate>
+        <DataTemplate
+            DataType="{x:Type mods:ModSectionRow}">
+            <Border
+                Style="{StaticResource PanelCardStyle}"
+                CornerRadius="0"
+                BorderThickness="1,0,1,0"
+                Margin="0,0,6,0"
+                Height="34"
+                Padding="16,0">
+                <TextBlock
+                    Text="{Binding Text}"
+                    FontSize="{DynamicResource CaptionFontSize}"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextMutedBrush}" />
+            </Border>
+        </DataTemplate>
+        <DataTemplate
+            DataType="{x:Type mods:ModDependencyRow}">
+            <Border
+                Style="{StaticResource PanelCardStyle}"
+                CornerRadius="0"
+                BorderThickness="1,0,1,0"
+                Margin="0,0,6,0"
+                Padding="12,0"
+                Height="84"
+                Cursor="Hand"
+                MouseLeftButtonUp="Dependency_Click"
+                Loaded="TimelineRow_Loaded">
+                <Border
+                    Style="{StaticResource InsetListRowStyle}"
+                    Padding="12,0"
+                    Margin="0,0,0,6">
+                    <controls:ModProjectCard
+                        DataContext="{Binding Project}" />
+                </Border>
+            </Border>
+        </DataTemplate>
+        <DataTemplate
+            DataType="{x:Type mods:ModGroupFooter}">
+            <Border
+                Style="{StaticResource PanelCardStyle}"
+                CornerRadius="0,0,8,8"
+                BorderThickness="1,0,1,1"
+                Height="12"
+                Margin="0,0,6,10" />
+        </DataTemplate>
+        <DataTemplate
+            DataType="{x:Type local:ModFileRow}">
+            <Border
+                Style="{StaticResource PanelCardStyle}"
+                CornerRadius="0"
+                BorderThickness="1,0,1,0"
+                Margin="0,0,6,0"
+                Height="66"
+                Loaded="TimelineRow_Loaded">
+                <Border
+                    Style="{StaticResource InsetListRowStyle}"
+                    Margin="12,0,12,6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="36" />
+                            <ColumnDefinition
+                                Width="*" />
+                            <ColumnDefinition
+                                Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Path
+                            Width="22"
+                            Height="24"
+                            Data="{Binding ReleaseIcon}"
+                            ToolTip="{Binding ReleaseLabel}"
+                            Stroke="{DynamicResource AccentBrush}"
+                            StrokeThickness="1.5"
+                            Stretch="Uniform"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left" />
+                        <StackPanel
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Margin="0,0,12,0">
+                            <TextBlock
+                                Text="{Binding Name}"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip="{Binding Name}" />
+                            <TextBlock
+                                Text="{Binding Metadata}"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                FontSize="11"
+                                Margin="0,5,0,0"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip="{Binding Metadata}" />
+                        </StackPanel>
+                        <controls:IconButton
+                            Grid.Column="2"
+                            Icon="{x:Static icons:LauncherIcons.Download}"
+                            ToolTip="{Binding DownloadHint}"
+                            ToolTipService.ShowOnDisabled="True"
+                            Click="Download_Click"
+                            Tag="{Binding}"
+                            IsEnabled="{Binding CanDownload}" />
+                    </Grid>
+                </Border>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid
+        Margin="{StaticResource FormPageContentMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <Button
+                Content="{DynamicResource I18n.mods.back}"
+                HorizontalAlignment="Left"
+                Style="{StaticResource CompactActionButtonStyle}"
+                Click="Back_Click"
+                Margin="0,0,0,12" />
+            <Border
+                Padding="18,12"
+                Style="{StaticResource PanelCardStyle}">
+                <StackPanel>
+                    <controls:ModProjectCard
+                        x:Name="ProjectCard" />
+                    <TextBlock
+                        x:Name="DescriptionText"
+                        TextWrapping="Wrap"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Margin="0,4,0,12" />
+                    <WrapPanel>
+                        <Button
+                            Content="{DynamicResource I18n.mods.openSource}"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Click="Source_Click"
+                            Margin="0,0,8,0" />
+                        <Button
+                            x:Name="WikiButton"
+                            Content="{DynamicResource I18n.mods.openWiki}"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Click="Wiki_Click"
+                            ToolTip="{Binding WikiHint}"
+                            Margin="0,0,8,0" />
+                        <Button
+                            Content="{DynamicResource I18n.mods.copyName}"
+                            Style="{StaticResource CompactActionButtonStyle}"
+                            Click="Copy_Click" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <Grid
+            Grid.Row="1"
+            Margin="0,14,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="*" />
+                <ColumnDefinition
+                    Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <controls:AnimatedFilterPair
+                x:Name="LoaderPair"
+                Margin="0,0,12,0">
+                <StackPanel>
+                    <TextBlock
+                        Text="{DynamicResource I18n.mods.gameVersion}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource CaptionFontSize}"
+                        Margin="0,0,0,6" />
+                    <controls:GameVersionComboBox
+                        x:Name="GameVersionBox"
+                        SelectionChanged="Version_Changed"
+                        LostKeyboardFocus="Version_LostFocus"
+                        KeyDown="Version_KeyDown" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock
+                        Text="{DynamicResource I18n.mods.loader}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        FontSize="{DynamicResource CaptionFontSize}"
+                        Margin="0,0,0,6" />
+                    <ComboBox
+                        x:Name="LoaderBox"
+                        Style="{StaticResource FormComboBoxStyle}"
+                        SelectionChanged="Loader_Changed" />
+                </StackPanel>
+            </controls:AnimatedFilterPair>
+            <Button
+                Grid.Column="1"
+                VerticalAlignment="Bottom"
+                Height="34"
+                Content="{DynamicResource I18n.mods.refresh}"
+                Style="{StaticResource CompactActionButtonStyle}"
+                Click="Refresh_Click" />
+        </Grid>
+        <Grid
+            Grid.Row="2">
+            <ListBox
+                x:Name="FilesTimeline"
+                Background="Transparent"
+                BorderThickness="0"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                ScrollViewer.CanContentScroll="True"
+                VirtualizingPanel.IsVirtualizing="True"
+                VirtualizingPanel.VirtualizationMode="Recycling"
+                VirtualizingPanel.ScrollUnit="Pixel"
+                VirtualizingPanel.CacheLength="0.5">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style
+                        TargetType="ListBoxItem"
+                        BasedOn="{StaticResource PlainListBoxItemStyle}">
+                        <Setter
+                            Property="HorizontalContentAlignment"
+                            Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+            <TextBlock
+                x:Name="EmptyText"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextMutedBrush}"
+                TextWrapping="Wrap"
+                IsHitTestVisible="False" />
+        </Grid>
+    </Grid>
+</UserControl>
