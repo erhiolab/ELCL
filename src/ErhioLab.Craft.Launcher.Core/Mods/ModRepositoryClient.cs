@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Mods;
 
-/// <summary>社区模组查询与依赖计划; API Key、HTTP 客户端及来源偏好由调用方提供.</summary>
+/// <summary>社区 Mods 查询与依赖计划; API Key、HTTP 客户端及来源偏好由调用方提供.</summary>
 public sealed class ModRepositoryClient
 {
     private readonly HttpClient _http;
@@ -27,7 +27,7 @@ public sealed class ModRepositoryClient
         int required = checked((request.Page + 1) * request.PageSize + 1);
         var results = await Task.WhenAll(platforms.Select(QuerySource)).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        if (results.All(result => result.Error is not null)) throw new AggregateException("模组来源均不可用.", results.Select(result => result.Error!));
+        if (results.All(result => result.Error is not null)) throw new AggregateException("Mods 来源均不可用.", results.Select(result => result.Error!));
         var ranked = results.SelectMany(result => result.Projects.Select((project, rank) => (Project: project, Rank: rank)))
             .DistinctBy(item => (item.Project.Platform, item.Project.Id));
         // 相关性分数不跨平台比较, 按各来源名次交替合并, 保留来源内部顺序.
@@ -104,6 +104,18 @@ public sealed class ModRepositoryClient
         return platform == ModPlatform.Modrinth ? ReadModrinthProject(doc.RootElement, false) : ReadCurseForgeProject(doc.RootElement.GetProperty("data"));
     }
 
+    public async Task<ModFile> GetFileAsync(ModPlatform platform, string projectId, string fileId, CancellationToken cancellationToken = default)
+    {
+        ValidatePlatform(platform);
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
+        using var document = await RequestAsync(platform, platform == ModPlatform.Modrinth ? "/v2/version/" + Escape(fileId)
+            : "/v1/mods/" + Escape(projectId) + "/files/" + Escape(fileId), null, cancellationToken).ConfigureAwait(false);
+        var file = platform == ModPlatform.Modrinth ? ReadModrinthFile(document.RootElement) : ReadCurseForgeFile(document.RootElement.GetProperty("data"), true);
+        if (file.ProjectId != projectId || file.Id != fileId) throw new InvalidDataException("Mods 文件与请求的项目或文件标识不匹配.");
+        return file;
+    }
+
     public async Task<ModFilePage> GetFilesAsync(ModProject project, string? gameVersion = null, string? loader = null,
         int page = 0, int pageSize = 50, CancellationToken cancellationToken = default)
     {
@@ -163,7 +175,7 @@ public sealed class ModRepositoryClient
 
         if (first.HasMore && first.Files.Count < 50)
             first = await GetFilesAsync(project, gameVersion, loader, cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (first.HasMore && first.Files.Count == 0) throw new InvalidDataException("模组来源没有返回第一页文件.");
+        if (first.HasMore && first.Files.Count == 0) throw new InvalidDataException("Mods 来源没有返回第一页文件.");
         Add(first);
         for (int offset = Math.Max(1, first.Files.Count / 50); first.HasMore && offset < 200; offset += 4)
         {
@@ -173,7 +185,7 @@ public sealed class ModRepositoryClient
             int previousCount = result.Count;
             foreach (var page in pages) Add(page);
             if (pages.Any(page => !page.HasMore)) break;
-            if (result.Count == previousCount) throw new InvalidDataException("模组来源没有返回下一页文件.");
+            if (result.Count == previousCount) throw new InvalidDataException("Mods 来源没有返回下一页文件.");
         }
 
         return result.OrderByDescending(file => file.Published).ToArray();
@@ -214,7 +226,7 @@ public sealed class ModRepositoryClient
         return match.ValueKind == JsonValueKind.Object ? await GetProjectAsync(ModPlatform.CurseForge, match.GetProperty("id").ToString(), cancellationToken).ConfigureAwait(false) : null;
     }
 
-    /// <summary>查询给定前置模组的项目信息, 不递归解析或下载文件.</summary>
+    /// <summary>查询给定前置 Mods 的项目信息, 不递归解析或下载文件.</summary>
     public async Task<IReadOnlyList<ModProject>> GetDependenciesAsync(ModPlatform platform, IEnumerable<ModDependency> dependencies,
         CancellationToken cancellationToken = default)
     {
@@ -222,7 +234,7 @@ public sealed class ModRepositoryClient
         ArgumentNullException.ThrowIfNull(dependencies);
         cancellationToken.ThrowIfCancellationRequested();
         var entries = dependencies.DistinctBy(dependency => dependency.ProjectId is { Length: > 0 } id ? "project:" + id : "version:" + dependency.VersionId).Take(129).ToArray();
-        if (entries.Length > 128) throw new InvalidDataException("前置模组数量过多.");
+        if (entries.Length > 128) throw new InvalidDataException("前置 Mods 数量过多.");
         using var limit = new SemaphoreSlim(4);
         var lookups = new Task<ModProject>[entries.Length];
         for (var index = 0; index < entries.Length; index++)
@@ -243,7 +255,7 @@ public sealed class ModRepositoryClient
                 id = Text(document.RootElement, "project_id");
             }
 
-            if (string.IsNullOrWhiteSpace(id)) throw new InvalidDataException("前置模组缺少项目标识.");
+            if (string.IsNullOrWhiteSpace(id)) throw new InvalidDataException("前置 Mods 缺少项目标识.");
             return await GetProjectAsync(platform, id, cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -270,10 +282,10 @@ public sealed class ModRepositoryClient
                 return;
             }
 
-            if (visited.Count >= 128) throw new InvalidDataException("模组依赖数量过多.");
-            if (selected.Platform != current.Platform || selected.ProjectId != current.Id) throw new ArgumentException("所选文件不属于当前模组.", nameof(file));
+            if (visited.Count >= 128) throw new InvalidDataException("Mods 依赖数量过多.");
+            if (selected.Platform != current.Platform || selected.ProjectId != current.Id) throw new ArgumentException("所选文件不属于当前 Mods.", nameof(file));
             if (gameVersion is not null && !selected.GameVersions.Contains(gameVersion) || loader is not null && !selected.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase))
-                throw new InvalidDataException("所选模组与游戏版本或加载器不兼容: " + current.Name);
+                throw new InvalidDataException("所选 Mods 与游戏版本或加载器不兼容: " + current.Name);
             if (!current.CanDownload || selected.DownloadUri is null) throw new InvalidOperationException("作者限制了第三方下载, 请前往来源页面.");
             visited[(current.Platform, current.Id)] = selected.Id;
             foreach (var dependency in selected.RequiredDependencies)
@@ -339,14 +351,14 @@ public sealed class ModRepositoryClient
                 if (body is not null) request.Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json");
                 using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                if (response.Content.Headers.ContentLength > 32 * 1024 * 1024) throw new InvalidDataException("模组元数据过大.");
+                if (response.Content.Headers.ContentLength > 32 * 1024 * 1024) throw new InvalidDataException("Mods 元数据过大.");
                 await using var input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
                 using var output = new MemoryStream();
                 var buffer = new byte[65536];
                 int count;
                 while ((count = await input.ReadAsync(buffer, token).ConfigureAwait(false)) > 0)
                 {
-                    if (output.Length + count > 32 * 1024 * 1024) throw new InvalidDataException("模组元数据过大.");
+                    if (output.Length + count > 32 * 1024 * 1024) throw new InvalidDataException("Mods 元数据过大.");
                     output.Write(buffer, 0, count);
                 }
 
@@ -362,7 +374,7 @@ public sealed class ModRepositoryClient
             }
         }
 
-        throw failure ?? new HttpRequestException("模组来源不可用.");
+        throw failure ?? new HttpRequestException("Mods 来源不可用.");
     }
 
     private static void ValidatePlatform(ModPlatform platform)
@@ -411,7 +423,7 @@ public sealed class ModRepositoryClient
     {
         var files = row.GetProperty("files").EnumerateArray().OrderByDescending(file => file.TryGetProperty("primary", out var primary) && primary.GetBoolean()).ToArray();
         var binary = files.FirstOrDefault(file => Text(file, "filename").EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
-        if (binary.ValueKind != JsonValueKind.Object) throw new InvalidDataException("模组版本没有 JAR 文件.");
+        if (binary.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Mods 版本没有 JAR 文件.");
         var hashes = binary.GetProperty("hashes");
         var dependencies = row.TryGetProperty("dependencies", out var deps)
             ? deps.EnumerateArray().Where(dep => Text(dep, "dependency_type") == "required")

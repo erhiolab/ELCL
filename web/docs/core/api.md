@@ -57,7 +57,7 @@
 - [`MinecraftLauncherProfilesStore.UpsertProfilesAsync`](launcher-profiles.md#minecraftlauncherprofilesstore-upsertprofilesasync)
 - [`MinecraftLauncherProfilesStore.RemoveProfileAsync`](launcher-profiles.md#minecraftlauncherprofilesstore-removeprofileasync)
 
-## 安装模组加载器
+## 安装加载器
 
 [阅读本篇](loader-installation.md)
 
@@ -67,7 +67,7 @@
 - [`MinecraftLoaderInstaller.RunProcessorsAsync`](loader-installation.md#minecraftloaderinstaller-runprocessorsasync)
 - [`MinecraftLoaderInstaller.WriteVersionAsync`](loader-installation.md#minecraftloaderinstaller-writeversionasync)
 
-## 模组加载器版本
+## 加载器版本
 
 [阅读本篇](loaders.md)
 
@@ -164,13 +164,14 @@
 - [`MinecraftWikiClient.GetPageUrlAsync`](wiki.md#minecraftwikiclient-getpageurlasync)
 - [`MinecraftWikiClient.GetPageUrl`](wiki.md#minecraftwikiclient-getpageurl)
 
-## 社区模组
+## 社区 Mods
 
 [阅读本篇](mods.md)
 
 - [`ModRepositoryClient.SearchAsync`](mods.md#modrepositoryclient-searchasync)
 - [`ModSearchRequest.SortOrder` 与 `ModSortOrder`](mods.md#modrepositoryclient-searchasync)
 - [`ModRepositoryClient.GetProjectAsync`](mods.md#modrepositoryclient-getprojectasync)
+- [`ModRepositoryClient.GetFileAsync`](mods.md#modrepositoryclient-getfileasync)
 - [`ModRepositoryClient.GetFilesAsync`](mods.md#modrepositoryclient-getfilesasync)
 - [`ModRepositoryClient.GetAllFilesAsync`](mods.md#modrepositoryclient-getallfilesasync)
 - [`ModRepositoryClient.IdentifyAsync`](mods.md#modrepositoryclient-identifyasync)
@@ -184,3 +185,12 @@
 - [`LocalModManager.InstallAsync`](mods.md#localmodmanager-installasync)
 - [`LocalModManager.SetEnabled`](mods.md#localmodmanager-setenabled)
 - [`LocalModManager.Delete`](mods.md#localmodmanager-delete)
+
+## 整合包
+
+[阅读本篇](modpacks.md)
+
+- [`ModpackArchive.ReadAsync`](modpacks.md#modpackarchive-readasync)
+- [`ModpackArchive.ResolveDownloadsAsync`](modpacks.md#modpackarchive-resolvedownloadsasync)
+- [`ModpackArchive.VerifyDownloadsAsync`](modpacks.md#modpackarchive-verifydownloadsasync)
+- [`ModpackArchive.ExtractOverridesAsync`](modpacks.md#modpackarchive-extractoverridesasync)

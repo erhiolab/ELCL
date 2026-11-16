@@ -81,6 +81,7 @@ public partial class MainWindow
         };
         App.Tasks.Tasks.CollectionChanged += (_, _) => OnTasksChanged();
         LaunchNavigation.IsChecked = true;
+        InitializeModpackImport();
     }
 
     /// <summary>在透明窗口的内容层应用不透明度, 使桌面真正透出.</summary>
@@ -237,6 +238,7 @@ public partial class MainWindow
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
+        UpdateTaskManagerButton();
         App.Logger.Information("Navigation", $"打开{name}.");
     }
 
@@ -255,6 +257,7 @@ public partial class MainWindow
 
         // 退场期间不再响应页面点击, 重复关闭也不能重启动画.
         page.IsHitTestVisible = false;
+        UpdateTaskManagerButton();
         int version = ++_secondaryPageTransitionVersion;
         title.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(170)));
         DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(190))
@@ -303,8 +306,10 @@ public partial class MainWindow
     private void UpdateTaskManagerButton()
     {
         bool versionSettings = VersionSettingsPage.Visibility == Visibility.Visible;
+        bool secondaryClosing = versionSettings ? !VersionSettingsPage.IsHitTestVisible
+            : VersionSelectionPage.Visibility == Visibility.Visible && !VersionSelectionPage.IsHitTestVisible;
         TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible
-            || !versionSettings && (VersionSelectionPage.Visibility == Visibility.Visible || AccountManagementPage.Visibility == Visibility.Visible)
+            || secondaryClosing || !versionSettings && AccountManagementPage.Visibility == Visibility.Visible
             || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -323,6 +328,7 @@ public partial class MainWindow
         TaskManagerButton.Visibility = Visibility.Collapsed;
         TitleBarLabel.Visibility = Visibility.Collapsed;
         TopNavigationHost.Visibility = Visibility.Collapsed;
+        VersionSelectionTitle.Visibility = Visibility.Collapsed;
         VersionSettingsTitle.Visibility = Visibility.Collapsed;
         TaskTitle.Visibility = Visibility.Visible;
         TaskManagerPage.Visibility = Visibility.Visible;
@@ -354,20 +360,19 @@ public partial class MainWindow
         }
 
         _taskManagerClosing = true;
-        TaskTitle.Visibility = Visibility.Collapsed;
-        TitleBarLabel.Visibility = Visibility.Visible;
-        TopNavigationHost.Visibility = Visibility.Visible;
-        if (VersionSettingsPage.Visibility == Visibility.Visible)
-        {
-            TitleBarLabel.Visibility = TopNavigationHost.Visibility = Visibility.Collapsed;
-            VersionSettingsTitle.Visibility = Visibility.Visible;
-        }
         DoubleAnimation fade = new(1, 0, TimeSpan.FromMilliseconds(170));
         fade.Completed += (_, _) =>
         {
             TaskManagerPage.BeginAnimation(OpacityProperty, null);
             TaskManagerPage.Visibility = Visibility.Collapsed;
             TaskManagerPage.Opacity = 1;
+            TaskTitle.Visibility = Visibility.Collapsed;
+            if (VersionSettingsPage.Visibility == Visibility.Visible)
+                VersionSettingsTitle.Visibility = Visibility.Visible;
+            else if (VersionSelectionPage.Visibility == Visibility.Visible)
+                VersionSelectionTitle.Visibility = Visibility.Visible;
+            else
+                TitleBarLabel.Visibility = TopNavigationHost.Visibility = Visibility.Visible;
             _taskManagerClosing = false;
             UpdateTaskManagerButton();
         };
@@ -377,7 +382,7 @@ public partial class MainWindow
 
     /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
     internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,
-        bool requiresConfirmation, string confirmText)
+        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null, Action<string>? inputConfirmed = null)
     {
         await _dialogGate.WaitAsync();
         try
@@ -389,12 +394,14 @@ public partial class MainWindow
             Closed += OnDialogWindowClosed;
             try
             {
-                DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText);
+                DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText, inputText, inputValidator);
                 TopNavigationHost.IsHitTestVisible = false;
                 WindowControls.IsHitTestVisible = false;
                 DialogOverlay.Visibility = Visibility.Visible;
                 DialogOverlay.Open();
-                return await completion.Task;
+                bool confirmed = await completion.Task;
+                if (confirmed) inputConfirmed?.Invoke(DialogOverlay.InputValue);
+                return confirmed;
             }
             finally
             {
@@ -424,6 +431,7 @@ public partial class MainWindow
 
         SidebarHost.Content = route.Sidebar;
         PageHost.Content = route.Page;
+        UpdateModpackDropTarget();
         _selectedNavigationButton = button;
         App.Logger.Information("Navigation", $"打开主页面: {section}");
 

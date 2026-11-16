@@ -56,7 +56,7 @@ var java = (await JavaDiscovery.FindAsync(cancellationToken: cancellationToken))
 
 默认要求主版本一致；Java 16 要求接受 17，要求为 21 及以上时接受不低于它的版本。元数据缺少要求时按游戏版本推断。
 
-这是核心兼容规则，不是任意旧模组对新版 Java 的兼容保证。还应使用 `ProbeAsync` 确认运行时可以执行。
+这是核心兼容规则，不是任意旧 Mods 对新版 Java 的兼容保证。还应使用 `ProbeAsync` 确认运行时可以执行。
 
 ## `MinecraftLaunchFiles.Plan` {#minecraftlaunchfiles-plan}
 

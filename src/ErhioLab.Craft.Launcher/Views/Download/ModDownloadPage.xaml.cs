@@ -158,7 +158,7 @@ public partial class ModDownloadPage
         string query = QueryBox.Text.Trim();
         ModPlatform platform = (ModPlatform)Math.Max(0, SourcesBox.SelectedIndex);
         ModSortOrder sort = SortBox.SelectedIndex == 1 ? ModSortOrder.Downloads : ModSortOrder.Relevance;
-        App.Logger.Information("Mods", $"查询模组: 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
+        App.Logger.Information("Mods", $"查询 Mods: 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
         try
         {
             if (CommunityMods.IsTranslationEnabled && query.Any(character => character is >= '\u4e00' and <= '\u9fff'))
@@ -170,7 +170,7 @@ public partial class ModDownloadPage
 
             var result = await CommunityMods.Client().SearchAsync(new ModSearchRequest(query, platform, version, loader, category, _page, SortOrder: sort), cancellation.Token);
             if (!ReferenceEquals(_search, cancellation)) return;
-            foreach (var failure in result.SourceErrors) App.Logger.Error("Mods", $"模组来源暂不可用: {failure.Key}.", failure.Value);
+            foreach (var failure in result.SourceErrors) App.Logger.Error("Mods", $"Mods 来源暂不可用: {failure.Key}.", failure.Value);
             var rows = result.Projects.Select(project => new ModProjectRow(project)).ToArray();
             ResultsList.ItemsSource = rows;
             EmptyText.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -181,7 +181,7 @@ public partial class ModDownloadPage
             PreviousButton.IsEnabled = _page > 0;
             NextButton.IsEnabled = result.HasMore && _page < 499;
             foreach (var row in rows) _ = row.EnrichAsync();
-            App.Logger.Information("Mods", $"模组查询完成: 条目={rows.Length}, 总数={result.Total}.");
+            App.Logger.Information("Mods", $"Mods 查询完成: 条目={rows.Length}, 总数={result.Total}.");
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -190,7 +190,7 @@ public partial class ModDownloadPage
         {
             if (!ReferenceEquals(_search, cancellation)) return;
             EmptyText.Text = CommunityMods.L("searchFailed");
-            App.Logger.Error("Mods", "模组查询失败.", error);
+            App.Logger.Error("Mods", "Mods 查询失败.", error);
             LauncherToasts.Error(CommunityMods.L("searchFailed"));
         }
         finally

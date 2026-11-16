@@ -13,6 +13,7 @@
     <ProjectReference Include="../ErhioLab.Craft.Launcher.Core/ErhioLab.Craft.Launcher.Core.csproj" />
     <EmbeddedResource Include="Languages/**/*.json" />
     <EmbeddedResource Include="Assets/Launch/*.jar" />
+    <EmbeddedResource Include="Assets/ThirdParty/*.txt" />
     <Content Include="Assets/Launch/*.LICENSE" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
@@ -26,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="4.156.0" />
+    <PackageReference Include="PhotoSauce.NativeCodecs.Libwebp" Version="1.6.0-preview1" />
   </ItemGroup>
 </Project>
 

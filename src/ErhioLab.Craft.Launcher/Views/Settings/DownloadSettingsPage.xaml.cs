@@ -68,7 +68,7 @@ public partial class DownloadSettingsPage
             ModFileNameFormat = ModLocalization.IsEnabled(App.Settings)
                 ? (ModFileNameFormat)ModFileNameBox.SelectedIndex : App.Settings.ModFileNameFormat
         })) RefreshControls();
-        else App.Logger.Information("Settings", "已保存社区资源来源与模组文件名格式.");
+        else App.Logger.Information("Settings", "已保存社区资源来源与 Mods 文件名格式.");
     }
 
     private void DownloadSettingsPage_Loaded(object sender, RoutedEventArgs e) => RefreshControls();

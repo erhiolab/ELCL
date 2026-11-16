@@ -12,6 +12,8 @@ public partial class LauncherDialogView
 {
     private bool _closing;
     private bool _requiresConfirmation;
+    private Func<string, string?>? _inputValidator;
+    internal string InputValue => InputBox.Text.Trim();
 
     /// <summary>用户关闭弹窗后传回是否确认.</summary>
     internal event Action<bool>? Completed;
@@ -24,14 +26,18 @@ public partial class LauncherDialogView
 
     /// <summary>填充本次提示的文字/按钮和等级颜色.</summary>
     internal void Configure(string title, string message, LauncherDialogLevel level,
-        bool requiresConfirmation, string confirmText)
+        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null)
     {
         _closing = false;
         _requiresConfirmation = requiresConfirmation;
+        _inputValidator = inputValidator;
+        InputPanel.Visibility = inputText is null ? Visibility.Collapsed : Visibility.Visible;
+        InputBox.Text = inputText ?? "";
+        ValidateInput();
         DialogTitle.Text = title;
         DialogMessage.Text = message;
         ConfirmButton.Content = confirmText;
-        ConfirmButton.IsDefault = !requiresConfirmation;
+        ConfirmButton.IsDefault = inputText is not null || !requiresConfirmation;
         CancelButton.Visibility = requiresConfirmation ? Visibility.Visible : Visibility.Collapsed;
 
         bool day = App.Settings.Theme == LauncherTheme.Day;
@@ -93,7 +99,12 @@ public partial class LauncherDialogView
 
         Dispatcher.BeginInvoke(() =>
         {
-            if (_requiresConfirmation)
+            if (InputPanel.Visibility == Visibility.Visible)
+            {
+                InputBox.Focus();
+                InputBox.SelectAll();
+            }
+            else if (_requiresConfirmation)
             {
                 CancelButton.Focus();
             }
@@ -106,7 +117,7 @@ public partial class LauncherDialogView
 
     private void Close(bool confirmed)
     {
-        if (_closing)
+        if (_closing || confirmed && !ConfirmButton.IsEnabled)
         {
             return;
         }
@@ -143,6 +154,19 @@ public partial class LauncherDialogView
     };
 
     private void ConfirmButton_Click(object sender, RoutedEventArgs e) => Close(true);
+
+    private void InputBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (InputError is not null) ValidateInput();
+    }
+
+    private void ValidateInput()
+    {
+        string? error = InputPanel.Visibility == Visibility.Visible ? _inputValidator?.Invoke(InputValue) : null;
+        InputError.Text = error ?? "";
+        InputError.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
+        ConfirmButton.IsEnabled = error is null;
+    }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e) => Close(false);
 

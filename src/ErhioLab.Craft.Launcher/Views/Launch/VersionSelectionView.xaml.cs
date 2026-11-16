@@ -31,6 +31,8 @@ public partial class VersionSelectionView
     /// <summary>用户选择版本后通知主窗口返回启动页.</summary>
     internal event Action<LocalMinecraftVersion>? VersionChosen;
     internal event Action<LocalMinecraftVersion>? VersionSettingsRequested;
+    internal event Action? ImportModpackRequested;
+    private void ImportModpack_Click(object sender, RoutedEventArgs e) => ImportModpackRequested?.Invoke();
 
     internal Task ReloadAsync()
     {

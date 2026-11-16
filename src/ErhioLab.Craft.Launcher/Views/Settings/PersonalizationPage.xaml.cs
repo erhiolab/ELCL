@@ -180,13 +180,13 @@ public partial class PersonalizationPage
         if (_initializing || !ModLocalization.SupportsLanguage(App.Settings.Language)) return;
         bool enabled = ModTranslationBox.IsChecked == true;
         if (enabled == App.Settings.ModTranslationEnabled) return;
-        App.Logger.Information("Settings", $"开始设置模组汉化: {enabled}.");
+        App.Logger.Information("Settings", $"开始设置 Mods 汉化: {enabled}.");
         if (!App.UpdateSettings(App.Settings with { ModTranslationEnabled = enabled }))
         {
             RefreshControls();
             return;
         }
-        App.Logger.Information("Settings", $"模组汉化偏好已保存: {enabled}.");
+        App.Logger.Information("Settings", $"Mods 汉化偏好已保存: {enabled}.");
     }
 
     private void MemoryUnitBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -214,7 +214,7 @@ public partial class PersonalizationPage
             RefreshControls();
             return;
         }
-        App.Logger.Information("Settings", $"模组列表样式已保存: {selected}.");
+        App.Logger.Information("Settings", $"Mods 列表样式已保存: {selected}.");
     }
 
     private void AccentPicker_ColorSelected(string color)

@@ -25,7 +25,7 @@ foreach (string reference in references)
     Console.WriteLine(reference);
 ```
 
-它不分析模组、存档或用户脚本中的引用。列表非空时，重命名和删除会拒绝执行。
+它不分析 Mods、存档或用户脚本中的引用。列表非空时，重命名和删除会拒绝执行。
 
 ## `MinecraftVersionDirectory.RenameAsync` {#minecraftversiondirectory-renameasync}
 
@@ -49,7 +49,7 @@ Console.WriteLine(renamed.FolderPath);
 MinecraftVersionDirectory.Delete(gameDirectory, renamed.FolderPath);
 ```
 
-删除整个目标版本目录，包括其中的存档、模组与配置，不删除根目录的 `libraries`、`assets` 或其他版本。
+删除整个目标版本目录，包括其中的存档、Mods 与配置，不删除根目录的 `libraries`、`assets` 或其他版本。
 
 目标必须是 `versions` 的直接子目录。越界、不存在、链接目录或仍被引用的目录会被拒绝，权限与占用问题也会抛出异常。
 

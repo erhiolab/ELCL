@@ -1,8 +1,8 @@
-# 社区模组
+# 社区 Mods
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Mods`。
 
-`ModRepositoryClient` 查询 CurseForge 与 Modrinth，返回项目、文件和必需依赖计划。`LocalModManager` 读取本地模组并处理文件操作；`McModTranslationClient` 查询 MC 百科译名。
+`ModRepositoryClient` 查询 CurseForge 与 Modrinth，返回项目、文件和必需依赖计划。`LocalModManager` 读取本地 Mods 并处理文件操作；`McModTranslationClient` 查询 MC 百科译名。
 
 核心不保存 API Key，不选择安装目录，也不创建启动器任务。你提供 `HttpClient`、密钥与路径，再决定怎样展示和下载。
 
@@ -22,7 +22,7 @@ var client = new ModRepositoryClient(http, key, CommunitySource.OfficialFirst);
 
 ## ModRepositoryClient.SearchAsync
 
-按名称、游戏版本、加载器和类型搜索，可选择相关性或下载量排序。返回 `ModSearchResult`；这个方法只请求元数据，不下载模组文件。
+按名称、游戏版本、加载器和类型搜索，可选择相关性或下载量排序。返回 `ModSearchResult`；这个方法只请求元数据，不下载 Mods 文件。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -82,6 +82,24 @@ Console.WriteLine(project.Website);
 
 项目不存在时抛出状态为 404 的 `HttpRequestException`；不会创建本地文件。
 
+## ModRepositoryClient.GetFileAsync
+
+按项目 ID 与文件 ID 读取一个确切文件，适合处理 CurseForge 整合包中固定的文件引用。不会下载文件内容。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Mods;
+
+using var http = new HttpClient();
+var client = new ModRepositoryClient(http,
+    Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY"));
+ModFile file = await client.GetFileAsync(ModPlatform.CurseForge, "238222", "5877199");
+Console.WriteLine(file.FileName);
+```
+
+`platform` 必须是 `CurseForge` 或 `Modrinth`，不能使用 `All`；`projectId`、`fileId` 均必填，使用平台提供的准确 ID，`cancellationToken` 可取消请求。返回 `ModFile`，包含文件名、下载地址、校验信息、适用版本与声明的前置。
+
+此方法检查返回文件的项目与文件 ID 是否匹配，不匹配时抛出 `InvalidDataException`；空 ID 或不支持的平台值会抛出参数异常。CurseForge 官方查询需要调用方提供 API Key。网络、解析与取消异常保持原义。没有下载地址时，调用方应保留不可下载状态，不能假设能从其他地址取得文件。
+
 ## ModRepositoryClient.GetFilesAsync
 
 读取项目的可下载版本。可以按游戏版本与加载器筛选，返回 `ModFilePage`。
@@ -124,7 +142,7 @@ foreach (var file in files) Console.WriteLine(file.Name);
 
 返回值按发布时间从新到旧排列。Modrinth 一次取得匹配的版本，省略更新日志正文，不反复请求整份列表；CurseForge 优先在一次请求中获取最多 10000 个文件的元数据；来源只返回部分结果或不支持大页时，再自动翻页补齐，每批最多四个并行请求，并去除重复文件 ID。受上游限制，最多取得前 10000 个文件。没有匹配项时返回空列表。
 
-方法不下载模组、不修改磁盘。主动取消抛出 `OperationCanceledException`；任一请求失败会抛出对应异常，调用方不能把这次读取当成完整结果。参数为空或平台无效时抛出参数异常，其余网络及解析异常与 `GetFilesAsync` 一致。
+方法不下载 Mods、不修改磁盘。主动取消抛出 `OperationCanceledException`；任一请求失败会抛出对应异常，调用方不能把这次读取当成完整结果。参数为空或平台无效时抛出参数异常，其余网络及解析异常与 `GetFilesAsync` 一致。
 
 ## ModRepositoryClient.IdentifyAsync
 
@@ -147,7 +165,7 @@ Console.WriteLine(project?.Website.ToString() ?? "没有找到来源");
 
 ## ModRepositoryClient.GetDependenciesAsync
 
-查询给定依赖记录对应的模组项目，返回去重后按下载量降序排列的 `IReadOnlyList<ModProject>`。适合展示前置模组名称、图标与详情入口。
+查询给定依赖记录对应的 Mods 项目，返回去重后按下载量降序排列的 `IReadOnlyList<ModProject>`。适合展示前置 Mods 名称、图标与详情入口。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -172,7 +190,7 @@ if (files.Files.FirstOrDefault() is { } file)
 
 ## ModRepositoryClient.CreateDownloadPlanAsync
 
-为一个明确选择的文件递归解析必需依赖，返回按依赖在前、主模组在后排列的 `IReadOnlyList<ModDownloadItem>`。
+为一个明确选择的文件递归解析必需依赖，返回按依赖在前、主 Mods 在后排列的 `IReadOnlyList<ModDownloadItem>`。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -191,7 +209,7 @@ foreach (var item in plan)
 
 可选依赖不会加入计划，也不会检查你的磁盘。循环依赖不会无限递归；同一项目要求冲突版本、缺少兼容依赖或超过 128 个项目时抛出 `InvalidDataException`。文件不属于项目时抛出 `ArgumentException`；禁止第三方下载或没有文件地址时抛出 `InvalidOperationException`。
 
-这个方法只查询元数据，不下载、不安装、不替换已有模组。调用方负责识别已安装的相同文件、处理版本冲突，再将计划交给[下载器](downloader.md)。
+这个方法只查询元数据，不下载、不安装、不替换已有 Mods。调用方负责识别已安装的相同文件、处理版本冲突，再将计划交给[下载器](downloader.md)。
 
 ## ModRepositoryClient.DownloadSources
 
@@ -235,7 +253,7 @@ Console.WriteLine(entry?.ChineseName ?? "Sodium");
 
 有平台 slug 时优先精确匹配平台身份；没有平台身份时才按明确的中文名、英文名或 slug 查找。索引命中不会发送 HTTP 请求。少数映射只有词条地址、没有中文名，`ChineseName` 为空时应保留项目原名，仍可使用 `Website`。
 
-索引未命中时，最多检查四个搜索候选，只读取词条主要来源链接并解码百科的跳转地址，避免把正文中提及的其他模组当成本项目。只有能核实名称或来源时返回 `McModTranslation`，否则返回 `null`。
+索引未命中时，最多检查四个搜索候选，只读取词条主要来源链接并解码百科的跳转地址，避免把正文中提及的其他 Mods 当成本项目。只有能核实名称或来源时返回 `McModTranslation`，否则返回 `null`。
 
 网页搜索请求会串行调度并至少间隔两秒；百科明确返回搜索限流提示时抛出状态为 429 的 `HttpRequestException`，不会把限流误认成“没有收录”。网络错误仍抛异常，页面结构变化也可能导致没有结果。调用方应缓存成功结果，对未找到的结果使用较短有效期，不长期缓存网络失败，并在查询失败时保留原名。
 
@@ -243,7 +261,7 @@ Console.WriteLine(entry?.ChineseName ?? "Sodium");
 
 ## LocalModManager.EnumerateFiles
 
-只列出目录里的模组文件，返回按文件名排序的完整路径列表 `IReadOnlyList<string>`。适合先显示文件列表，再逐个调用 `ReadAsync` 补充详情。
+只列出目录里的 Mods 文件，返回按文件名排序的完整路径列表 `IReadOnlyList<string>`。适合先显示文件列表，再逐个调用 `ReadAsync` 补充详情。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -275,7 +293,7 @@ foreach (string path in paths)
 
 ## LocalModManager.ScanAsync
 
-扫描指定目录的直接模组文件，返回 `IReadOnlyList<LocalModInfo>`。不递归子目录；目录不存在时返回空列表，不创建目录。
+扫描指定目录的直接 Mods 文件，返回 `IReadOnlyList<LocalModInfo>`。不递归子目录；目录不存在时返回空列表，不创建目录。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -301,9 +319,9 @@ LocalModInfo mod = await Task.Run(() =>
 Console.WriteLine($"{mod.Name} {mod.Version}，{mod.Sha1}");
 ```
 
-NeoForge 图标支持 `iconFile`，并兼容 Forge 的 `logoFile`。没有常规模组名称时，使用 Manifest 主段中的 `Specification-Title`；版本缺失或仍为模板占位符时，使用 `Implementation-Version`，其次为 `Specification-Version`。不把构建任务名 `Implementation-Title` 作为模组名。
+NeoForge 图标支持 `iconFile`，并兼容 Forge 的 `logoFile`。没有常规 Mods 名称时，使用 Manifest 主段中的 `Specification-Title`；版本缺失或仍为模板占位符时，使用 `Implementation-Version`，其次为 `Specification-Version`。不把构建任务名 `Implementation-Title` 作为 Mods 名。
 
-`path` 是完整模组路径，不会被修改。与扫描不同，单文件读取失败会抛出异常，不会转换成带 `Error` 的结果。
+`path` 是完整 Mods 路径，不会被修改。与扫描不同，单文件读取失败会抛出异常，不会转换成带 `Error` 的结果。
 
 文件最大 512 MiB，ZIP 最多 100000 个条目，单份元数据和图标最多 2 MiB。超过限制或损坏时抛出 `InvalidDataException`；JSON 不合法时可能抛出 `JsonException`。图标是未解码的原始字节，调用方仍需限制图片尺寸并处理不支持的格式。
 
@@ -311,7 +329,7 @@ NeoForge 图标支持 `iconFile`，并兼容 Forge 的 `logoFile`。没有常规
 
 ## LocalModManager.InstallAsync
 
-把一组本地模组复制到指定目录，返回新文件的完整路径列表。
+把一组本地 Mods 复制到指定目录，返回新文件的完整路径列表。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -322,15 +340,15 @@ IReadOnlyList<string> installed = await LocalModManager.InstallAsync(
 foreach (var path in installed) Console.WriteLine(path);
 ```
 
-`directory` 是目标模组目录；不存在时会创建。`sourceFiles` 是源文件路径列表，支持与扫描相同的扩展名，不会删除源文件。
+`directory` 是目标 Mods 目录；不存在时会创建。`sourceFiles` 是源文件路径列表，支持与扫描相同的扩展名，不会删除源文件。
 
 先检查整批文件名和目标冲突，再复制到目标目录内的临时子目录，最后发布。遇到同名或对应的禁用文件时抛出 `IOException`，不会覆盖。安装失败或取消会尝试撤回本次发布的文件并清理临时目录，不移除原有文件；磁盘或权限故障也可能让清理失败，应保留异常供用户排查。
 
-这里只复制文件，不判断模组间兼容性，不解析远端依赖，也不保证选中的归档可运行。不支持的扩展名抛出 `InvalidDataException`。目标为链接目录时拒绝修改。
+这里只复制文件，不判断 Mods 间兼容性，不解析远端依赖，也不保证选中的归档可运行。不支持的扩展名抛出 `InvalidDataException`。目标为链接目录时拒绝修改。
 
 ## LocalModManager.SetEnabled
 
-通过重命名扩展名启用或禁用一个模组，返回操作后的完整路径。
+通过重命名扩展名启用或禁用一个 Mods，返回操作后的完整路径。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -341,13 +359,13 @@ string enabled = LocalModManager.SetEnabled(@"D:\Minecraft\mods", disabled, enab
 Console.WriteLine(enabled);
 ```
 
-`directory` 是所属目录，`path` 必须是它的直接模组文件。禁用时添加 `.disabled`；启用时移除 `.disabled` 或 `.disable`。已经处于所需状态时返回原路径。
+`directory` 是所属目录，`path` 必须是它的直接 Mods 文件。禁用时添加 `.disabled`；启用时移除 `.disabled` 或 `.disable`。已经处于所需状态时返回原路径。
 
 文件不存在抛出 `FileNotFoundException`；目标已存在、文件占用或权限不足会抛出 I/O 或权限异常。不会覆盖另一文件，不会结束正在运行的游戏。
 
 ## LocalModManager.Delete
 
-永久删除指定目录中的一个模组文件，没有返回值。
+永久删除指定目录中的一个 Mods 文件，没有返回值。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -356,7 +374,7 @@ using ErhioLab.Craft.Launcher.Core.Mods;
 LocalModManager.Delete(@"D:\Minecraft\mods", @"D:\Minecraft\mods\example.jar.disabled");
 ```
 
-`path` 必须是 `directory` 的直接模组文件，否则抛出 `ArgumentException`。不进入子目录，不删除整个模组目录，不移入回收站。不存在的文件不报错；文件占用或权限问题会抛出异常。确认与批量操作提示由调用方负责。
+`path` 必须是 `directory` 的直接 Mods 文件，否则抛出 `ArgumentException`。不进入子目录，不删除整个 Mods 目录，不移入回收站。不存在的文件不报错；文件占用或权限问题会抛出异常。确认与批量操作提示由调用方负责。
 
 ## 返回类型
 
@@ -365,7 +383,7 @@ LocalModManager.Delete(@"D:\Minecraft\mods", @"D:\Minecraft\mods\example.jar.dis
 | `ModProject` | 平台、项目 ID、slug、名称、简介、来源网页、图标 URL、下载量、时间、已知版本、加载器、分类及第三方下载许可。 |
 | `ModFile` | 平台、项目与文件 ID、显示名、实际文件名、下载 URL、大小、SHA-1／SHA-512、发布时间、发布类型、游戏版本、加载器和必需依赖。 |
 | `ModDownloadItem` | 依赖计划中的项目与明确文件。 |
-| `LocalModInfo` | 路径、文件名、名称、版本、描述、模组 ID、加载器、启用状态、指纹、图标及解析错误。 |
+| `LocalModInfo` | 路径、文件名、名称、版本、描述、Mods ID、加载器、启用状态、指纹、图标及解析错误。 |
 | `McModTranslation` | 已核实的中英文名称、百科词条 URL，以及能读到的两个平台 slug。 |
 
 `ModFile.ReleaseType` 为 `release`、`beta` 或 `alpha`。上游没有提供的信息可能为空，不应根据文件名猜造发布日期或项目身份。

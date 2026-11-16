@@ -160,8 +160,8 @@ public static class LauncherIcons
         _ => VersionAprilFools
     };
 
-    /// <summary>Mod 和资源图标.</summary>
-    public static readonly Geometry ModsAndResources = Parse("M 7,2 L 11,2 L 11,6 L 15,6 L 15,10 L 11,10 L 11,14 L 7,14 L 7,10 L 3,10 L 3,6 L 7,6 Z");
+    /// <summary>Mods 图标.</summary>
+    public static readonly Geometry ModsAndResources = Parse("M 3,5 H 6 V 3 A 2,2 0 0 1 10,3 V 5 H 13 Q 14,5 14,6 V 8 H 16 A 2,2 0 0 1 16,12 H 14 V 15 Q 14,16 13,16 H 10 V 14 A 2,2 0 0 0 6,14 V 16 H 3 Q 2,16 2,15 V 12 H 4 A 2,2 0 0 0 4,8 H 2 V 6 Q 2,5 3,5 Z");
 
     /// <summary>整合包图标.</summary>
     public static readonly Geometry Modpacks = Parse("M 2,5 L 9,2 L 16,5 L 9,8 Z M 2,9 L 9,12 L 16,9 M 2,13 L 9,16 L 16,13");

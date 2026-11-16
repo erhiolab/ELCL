@@ -1,4 +1,4 @@
-# 安装模组加载器
+# 安装加载器
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Minecraft`。
 
@@ -53,7 +53,7 @@ MinecraftVanillaDownloadPlanner.ValidateVersionName(name);
 
 校验游戏和加载器版本标识，以及两两组合兼容性；不兼容时抛出 `ArgumentException`。没有选择加载器的情况由后续 `PrepareAsync` 拒绝。
 
-当前允许单个加载器，以及明确兼容的 Forge＋OptiFine。不会安装 Fabric API 或其他普通模组。
+当前允许单个加载器，以及明确兼容的 Forge＋OptiFine。不会安装 Fabric API 或其他普通 Mods。
 
 ## `MinecraftLoaderInstaller.PrepareAsync` {#minecraftloaderinstaller-prepareasync}
 
@@ -154,7 +154,7 @@ static async Task RunJavaAsync(ProcessStartInfo start, CancellationToken token)
 | Forge／NeoForge | 读取安装器、提取内置库、准备依赖、执行客户端处理器，跳过服务端步骤。 |
 | Fabric／Quilt | 取得 Meta 启动配置并下载依赖，不运行图形安装器。 |
 | LiteLoader | 构建 LaunchWrapper 配置，兼容旧构建地址和依赖。 |
-| OptiFine | 获取发行包，必要时调用补丁工具生成支持库；与 Forge 组合时写入版本的模组目录。 |
+| OptiFine | 获取发行包，必要时调用补丁工具生成支持库；与 Forge 组合时写入版本的 Mods 目录。 |
 
 LiteLoader 旧地址的 HTTPS 逐跳解析由安装器处理，最多 10 次。失败会记入 `log` 并保留候选来源，不会放宽通用下载器的 HTTPS 降级限制。
 

@@ -15,8 +15,6 @@ using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
 
-using SkiaSharp;
-
 namespace ErhioLab.Craft.Launcher.Mods;
 
 internal sealed record ModBrowserContext(string? GameVersion, string? Loader, string? VersionDirectory)
@@ -88,7 +86,7 @@ internal static class CommunityMods
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or TaskCanceledException)
         {
-            App.Logger.Error("Mods", $"本地模组来源信息暂不可用: {mod.FileName}.", error);
+            App.Logger.Error("Mods", $"本地 Mods 来源信息暂不可用: {mod.FileName}.", error);
             return null;
         }
         finally
@@ -107,7 +105,7 @@ internal static class CommunityMods
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            App.Logger.Error("Mods", "保存本地模组来源信息失败.", error);
+            App.Logger.Error("Mods", "保存本地 Mods 来源信息失败.", error);
         }
     }
 
@@ -172,7 +170,8 @@ internal static class CommunityMods
     {
         if (uri is null) return Task.FromResult<ImageSource?>(null);
         if (Images.TryGetValue(uri.AbsoluteUri, out var previous) && previous.IsCompletedSuccessfully && previous.Result is null) Images.TryRemove(uri.AbsoluteUri, out _);
-        return Images.GetOrAdd(uri.AbsoluteUri, _ => LoadImageAsync(uri));
+        // WIC 管线要求 MTA, 并将图片解码与缩放留在后台, 不占用界面线程.
+        return Images.GetOrAdd(uri.AbsoluteUri, _ => Task.Run(() => LoadImageAsync(uri)));
     }
 
     private static async Task<ImageSource?> LoadImageAsync(Uri uri)
@@ -215,33 +214,12 @@ internal static class CommunityMods
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or UnauthorizedAccessException or TaskCanceledException or ArgumentException or NotSupportedException)
         {
-            App.Logger.Error("Mods", $"模组图标暂不可用: {uri.Host}.", error);
+            App.Logger.Error("Mods", $"Mods 图标暂不可用: {uri.Host}.", error);
             return null;
         }
     }
 
-    internal static ImageSource? Decode(byte[]? bytes)
-    {
-        if (bytes is not { Length: > 0 }) return null;
-        // Skia 解码 WebP 等平台图标; 先检查尺寸, 避免解码异常大图片.
-        using var data = SKData.CreateCopy(bytes);
-        using var codec = SKCodec.Create(data);
-        if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 || (long)codec.Info.Width * codec.Info.Height > 16_777_216) return null;
-        using var bitmap = SKBitmap.Decode(codec);
-        if (bitmap is null) return null;
-        using var scaled = bitmap.Resize(new SKImageInfo(64, 64), new SKSamplingOptions(SKFilterMode.Linear));
-        if (scaled is null) return null;
-        using var image = SKImage.FromBitmap(scaled);
-        using var png = image.Encode(SKEncodedImageFormat.Png, 90);
-        using var stream = new MemoryStream(png.ToArray());
-        BitmapImage result = new();
-        result.BeginInit();
-        result.CacheOption = BitmapCacheOption.OnLoad;
-        result.StreamSource = stream;
-        result.EndInit();
-        result.Freeze();
-        return result;
-    }
+    internal static ImageSource? Decode(byte[]? bytes) => ModIconDecoder.Decode(bytes);
 
     private static string CachePath(string category, string value, string extension)
     {
@@ -282,11 +260,11 @@ internal static class CommunityMods
             Process.Start(reveal
                 ? new ProcessStartInfo("explorer.exe", "/select,\"" + target + "\"") { UseShellExecute = true }
                 : new ProcessStartInfo(target) { UseShellExecute = true });
-            App.Logger.Information("Mods", $"打开模组位置或页面: {target}.");
+            App.Logger.Information("Mods", $"打开 Mods 位置或页面: {target}.");
         }
         catch (Exception error) when (error is Win32Exception or IOException or InvalidDataException or InvalidOperationException)
         {
-            App.Logger.Error("Mods", "无法打开模组位置或页面.", error);
+            App.Logger.Error("Mods", "无法打开 Mods 位置或页面.", error);
             LauncherToasts.Error(L("openFailed"));
         }
     }

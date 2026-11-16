@@ -1,8 +1,8 @@
-# 模组加载器版本
+# 加载器版本
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Minecraft`。
 
-支持查询 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine。查询结果不代表已经安装，安装流程见[安装模组加载器](loader-installation.md)。
+支持查询 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine。查询结果不代表已经安装，安装流程见[安装加载器](loader-installation.md)。
 
 ## 创建 `MinecraftLoaderVersionClient`
 

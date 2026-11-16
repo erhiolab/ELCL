@@ -1,0 +1,105 @@
+PhotoSauce uses third-party libraries or other resources that may be
+distributed under licenses different than the PhotoSauce software.
+
+The attached notices are provided for information only.
+
+License notice for .NET Runtime
+-------------------------------
+
+Copyright (c) .NET Foundation and Contributors. All rights reserved.
+Licensed under the MIT License
+
+Available at
+https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+
+License notice for vcpkg
+------------------------
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License
+
+Available at
+https://github.com/microsoft/vcpkg/blob/master/LICENSE.txt
+
+License notice for TerraFX.Interop.Windows
+------------------------------------------
+
+Copyright (c) Tanner Gooding and Contributors.
+Licensed under the MIT License
+
+Available at
+https://github.com/terrafx/terrafx.interop.windows/blob/main/LICENSE.md
+
+License notice for SixLabors.ImageSharp
+---------------------------------------
+
+Copyright (c) Six Labors and contributors.
+Licensed under the Apache License, Version 2.0
+
+Available at
+https://github.com/SixLabors/ImageSharp/blob/master/LICENSE
+
+License notice for libjxl
+-------------------------
+
+Copyright (c) the JPEG XL Project Authors. All rights reserved.
+Licensed under a 3-clause BSD License.
+
+Available at
+https://github.com/libjxl/libjxl/blob/main/LICENSE
+
+License notice for libheif
+--------------------------
+
+Copyright (c) 2017-2020 Struktur AG
+Copyright (c) 2017-2023 Dirk Farin
+Licensed under the GNU Lesser General Public License version 3.
+
+Available at
+https://github.com/strukturag/libheif/blob/master/COPYING
+
+License notice for libwebp
+--------------------------
+
+Copyright (c) 2010, Google Inc. All rights reserved.
+Licensed under a 3-clause BSD License.
+
+Available at
+https://chromium.googlesource.com/webm/libwebp/+/refs/heads/main/COPYING
+
+License notice for libjpeg-turbo
+--------------------------------
+
+Copyright (C)2009-2022 D. R. Commander.  All Rights Reserved.
+This software is based in part on the work of the Independent JPEG Group.
+Licensed under a 3-clause BSD License.
+
+Available at
+https://github.com/libjpeg-turbo/libjpeg-turbo/blob/main/LICENSE.md
+
+License notice for libpng
+-------------------------
+
+Copyright (c) 1995-2022 The PNG Reference Library Authors.
+Licensed under the PNG Reference Library License version 2.
+
+Available at
+https://github.com/glennrp/libpng/blob/libpng16/LICENSE
+
+License notice for GIFLIB
+-------------------------
+
+Copyright (c) 1997  Eric S. Raymond
+Licensed under the MIT License
+
+Available at
+https://sourceforge.net/p/giflib/code/ci/master/tree/COPYING
+
+License notice for LittleCMS
+----------------------------
+
+Copyright (c) 1998-2022 Marti Maria Saguer
+Licensed under the MIT License
+
+Available at
+https://github.com/mm2/Little-CMS/blob/master/COPYING

@@ -69,7 +69,7 @@ internal static class ModInstallTasks
                     if (item.File.Sha1 is { Length: > 0 } hash)
                         await CommunityMods.RememberProjectAsync(hash, item.Project);
                 if (Directory.Exists(work)) Directory.Delete(work, true);
-                App.Logger.Information("Mods", $"模组安装完成: {project.Name}, 文件={files.Count}, 目录={directory}.");
+                App.Logger.Information("Mods", $"Mods 安装完成: {project.Name}, 文件={files.Count}, 目录={directory}.");
                 CommunityMods.NotifyInstalled(directory);
             })
         ], directory, cleanupOnRemove: () =>

@@ -33,7 +33,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/download">
         <span class="feature-number">01 / 下载</span>
         <h3>原版与加载器一起安装</h3>
-        <p>支持 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine。多文件并发下载，首选来源失败后尝试备用来源。</p>
+        <p>支持 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine，也能导入通用格式整合包。多文件并发下载，首选来源失败后尝试备用来源。</p>
         <span class="home-feature-link">查看安装方法</span>
       </a>
       <a class="home-feature" href="./launcher/accounts">
@@ -45,7 +45,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/version-settings">
         <span class="feature-number">03 / 版本</span>
         <h3>每个版本都有自己的位置</h3>
-        <p>记住上次选择，填写描述，打开存档或模组文件夹。管理模组、查看日志，需要时补全文件，或导出一个启动脚本。</p>
+        <p>记住上次选择，填写描述，打开存档或 Mods 文件夹。管理 Mods、查看日志，需要时补全文件，或导出一个启动脚本。</p>
         <span class="home-feature-link">了解版本管理</span>
       </a>
       <a class="home-feature" href="./launcher/launch-settings">
@@ -73,7 +73,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
     <div>
       <span class="home-kicker">给开发者</span>
       <h2 id="core-intro">你的启动器，也能用 ELCLC。</h2>
-      <p>ELCLC 是独立的 .NET 10 核心库。查询版本、发现 Java、下载文件、安装加载器、查询与管理模组，再生成游戏启动参数。你提供网络客户端与路径，界面和配置由你决定。</p>
+      <p>ELCLC 是独立的 .NET 10 核心库。查询版本、发现 Java、下载文件、安装加载器、查询与管理 Mods，再生成游戏启动参数。你提供网络客户端与路径，界面和配置由你决定。</p>
       <div class="home-actions">
         <a class="home-button home-button-primary" href="./core/quick-start">运行第一个示例</a>
         <a class="home-button home-button-secondary" href="./core/api">查找 API</a>

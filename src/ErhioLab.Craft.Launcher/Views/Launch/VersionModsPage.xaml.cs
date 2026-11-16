@@ -95,7 +95,7 @@ public partial class VersionModsPage
         EmptyText.Text = CommunityMods.L("loading");
         EmptyText.Visibility = Visibility.Visible;
         string directory = _directory;
-        App.Logger.Information("Mods", $"扫描本地模组: {directory}.");
+        App.Logger.Information("Mods", $"扫描本地 Mods: {directory}.");
         try
         {
             var paths = await Task.Run(() => LocalModManager.EnumerateFiles(directory, request.Token), request.Token);
@@ -104,7 +104,7 @@ public partial class VersionModsPage
             _rows = rows;
             ModsList.ItemsSource = rows;
             ApplyFilter();
-            App.Logger.Information("Mods", $"本地模组文件已列出: {paths.Count} 项, 开始后台读取详情.");
+            App.Logger.Information("Mods", $"本地 Mods 文件已列出: {paths.Count} 项, 开始后台读取详情.");
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background, request.Token);
             var pending = Channel.CreateUnbounded<LocalModRow>();
             var enrichment = Task.WhenAll(EnrichRowsAsync(pending.Reader, request), EnrichRowsAsync(pending.Reader, request));
@@ -122,7 +122,7 @@ public partial class VersionModsPage
                     catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or KeyNotFoundException or FormatException or NotSupportedException)
                     {
                         metadata = row.Mod with { Error = error.Message };
-                        App.Logger.Error("Mods", $"读取模组文件失败: {row.Mod.FileName}.", error);
+                        App.Logger.Error("Mods", $"读取 Mods 文件失败: {row.Mod.FileName}.", error);
                     }
 
                     await Dispatcher.InvokeAsync(() =>
@@ -133,7 +133,7 @@ public partial class VersionModsPage
                         pending.Writer.TryWrite(row);
                     }, DispatcherPriority.Background, token);
                 });
-                App.Logger.Information("Mods", $"本地模组详情读取完成: {rows.Length} 项, 无法解析={rows.Count(row => row.Mod.Error is not null)}.");
+                App.Logger.Information("Mods", $"本地 Mods 详情读取完成: {rows.Length} 项, 无法解析={rows.Count(row => row.Mod.Error is not null)}.");
             }
             finally
             {
@@ -146,7 +146,7 @@ public partial class VersionModsPage
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            App.Logger.Error("Mods", "扫描本地模组失败.", error);
+            App.Logger.Error("Mods", "扫描本地 Mods 失败.", error);
             EmptyText.Text = CommunityMods.L("scanFailed");
             LauncherToasts.Error(CommunityMods.L("scanFailed"));
         }
@@ -172,7 +172,7 @@ public partial class VersionModsPage
             }
             catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or TaskCanceledException)
             {
-                App.Logger.Error("Mods", $"补充模组来源信息失败: {row.Mod.FileName}.", error);
+                App.Logger.Error("Mods", $"补充 Mods 来源信息失败: {row.Mod.FileName}.", error);
             }
 
             if (ReferenceEquals(_scan, request) && IsLoaded && SearchBox.Text.Trim().Length > 0) ApplyFilter();
@@ -204,7 +204,7 @@ public partial class VersionModsPage
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            App.Logger.Error("Mods", "打开模组文件夹失败.", error);
+            App.Logger.Error("Mods", "打开 Mods 文件夹失败.", error);
             LauncherToasts.Error(CommunityMods.L("openFailed"));
         }
     }
@@ -243,24 +243,24 @@ public partial class VersionModsPage
     {
         if (_busy || string.IsNullOrEmpty(_directory))
         {
-            App.Logger.Warning("Mods", $"忽略模组拖入: 正在处理={_busy}, 已选择目录={!string.IsNullOrEmpty(_directory)}, 文件数={files.Length}.");
+            App.Logger.Warning("Mods", $"忽略 Mods 拖入: 正在处理={_busy}, 已选择目录={!string.IsNullOrEmpty(_directory)}, 文件数={files.Length}.");
             return;
         }
 
         if (GetDroppedModFiles(new DataObject(DataFormats.FileDrop, files)) is not { } accepted)
         {
-            App.Logger.Warning("Mods", $"拖入的文件不是支持的模组文件: 文件数={files.Length}.");
+            App.Logger.Warning("Mods", $"拖入的文件不是支持的 Mods 文件: 文件数={files.Length}.");
             LauncherToasts.Error(CommunityMods.L("dropUnsupported"));
             return;
         }
 
-        App.Logger.Information("Mods", $"开始导入拖入的模组: 文件数={accepted.Length}, 目录={_directory}.");
+        App.Logger.Information("Mods", $"开始导入拖入的 Mods: 文件数={accepted.Length}, 目录={_directory}.");
         _ = ImportAsync(accepted);
     }
 
     private void WindowsDropFailed(Exception error)
     {
-        App.Logger.Error("Mods", "模组拖入失败.", error);
+        App.Logger.Error("Mods", "Mods 拖入失败.", error);
         LauncherToasts.Error(CommunityMods.L("dropFailed"));
     }
 
@@ -330,18 +330,18 @@ public partial class VersionModsPage
         int generation = _generation;
         var context = _context;
         LauncherToasts.Information(CommunityMods.L("identifying"));
-        App.Logger.Information("Mods", $"查询本地模组来源: {row.Mod.FileName}.");
+        App.Logger.Information("Mods", $"查询本地 Mods 来源: {row.Mod.FileName}.");
         try
         {
             var project = row.Project ?? await CommunityMods.IdentifyAsync(row.Mod);
             if (generation != _generation || !IsLoaded) return;
             if (project is not null) DetailsRequested?.Invoke(new ModProjectRow(project), context);
             else await LauncherDialogs.WarningAsync(row.Title, string.Format(CommunityMods.L("localDetails"), row.Mod.Version ?? CommunityMods.L("unknown"), row.Mod.Description, row.Mod.FileName, row.Mod.Error ?? ""));
-            App.Logger.Information("Mods", $"本地模组详情已打开: {row.Mod.FileName}, 来源={project?.Platform}.");
+            App.Logger.Information("Mods", $"本地 Mods 详情已打开: {row.Mod.FileName}, 来源={project?.Platform}.");
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or TaskCanceledException)
         {
-            App.Logger.Error("Mods", "识别本地模组失败.", error);
+            App.Logger.Error("Mods", "识别本地 Mods 失败.", error);
             LauncherToasts.Error(CommunityMods.L("identifyFailed"));
         }
         finally
@@ -408,7 +408,7 @@ public partial class VersionModsPage
         IsEnabled = false;
         string directory = _directory;
         int generation = _generation;
-        App.Logger.Information("Mods", $"开始模组操作: {action}, 目录={directory}.");
+        App.Logger.Information("Mods", $"开始 Mods 操作: {action}, 目录={directory}.");
         if (notifyProgress) LauncherToasts.Information(CommunityMods.L("operating"));
         try
         {
@@ -419,12 +419,12 @@ public partial class VersionModsPage
             await Task.Run(() => operation(directory, errors));
             if (errors.Count > 0) throw new AggregateException(errors);
             string message = completionMessage?.Invoke() ?? CommunityMods.L("operationComplete");
-            App.Logger.Information("Mods", $"模组操作完成: {action}. {message}");
+            App.Logger.Information("Mods", $"Mods 操作完成: {action}. {message}");
             LauncherToasts.Success(message);
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or AggregateException)
         {
-            App.Logger.Error("Mods", $"模组操作失败: {action}.", error);
+            App.Logger.Error("Mods", $"Mods 操作失败: {action}.", error);
             LauncherToasts.Error(string.Format(CommunityMods.L("operationFailed"), error.Message));
         }
         finally

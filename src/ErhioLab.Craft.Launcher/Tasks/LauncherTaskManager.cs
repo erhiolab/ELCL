@@ -14,6 +14,8 @@ using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
 
+internal sealed record MinecraftInstallOperation(IReadOnlyList<LauncherTaskStage> Stages, string VersionFolder, Func<Task> Cleanup);
+
 /// <summary>统一管理启动器操作的阶段/进度和取消, 下载器由任务阶段调用.</summary>
 internal sealed class LauncherTaskManager
 {
@@ -28,6 +30,15 @@ internal sealed class LauncherTaskManager
     internal LauncherTask StartMinecraftInstall(MinecraftVersion version, string installedName, string gameDirectory,
         MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null)
     {
+        var operation = CreateMinecraftInstall(version, installedName, gameDirectory, preferredSource, options, loaders);
+        LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), operation.Stages, operation.VersionFolder, operation.Cleanup);
+        task.LocalizedTitle = () => string.Format(LocalizationManager.Get("install.title"), installedName);
+        return task;
+    }
+
+    internal MinecraftInstallOperation CreateMinecraftInstall(MinecraftVersion version, string installedName, string gameDirectory,
+        MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null, LauncherTask? owner = null)
+    {
         MinecraftLoaderSelection[] selections = loaders?.ToArray() ?? [];
         MinecraftVanillaDownloadPlanner.ValidateVersionName(installedName);
         MinecraftLoaderInstaller.ValidateSelections(version.Id, selections);
@@ -41,7 +52,7 @@ internal sealed class LauncherTaskManager
         if (versionJsonExisted) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
         if (selections.Length > 0 && Directory.Exists(versionFolder) && Directory.EnumerateFileSystemEntries(versionFolder).Any())
             throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
-        if (Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, versionFolder, StringComparison.OrdinalIgnoreCase)))
+        if (Tasks.Any(task => task != owner && task.IsActive && string.Equals(task.TargetPath, versionFolder, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException(LocalizationManager.Get("install.alreadyRunning"));
 
         string cacheName = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(version.MetadataUrl.AbsoluteUri)));
@@ -73,7 +84,7 @@ internal sealed class LauncherTaskManager
                     LauncherTaskContext.EstimatedSize(plan.AssetIndex),
                     plan.AssetTotalSize ?? 64L * 1024 * 1024,
                     .. (selections.Length == 0 ? Array.Empty<long>() : new[] { 1024 * 1024, 64L * 1024 * 1024, 1024 * 1024, 1024 * 1024 })
-                ]);
+                ], fromCurrentStage: true);
             }),
             Stage("install.libraries", async context =>
             {
@@ -158,7 +169,7 @@ internal sealed class LauncherTaskManager
             })
         ];
 
-        LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), stages, versionFolder,
+        return new MinecraftInstallOperation(stages, versionFolder,
             async () =>
             {
                 if (selections.Length == 0)
@@ -181,8 +192,6 @@ internal sealed class LauncherTaskManager
                 if (!versionJsonExisted)
                     await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, versionFolder);
             });
-        task.LocalizedTitle = () => string.Format(LocalizationManager.Get("install.title"), installedName);
-        return task;
     }
 
     private static void CleanupLoaderWorkDirectory(string path)
@@ -214,7 +223,7 @@ internal sealed class LauncherTaskManager
         return task;
     }
 
-    /// <summary>创建由多个阶段组成的任务, 后续安装与模组操作可复用.</summary>
+    /// <summary>创建由多个阶段组成的任务, 后续安装与 Mods 操作可复用.</summary>
     internal LauncherTask Start(string title, IReadOnlyList<LauncherTaskStage> stages, string? targetPath = null,
         Func<Task>? cleanupOnRemove = null, Action? onCompleted = null, bool isGameLaunch = false)
     {
@@ -340,8 +349,9 @@ internal sealed class LauncherTaskManager
         try
         {
             task.Status = LauncherTaskStatus.Running;
-            foreach (LauncherTaskStage stage in task.Stages)
+            for (int index = 0; index < task.Stages.Count; index++)
             {
+                LauncherTaskStage stage = task.Stages[index];
                 task.Cancellation.Token.ThrowIfCancellationRequested();
                 stage.Status = LauncherTaskStatus.Running;
                 App.Logger.Information("Tasks", $"阶段开始: {task.Title} / {stage.Name}.");

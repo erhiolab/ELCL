@@ -113,6 +113,12 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
 /// <summary>一个阶段可使用的通用下载操作及进度上报入口.</summary>
 internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage stage)
 {
+    internal LauncherTask Owner => task;
+    internal void AppendStages(IEnumerable<LauncherTaskStage> stages)
+    {
+        foreach (var next in stages) task.Stages.Add(next);
+        task.RefreshProgress();
+    }
     private long _previousBytes;
     private long _previousTicks = Environment.TickCount64;
     private long _plannedTotalBytes;
@@ -127,11 +133,12 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
         task.RefreshProgress();
     }
 
-    internal void ConfigureStageWeights(IReadOnlyList<long> weights)
+    internal void ConfigureStageWeights(IReadOnlyList<long> weights, bool fromCurrentStage = false)
     {
-        if (weights.Count != task.Stages.Count) throw new ArgumentException("阶段数量不匹配.", nameof(weights));
+        int offset = fromCurrentStage ? task.Stages.IndexOf(stage) : 0;
+        if (offset < 0 || (fromCurrentStage ? weights.Count + offset > task.Stages.Count : weights.Count != task.Stages.Count)) throw new ArgumentException("阶段数量不匹配.", nameof(weights));
         for (int index = 0; index < weights.Count; index++)
-            task.Stages[index].PlannedBytes = Math.Max(1, weights[index]);
+            task.Stages[index + offset].PlannedBytes = Math.Max(1, weights[index]);
         task.RefreshProgress();
     }
 

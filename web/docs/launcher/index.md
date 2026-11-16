@@ -23,7 +23,7 @@ ELCL 是 Minecraft Java 版启动器。第一次使用，按下面三步就能�
 | 功能 | 可以做什么 |
 | --- | --- |
 | [下载与安装](download.md) | 安装原版，以及 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine。 |
-| [模组](mods.md) | 按相关性或下载量搜索 CurseForge 与 Modrinth、查看文件版本与前置模组、手动选择下载，以及按版本导入、启用、禁用和批量删除模组。中文界面可选择开启模组汉化。 |
+| [Mods](mods.md) | 按相关性或下载量搜索 CurseForge 与 Modrinth、查看文件版本与前置 Mods、手动选择下载，以及按版本导入、启用、禁用和批量删除 Mods。中文界面可选择开启 Mods 汉化。 |
 | [下载 Java](java-downloads.md) | 选择发行平台与主版本，下载、校验和安装适用于当前设备的 Java，标记来源并支持删除安装。 |
 | [任务管理](tasks.md) | 查看进度、按进程查看实时 Minecraft 日志、取消任务、移除失败任务、结束指定游戏进程。 |
 | [启动设置](launch-settings.md) | 设置窗口、优先级、内存和 Java 顺序，执行内存优化。 |
@@ -43,6 +43,6 @@ ELCL 是 Minecraft Java 版启动器。第一次使用，按下面三步就能�
 
 ## 当前边界
 
-ELCL 固定按版本隔离存档、模组和游戏设置，共享支持库与资源。启动选项默认跟随全局，也可以在版本设置中逐项覆盖；独立设置和描述保存在版本目录内。
+ELCL 固定按版本隔离存档、Mods 和游戏设置，共享支持库与资源。启动选项默认跟随全局，也可以在版本设置中逐项覆盖；独立设置和描述保存在版本目录内。
 
-界面中的整合包导入尚未实现。安装加载器也不会顺带下载 Fabric API、模组或整合包内容；需要的模组可以在下载页另行安装。
+可以从版本选择页的 **导入整合包** 按钮，或将 ZIP／MRPACK 拖到启动页、版本选择页，导入 Modrinth、CurseForge 和 MultiMC 格式的包。详见[导入整合包](modpacks.md)。单独安装加载器不会顺带下载 Fabric API 或 Mods；需要的 Mods 可以在下载页另行安装。

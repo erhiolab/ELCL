@@ -98,7 +98,7 @@ internal sealed class WindowsFileDropTarget : IDisposable
             var hit = _window.InputHitTest(location) as DependencyObject;
             if (!HitsTarget(hit))
             {
-                App.Logger.Information("DragDrop", $"忽略当前模组页面以外的拖放: 客户区={clientArea}, 坐标={location}, 命中={hit?.GetType().Name ?? "null"}.");
+                App.Logger.Information("DragDrop", $"忽略当前 Mods 页面以外的拖放: 客户区={clientArea}, 坐标={location}, 命中={hit?.GetType().Name ?? "null"}.");
                 return IntPtr.Zero;
             }
 

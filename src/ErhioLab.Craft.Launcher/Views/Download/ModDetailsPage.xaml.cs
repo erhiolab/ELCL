@@ -91,12 +91,12 @@ public partial class ModDetailsPage
         try
         {
             Clipboard.SetText(_row.Name);
-            App.Logger.Information("Mods", $"已复制模组名称: {_row.Name}.");
+            App.Logger.Information("Mods", $"已复制 Mods 名称: {_row.Name}.");
             LauncherToasts.Success(CommunityMods.L("nameCopied"));
         }
         catch (System.Runtime.InteropServices.COMException error)
         {
-            App.Logger.Error("Mods", "复制模组名称失败.", error);
+            App.Logger.Error("Mods", "复制 Mods 名称失败.", error);
             LauncherToasts.Error(CommunityMods.L("copyFailed"));
         }
     }
@@ -155,7 +155,7 @@ public partial class ModDetailsPage
         if (version is null || string.IsNullOrEmpty(loader)) loader = null;
         LoaderPair.IsExpanded = version is not null;
         string cacheKey = (version ?? "") + ":" + (loader ?? "");
-        App.Logger.Information("Mods", $"读取完整模组文件列表: {_row.Project.Platform}/{_row.Project.Id}, 游戏={version}, 加载器={loader}.");
+        App.Logger.Information("Mods", $"读取完整 Mods 文件列表: {_row.Project.Platform}/{_row.Project.Id}, 游戏={version}, 加载器={loader}.");
         try
         {
             IReadOnlyList<ModFile> all;
@@ -185,7 +185,7 @@ public partial class ModDetailsPage
             RefreshGroups();
             EmptyText.Text = CommunityMods.L("noFiles");
             EmptyText.Visibility = FilesTimeline.HasItems ? Visibility.Collapsed : Visibility.Visible;
-            App.Logger.Information("Mods", $"完整模组文件列表已读取: {_files.Count} 项.");
+            App.Logger.Information("Mods", $"完整 Mods 文件列表已读取: {_files.Count} 项.");
         }
         catch (OperationCanceledException) when (request.IsCancellationRequested)
         {
@@ -194,7 +194,7 @@ public partial class ModDetailsPage
         {
             if (!ReferenceEquals(_request, request)) return;
             EmptyText.Text = CommunityMods.L("filesFailed");
-            App.Logger.Error("Mods", "读取完整模组文件列表失败.", error);
+            App.Logger.Error("Mods", "读取完整 Mods 文件列表失败.", error);
             LauncherToasts.Error(CommunityMods.L("filesFailed"));
         }
         finally
@@ -240,7 +240,7 @@ public partial class ModDetailsPage
         {
             group.Dependencies = await group.DependencyTask;
             foreach (var row in group.Dependencies) _ = row.EnrichAsync();
-            App.Logger.Information("Mods", $"前置模组已读取: {group.Title}, 数量={group.Dependencies.Count}.");
+            App.Logger.Information("Mods", $"前置 Mods 已读取: {group.Title}, 数量={group.Dependencies.Count}.");
         }
         catch (OperationCanceledException) when (request.IsCancellationRequested)
         {
@@ -250,7 +250,7 @@ public partial class ModDetailsPage
         {
             group.DependencyTask = null;
             group.DependencyError = CommunityMods.L("dependenciesFailed");
-            App.Logger.Error("Mods", $"前置模组读取失败: {group.Title}.", error);
+            App.Logger.Error("Mods", $"前置 Mods 读取失败: {group.Title}.", error);
         }
         finally
         {
@@ -376,12 +376,12 @@ public partial class ModDetailsPage
             if (string.IsNullOrEmpty(version) || string.IsNullOrEmpty(loader)) throw new InvalidOperationException(CommunityMods.L("chooseCompatibility"));
             var context = _context with { GameVersion = version, Loader = loader };
             ModInstallTasks.Start(_row.Project, row.File, context, directory);
-            App.Logger.Information("Mods", $"创建模组下载任务: {_row.Project.Name}, 文件={row.File.FileName}, 目录={directory}.");
+            App.Logger.Information("Mods", $"创建 Mods 下载任务: {_row.Project.Name}, 文件={row.File.FileName}, 目录={directory}.");
             LauncherToasts.Information(CommunityMods.L("queued"));
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
-            App.Logger.Error("Mods", "创建模组下载任务失败.", error);
+            App.Logger.Error("Mods", "创建 Mods 下载任务失败.", error);
             LauncherToasts.Error(string.Format(CommunityMods.L("operationFailed"), error.Message));
         }
     }

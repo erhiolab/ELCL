@@ -34,9 +34,10 @@ export default defineConfig({
                         { text: "账户管理", link: "/launcher/accounts" },
                         { text: "皮肤与披风", link: "/launcher/appearance" },
                         { text: "版本选择", link: "/launcher/versions" },
+                        { text: "导入整合包", link: "/launcher/modpacks" },
                         { text: "下载与安装", link: "/launcher/download" },
                         { text: "下载 Java", link: "/launcher/java-downloads" },
-                        { text: "下载与管理模组", link: "/launcher/mods" },
+                        { text: "下载与管理 Mods", link: "/launcher/mods" },
                         { text: "启动游戏", link: "/launcher/launch" }
                     ]
                 },
@@ -72,10 +73,11 @@ export default defineConfig({
                         { text: "游戏版本列表", link: "/core/versions" },
                         { text: "本地版本扫描", link: "/core/local-versions" },
                         { text: "版本目录管理", link: "/core/version-directories" },
-                        { text: "模组加载器版本", link: "/core/loaders" },
+                        { text: "加载器版本", link: "/core/loaders" },
                         { text: "安装原版", link: "/core/vanilla-installation" },
-                        { text: "安装模组加载器", link: "/core/loader-installation" },
-                        { text: "社区模组", link: "/core/mods" }
+                        { text: "安装加载器", link: "/core/loader-installation" },
+                        { text: "社区 Mods", link: "/core/mods" },
+                        { text: "整合包", link: "/core/modpacks" }
                     ]
                 },
                 {

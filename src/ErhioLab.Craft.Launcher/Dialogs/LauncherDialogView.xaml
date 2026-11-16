@@ -151,11 +151,29 @@
                     Grid.Row="2"
                     MaxHeight="260"
                     VerticalScrollBarVisibility="Auto">
-                    <TextBlock
-                        x:Name="DialogMessage"
-                        FontSize="15"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        TextWrapping="Wrap" />
+                    <StackPanel>
+                        <TextBlock
+                            x:Name="DialogMessage"
+                            FontSize="15"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            TextWrapping="Wrap" />
+                        <StackPanel
+                            x:Name="InputPanel"
+                            Margin="0,12,0,0"
+                            Visibility="Collapsed">
+                            <TextBox
+                                x:Name="InputBox"
+                                MaxLength="128"
+                                Style="{StaticResource FormTextBoxStyle}"
+                                TextChanged="InputBox_TextChanged" />
+                            <TextBlock
+                                x:Name="InputError"
+                                Margin="0,6,0,0"
+                                Foreground="{DynamicResource DangerTextBrush}"
+                                TextWrapping="Wrap"
+                                Visibility="Collapsed" />
+                        </StackPanel>
+                    </StackPanel>
                 </ScrollViewer>
                 <StackPanel
                     Grid.Row="3"

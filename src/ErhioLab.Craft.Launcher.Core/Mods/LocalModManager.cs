@@ -5,10 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace ErhioLab.Craft.Launcher.Core.Mods;
 
-/// <summary>读取本地模组及执行文件操作, 不依赖启动器配置.</summary>
+/// <summary>读取本地 Mods 及执行文件操作, 不依赖启动器配置.</summary>
 public static class LocalModManager
 {
-    /// <summary>仅枚举模组文件路径, 不打开归档或计算指纹.</summary>
+    /// <summary>仅枚举 Mods 文件路径, 不打开归档或计算指纹.</summary>
     public static IReadOnlyList<string> EnumerateFiles(string directory, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -47,14 +47,14 @@ public static class LocalModManager
     public static async Task<LocalModInfo> ReadAsync(string path, CancellationToken cancellationToken = default)
     {
         path = Path.GetFullPath(path);
-        if (new FileInfo(path).Length > 512L * 1024 * 1024) throw new InvalidDataException("模组文件超过 512 MiB.");
+        if (new FileInfo(path).Length > 512L * 1024 * 1024) throw new InvalidDataException("Mods 文件超过 512 MiB.");
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous);
         string sha1 = Convert.ToHexStringLower(await SHA1.HashDataAsync(input, cancellationToken).ConfigureAwait(false));
         input.Position = 0;
         uint fingerprint = Fingerprint(input, cancellationToken);
         input.Position = 0;
         using var zip = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
-        if (zip.Entries.Count > 100000) throw new InvalidDataException("模组归档条目过多.");
+        if (zip.Entries.Count > 100000) throw new InvalidDataException("Mods 归档条目过多.");
         string name = Path.GetFileName(path), description = "", version = "";
         List<string> ids = [], loaders = [];
         byte[]? icon = null;
@@ -146,9 +146,9 @@ public static class LocalModManager
         if (files.Select(file => IsDisabled(file.Target) ? Counterpart(file.Target) : file.Target).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Length) throw new IOException("选择的文件名称重复.");
         foreach (var file in files)
         {
-            if (!IsMod(file.Source) || !File.Exists(file.Source)) throw new InvalidDataException("请选择有效的模组文件.");
+            if (!IsMod(file.Source) || !File.Exists(file.Source)) throw new InvalidDataException("请选择有效的 Mods 文件.");
             string enabled = IsDisabled(file.Target) ? Counterpart(file.Target) : file.Target;
-            if (File.Exists(enabled) || File.Exists(enabled + ".disabled") || File.Exists(enabled + ".disable")) throw new IOException("已存在同名模组: " + Path.GetFileName(file.Target));
+            if (File.Exists(enabled) || File.Exists(enabled + ".disabled") || File.Exists(enabled + ".disable")) throw new IOException("已存在同名 Mods: " + Path.GetFileName(file.Target));
         }
 
         string staging = Child(root, ".elcl-install-" + Guid.NewGuid().ToString("N"));
@@ -187,10 +187,10 @@ public static class LocalModManager
     public static string SetEnabled(string directory, string path, bool enabled)
     {
         string current = ValidateMember(directory, path);
-        if (!File.Exists(current)) throw new FileNotFoundException("模组文件已不存在.", current);
+        if (!File.Exists(current)) throw new FileNotFoundException("Mods 文件已不存在.", current);
         if (enabled == !IsDisabled(current)) return current;
         string target = Counterpart(current);
-        if (!enabled && File.Exists(current + ".disable")) throw new IOException("已存在同名禁用模组.");
+        if (!enabled && File.Exists(current + ".disable")) throw new IOException("已存在同名禁用 Mods.");
         File.Move(current, target);
         return target;
     }
@@ -201,8 +201,8 @@ public static class LocalModManager
     {
         string root = Path.GetFullPath(directory), full = Path.GetFullPath(path);
         if (!string.Equals(Path.GetDirectoryName(full)?.TrimEnd(Path.DirectorySeparatorChar), root.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) || !IsMod(full))
-            throw new ArgumentException("模组必须位于指定文件夹内.", nameof(path));
-        if (Directory.Exists(root) && (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) throw new IOException("不在链接目录中修改模组.");
+            throw new ArgumentException("Mods 必须位于指定文件夹内.", nameof(path));
+        if (Directory.Exists(root) && (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) throw new IOException("不在链接目录中修改 Mods.");
         return full;
     }
 
@@ -210,7 +210,7 @@ public static class LocalModManager
     {
         if (string.IsNullOrWhiteSpace(name) || name != Path.GetFileName(name)) throw new ArgumentException("文件名无效.", nameof(name));
         string path = Path.Combine(root, name);
-        if (Directory.Exists(root) && (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) throw new IOException("不在链接目录中安装模组.");
+        if (Directory.Exists(root) && (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) throw new IOException("不在链接目录中安装 Mods.");
         return path;
     }
 
@@ -225,14 +225,14 @@ public static class LocalModManager
 
     private static byte[] ReadEntry(ZipArchiveEntry entry)
     {
-        if (entry.Length > 2 * 1024 * 1024) throw new InvalidDataException("模组元数据超过 2 MiB.");
+        if (entry.Length > 2 * 1024 * 1024) throw new InvalidDataException("Mods 元数据超过 2 MiB.");
         using var stream = entry.Open();
         using var output = new MemoryStream();
         byte[] buffer = new byte[16384];
         int count;
         while ((count = stream.Read(buffer)) > 0)
         {
-            if (output.Length + count > 2 * 1024 * 1024) throw new InvalidDataException("模组元数据超过 2 MiB.");
+            if (output.Length + count > 2 * 1024 * 1024) throw new InvalidDataException("Mods 元数据超过 2 MiB.");
             output.Write(buffer, 0, count);
         }
 
