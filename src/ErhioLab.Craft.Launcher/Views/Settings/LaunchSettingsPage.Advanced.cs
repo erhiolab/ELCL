@@ -185,12 +185,12 @@ public partial class LaunchSettingsPage
         {
             SelectedGameFolderPath = _versionGameDirectory,
             SelectedVersionPath = _versionDirectory,
-            SelectedVersionId = _editingVersion?.Id,
-            JavaInstallations = _versionOptions.UseSpecifiedJava
-                ? App.Settings.JavaInstallations.Where(java => string.Equals(java.Path, _versionOptions.JavaPath, StringComparison.OrdinalIgnoreCase)).ToArray()
-                : App.Settings.JavaInstallations
+            SelectedVersionId = _editingVersion?.Id
         };
-        MinecraftLaunchPlaceholderContext context = LaunchPlaceholderPreview.Create(_placeholderVersion, previewSettings);
+        IReadOnlyList<LauncherJavaInstallation> javaInstallations = IsVersionMode && _versionOptions.UseSpecifiedJava
+            ? App.JavaCatalog.Installations.Where(java => string.Equals(java.Path, _versionOptions.JavaPath, StringComparison.OrdinalIgnoreCase)).ToArray()
+            : App.JavaCatalog.Installations;
+        MinecraftLaunchPlaceholderContext context = LaunchPlaceholderPreview.Create(_placeholderVersion, previewSettings, javaInstallations: javaInstallations);
         string title = GameWindowTitleBox.Text;
         GameWindowTitlePreview.Text = string.IsNullOrWhiteSpace(title)
             ? LocalizationManager.Get("launchSettings.defaultWindowTitle")

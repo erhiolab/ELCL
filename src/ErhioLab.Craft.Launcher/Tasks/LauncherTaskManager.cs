@@ -146,9 +146,9 @@ internal sealed class LauncherTaskManager
                     string? javaPath = null;
                     if (loaderPlan!.NeedsJava)
                     {
-                        if (App.Settings.JavaInstallations.Count == 0) await App.JavaCatalog.InitializeIfEmptyAsync();
+                        if (App.JavaCatalog.Installations.Count == 0) await App.JavaCatalog.InitializeIfEmptyAsync();
                         var baseVersion = await MinecraftLaunchVersion.LoadAsync(gameDirectory, metadataPath, cancellationToken: context.CancellationToken);
-                        foreach (var java in App.Settings.JavaInstallations.OrderBy(candidate => candidate.MajorVersion == baseVersion.JavaMajorVersion ? 0 : 1))
+                        foreach (var java in App.JavaCatalog.Installations.OrderBy(candidate => candidate.MajorVersion == baseVersion.JavaMajorVersion ? 0 : 1))
                         {
                             if (java.MajorVersion < baseVersion.JavaMajorVersion) continue;
                             if (await JavaDiscovery.ProbeAsync(java.Path, context.CancellationToken) is { } found) { javaPath = found.Path; break; }

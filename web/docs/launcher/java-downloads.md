@@ -29,11 +29,11 @@ ELCL 会按当前设备筛选下载。可选 Mojang、Adoptium Temurin、Azul Zu
 
 旁边的叉号仍然只是 **从列表移除**，不会删除文件。扫描发现或普通手动添加的 Java 不提供删除安装按钮。
 
-配置中的每个 Java 项目分别保存 `InstalledByLauncher`、`InstallationDirectory` 和 `InstallationId`。安装目录内的 `.elcl-java.json` 用于核对归属，刷新列表会保留这些信息；不要单独移除这个标识文件。移除后再次手动添加同一个 Java，可通过目录标识恢复“ELCL 安装”状态。
+独立列表文件 `ELCL/java.json` 中的每个 Java 项目分别保存 `InstalledByLauncher`、`InstallationDirectory` 和 `InstallationId`。安装目录内的 `.elcl-java.json` 用于核对归属，刷新列表会保留这些信息；不要单独移除这个标识文件。移除后再次手动添加同一个 Java，可通过目录标识恢复“ELCL 安装”状态。
 
-旧配置没有这些字段时，按普通 Java 处理。重置启动设置不会删除已安装的 Java，ELCL 安装的项目会重新验证并保留来源。整个配置被清空后，自定义位置中的 Java 可能需要重新手动添加。
+导入、导出或重置全局设置都不改变本机列表，也不会删除已安装的 Java。如果单独删除 `java.json`，自定义位置中的 Java 可能需要重新手动添加。Java 列表只使用独立文件，不从全局配置迁入。
 
-安装通过直接解压或下载文件完成，不运行系统安装向导，不修改 `JAVA_HOME` 或系统 PATH。解压后会实际运行 Java，检查能否启动、主版本及位数是否相符，通过后才登记到配置。
+安装通过直接解压或下载文件完成，不运行系统安装向导，不修改 `JAVA_HOME` 或系统 PATH。解压后会实际运行 Java，检查能否启动、主版本及位数是否相符，通过后才登记到 Java 列表。
 
 ## 下载与校验
 

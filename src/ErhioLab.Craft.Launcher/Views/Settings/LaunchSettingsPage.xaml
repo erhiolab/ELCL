@@ -524,6 +524,98 @@
                         Click="ExpandJavaButton_Click"
                         Style="{StaticResource SecondaryActionStyle}"
                         Visibility="Collapsed" />
+                    <ToggleButton
+                        x:Name="IgnoredJavaToggle"
+                        Height="48"
+                        Margin="0,8,0,0"
+                        Padding="0"
+                        FontSize="{DynamicResource BodyFontSize}"
+                        FontWeight="Medium"
+                        IsChecked="False"
+                        Style="{StaticResource CardExpanderHeaderStyle}" />
+                    <controls:AnimatedReveal
+                        x:Name="IgnoredJavaReveal"
+                        IsExpanded="{Binding IsChecked, ElementName=IgnoredJavaToggle}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Margin="0,0,12,0"
+                                    VerticalAlignment="Center"
+                                    FontSize="{DynamicResource LabelFontSize}"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    Text="{DynamicResource I18n.java.ignoredHint}"
+                                    TextWrapping="Wrap" />
+                                <Button
+                                    x:Name="RestoreAllIgnoredJavaButton"
+                                    Grid.Column="1"
+                                    MinWidth="96"
+                                    Height="32"
+                                    Click="RestoreAllIgnoredJava_Click"
+                                    Content="{DynamicResource I18n.java.restoreAllIgnored}"
+                                    Style="{StaticResource SecondaryActionStyle}" />
+                            </Grid>
+                            <TextBlock
+                                x:Name="IgnoredJavaEmptyText"
+                                Margin="0,12,0,0"
+                                FontSize="{DynamicResource LabelFontSize}"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{DynamicResource I18n.java.ignoredEmpty}" />
+                            <ScrollViewer
+                                MaxHeight="240"
+                                Margin="0,8,0,0"
+                                HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Auto">
+                                <ItemsControl
+                                    x:Name="IgnoredJavaList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border
+                                                Style="{StaticResource InsetListRowStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition
+                                                            Width="*" />
+                                                        <ColumnDefinition
+                                                            Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border
+                                                        Grid.ColumnSpan="2"
+                                                        Margin="-12,-9"
+                                                        Background="{DynamicResource AccentHoverBrush}"
+                                                        CornerRadius="6"
+                                                        Style="{StaticResource VersionListHoverStyle}" />
+                                                    <TextBlock
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="{DynamicResource LabelFontSize}"
+                                                        Text="{Binding}"
+                                                        TextTrimming="CharacterEllipsis"
+                                                        ToolTip="{Binding}" />
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Orientation="Horizontal"
+                                                        Style="{StaticResource VersionListActionsStyle}">
+                                                        <controls:IconButton
+                                                            Click="RestoreIgnoredJava_Click"
+                                                            Icon="{x:Static icons:LauncherIcons.Reset}"
+                                                            Tag="{Binding}"
+                                                            ToolTip="{DynamicResource I18n.java.restoreIgnored}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </controls:AnimatedReveal>
                 </StackPanel>
             </controls:LauncherCard>
             <Border

@@ -11,13 +11,14 @@ namespace ErhioLab.Craft.Launcher.Settings;
 /// <summary>为设置页预览提供当前选择的信息; 实际启动应重新选择 Java 并生成启动上下文.</summary>
 internal static class LaunchPlaceholderPreview
 {
-    internal static MinecraftLaunchPlaceholderContext Create(LocalMinecraftVersion? version, LauncherSettings? settingsOverride = null, AccountEntry? accountOverride = null)
+    internal static MinecraftLaunchPlaceholderContext Create(LocalMinecraftVersion? version, LauncherSettings? settingsOverride = null,
+        AccountEntry? accountOverride = null, IReadOnlyList<LauncherJavaInstallation>? javaInstallations = null)
     {
         LauncherSettings settings = settingsOverride ?? App.Settings;
         var account = accountOverride ?? App.Accounts.SelectedAccount;
         string gameDirectory = settings.SelectedGameFolderPath ?? Path.Combine(AppContext.BaseDirectory, ".minecraft");
         string? versionDirectory = version?.FolderPath ?? settings.SelectedVersionPath;
-        string? java = settings.JavaInstallations.FirstOrDefault()?.Path;
+        string? java = (javaInstallations ?? App.JavaCatalog.Installations).FirstOrDefault()?.Path;
         string? loader = version?.Loader;
         return new MinecraftLaunchPlaceholderContext
         {
@@ -64,7 +65,7 @@ internal static class LaunchPlaceholderPreview
         }
         catch (Exception error) when (error is ArgumentException or PathTooLongException)
         {
-            // 导入配置中的无效 Java 交由 Java 探测验证, 预览按未选择 Java 处理. 
+            // 本机清单中的无效 Java 交由 Java 探测验证, 预览按未选择 Java 处理.
             return null;
         }
     }

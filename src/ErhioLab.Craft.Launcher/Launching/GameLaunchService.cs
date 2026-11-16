@@ -79,6 +79,8 @@ internal sealed class GameLaunchService
         }
 
         string name = settings.SelectedVersionId ?? Path.GetFileName(versionDirectory);
+        // Java 清单与通用设置分别取快照, 运行中的任务不受后续排序或导入配置影响.
+        IReadOnlyList<LauncherJavaInstallation> javaCandidates = App.JavaCatalog.Installations.ToArray();
         string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8];
         string runDirectory = exportPath is null
             ? Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId)
@@ -165,11 +167,11 @@ internal sealed class GameLaunchService
                 }) } : Array.Empty<LauncherTaskStage>()),
                 Stage("gameLaunch.java", async task =>
                 {
-                    IReadOnlyList<JavaInstallation> candidates = settings.JavaInstallations.Select(candidate => candidate.ToJava()).ToArray();
+                    IReadOnlyList<JavaInstallation> candidates = javaCandidates.Select(candidate => candidate.ToJava()).ToArray();
                     if (!versionOptions.UseSpecifiedJava && candidates.Count == 0)
                     {
                         await App.JavaCatalog.InitializeIfEmptyAsync();
-                        candidates = App.Settings.JavaInstallations.Select(candidate => candidate.ToJava()).ToArray();
+                        candidates = App.JavaCatalog.Installations.Select(candidate => candidate.ToJava()).ToArray();
                     }
                     java = await LaunchJavaSelector.SelectAsync(version!, versionOptions, candidates, task.CancellationToken);
                     task.SetJavaExecutablePath(java.Path);

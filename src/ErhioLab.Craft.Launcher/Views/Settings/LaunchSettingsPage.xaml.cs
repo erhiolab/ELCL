@@ -70,7 +70,7 @@ public partial class LaunchSettingsPage
         RefreshLaunchOptions();
     }
 
-    internal async Task ResetToDefaultsAsync()
+    internal void ResetToDefaults()
     {
         _launchTextSaveTimer.Stop();
         LauncherSettings defaults = new();
@@ -96,9 +96,8 @@ public partial class LaunchSettingsPage
                 SkipFileVerification = defaults.SkipFileVerification
             })) return;
 
-        App.Logger.Information("Settings", "启动选项和内存分配已重置, 继续重置并重新获取 Java 列表.");
+        App.Logger.Information("Settings", "启动选项和内存分配已重置, 保留本机 Java 列表.");
         RefreshLaunchOptions();
-        await App.JavaCatalog.ResetAsync();
     }
 
     private void RefreshLaunchOptions()
@@ -306,7 +305,7 @@ public partial class LaunchSettingsPage
 
     private void RefreshControls()
     {
-        IReadOnlyList<LauncherJavaInstallation> installed = App.Settings.JavaInstallations;
+        IReadOnlyList<LauncherJavaInstallation> installed = App.JavaCatalog.Installations;
         JavaList.ItemsSource = installed.Take(PreviewCount).ToArray();
         MoreJavaList.ItemsSource = installed.Skip(PreviewCount).ToArray();
         JavaList.Visibility = installed.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -328,13 +327,18 @@ public partial class LaunchSettingsPage
         RefreshButton.IsEnabled = !App.JavaCatalog.IsRefreshing;
         AddButton.IsEnabled = !App.JavaCatalog.IsRefreshing;
         RefreshButton.Content = App.JavaCatalog.IsRefreshing ? LocalizationManager.Get("java.searching") : LocalizationManager.Get("java.search");
+        IgnoredJavaList.ItemsSource = App.JavaCatalog.IgnoredPaths.ToArray();
+        IgnoredJavaList.IsEnabled = !App.JavaCatalog.IsRefreshing;
+        IgnoredJavaToggle.Content = string.Format(LocalizationManager.Get("java.ignoredCount"), App.JavaCatalog.IgnoredPaths.Count);
+        IgnoredJavaEmptyText.Visibility = App.JavaCatalog.IgnoredPaths.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RestoreAllIgnoredJavaButton.IsEnabled = App.JavaCatalog.IgnoredPaths.Count > 0 && !App.JavaCatalog.IsRefreshing;
     }
 
     private void ExpandJavaButton_Click(object sender, RoutedEventArgs e)
     {
         _showAllJava = !_showAllJava;
         ExpandJavaButton.Content = _showAllJava ? LocalizationManager.Get("java.collapse")
-            : string.Format(LocalizationManager.Get("java.expand"), App.Settings.JavaInstallations.Count - PreviewCount);
+            : string.Format(LocalizationManager.Get("java.expand"), App.JavaCatalog.Installations.Count - PreviewCount);
         AnimateJavaExpansion();
     }
 
@@ -405,7 +409,7 @@ public partial class LaunchSettingsPage
     {
         if (Entry(sender) is not { } java) return;
         // 折叠时若第三项下移, 展开列表以便继续看到它的新位置.
-        if (!_showAllJava && App.Settings.JavaInstallations.Count > PreviewCount && App.Settings.JavaInstallations[PreviewCount - 1].Path == java.Path)
+        if (!_showAllJava && App.JavaCatalog.Installations.Count > PreviewCount && App.JavaCatalog.Installations[PreviewCount - 1].Path == java.Path)
         {
             _showAllJava = true;
             ExpandJavaButton.Content = LocalizationManager.Get("java.collapse");
@@ -422,6 +426,13 @@ public partial class LaunchSettingsPage
     {
         if (Entry(sender) is { } java) App.JavaCatalog.Remove(java);
     }
+
+    private async void RestoreIgnoredJava_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is string path) await App.JavaCatalog.RestoreIgnoredAsync(path);
+    }
+
+    private async void RestoreAllIgnoredJava_Click(object sender, RoutedEventArgs e) => await App.JavaCatalog.RestoreIgnoredAsync();
 
     private async void DeleteInstalledJava_Click(object sender, RoutedEventArgs e)
     {

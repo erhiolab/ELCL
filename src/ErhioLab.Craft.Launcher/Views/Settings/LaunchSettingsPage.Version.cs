@@ -93,7 +93,7 @@ public partial class LaunchSettingsPage
         bool initializing = _initializingLaunchOptions;
         _initializingLaunchOptions = true;
         // 已移除的指定路径仍保留显示, 避免刷新列表时静默改用其他 Java.
-        List<JavaInstallation> choices = App.Settings.JavaInstallations.Select(java => java.ToJava()).ToList();
+        List<JavaInstallation> choices = App.JavaCatalog.Installations.Select(java => java.ToJava()).ToList();
         if (_versionOptions.JavaPath is { } path && !choices.Any(java => string.Equals(java.Path, path, StringComparison.OrdinalIgnoreCase)))
             choices.Add(new JavaInstallation(path, "", 0, ""));
         SpecifiedJavaBox.ItemsSource = choices;
@@ -106,7 +106,7 @@ public partial class LaunchSettingsPage
     {
         if (_initializingLaunchOptions || !IsVersionMode || JavaModeBox.SelectedIndex < 0) return;
         bool specified = JavaModeBox.SelectedIndex == 1;
-        string? path = specified ? _versionOptions.JavaPath ?? App.Settings.JavaInstallations.FirstOrDefault()?.Path : null;
+        string? path = specified ? _versionOptions.JavaPath ?? App.JavaCatalog.Installations.FirstOrDefault()?.Path : null;
         if (!SaveVersionOptions(_versionOptions with { UseSpecifiedJava = specified, JavaPath = path })) return;
         SpecifiedJavaReveal.IsExpanded = specified;
         RefreshSpecifiedJava();

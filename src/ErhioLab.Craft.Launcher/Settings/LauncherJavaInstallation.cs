@@ -5,7 +5,7 @@ using ErhioLab.Craft.Launcher.Core.Java;
 
 namespace ErhioLab.Craft.Launcher.Settings;
 
-/// <summary>客户端 Java 列表项, 将安装来源与通用探测结果分开保存; 兼容旧配置的四个基本字段.</summary>
+/// <summary>客户端 Java 列表项, 将安装来源与通用探测结果分开保存.</summary>
 public sealed record LauncherJavaInstallation(
     string Path,
     string Version,

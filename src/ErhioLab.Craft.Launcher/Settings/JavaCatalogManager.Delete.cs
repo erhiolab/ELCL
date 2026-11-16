@@ -27,10 +27,10 @@ internal sealed partial class JavaCatalogManager
             RequireUnused(directory);
             App.Logger.Information("Java", $"开始删除 ELCL 安装的 Java: {directory}, 标识={java.InstallationId}.");
             await Task.Run(() => DeleteManagedFiles(java));
-            var removed = App.Settings.JavaInstallations.Where(entry => IsWithin(entry.Path, directory)).ToArray();
-            var list = App.Settings.JavaInstallations.Except(removed).ToArray();
-            string[] ignored = [.. App.Settings.IgnoredJavaPaths, .. removed.Select(entry => entry.Path)];
-            if (!App.UpdateSettings(App.Settings with { JavaInstallations = list, IgnoredJavaPaths = ignored }))
+            var removed = Installations.Where(entry => IsWithin(entry.Path, directory)).ToArray();
+            var list = Installations.Except(removed).ToArray();
+            string[] ignored = [.. _data.IgnoredJavaPaths, .. removed.Select(entry => entry.Path)];
+            if (!Save(_data with { JavaInstallations = list, IgnoredJavaPaths = ignored }))
             {
                 App.Logger.Warning("Java", $"Java 目录已删除, 但列表保存失败: {directory}.");
                 LauncherToasts.Error(L("java.deleteConfigFailed"));

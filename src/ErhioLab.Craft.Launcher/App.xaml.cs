@@ -116,22 +116,6 @@ public partial class App
         {
             Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
             LocalizationManager.Apply(Settings.Language);
-            if (Settings.GameFolders.Count == 0)
-            {
-                string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
-                GameFolderSetting[] folders =
-                [
-                    new(localGameDirectory, LocalizationManager.Get("folder.current"), "folder.current"),
-                    new(officialDirectory, LocalizationManager.Get("folder.official"), "folder.official")
-                ];
-                Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
-                _settingsStore.Save(Settings);
-            }
-            if (!File.Exists(settingsPath))
-            {
-                _settingsStore.Save(Settings);
-            }
-
             Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
@@ -141,6 +125,45 @@ public partial class App
             Settings = new LauncherSettings();
             analyticsSettingsLoaded = false;
             LocalizationManager.Apply(Settings.Language);
+        }
+
+        string javaCatalogPath = Path.Combine(dataDirectory, "java.json");
+        try
+        {
+            JavaCatalog.Load(javaCatalogPath);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+        {
+            Logger.Error("Java", $"读取 Java 列表失败: {javaCatalogPath}.", error);
+            LauncherThemeManager.Apply(Settings);
+            LauncherDialogs.Error(LocalizationManager.Get("app.startFailed"),
+                string.Format(LocalizationManager.Get("java.loadFailed"), javaCatalogPath, error.Message));
+            Shutdown(1);
+            return;
+        }
+
+        if (analyticsSettingsLoaded)
+        {
+            try
+            {
+                bool saveSettings = !File.Exists(settingsPath);
+                if (Settings.GameFolders.Count == 0)
+                {
+                    string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+                    GameFolderSetting[] folders =
+                    [
+                        new(localGameDirectory, LocalizationManager.Get("folder.current"), "folder.current"),
+                        new(officialDirectory, LocalizationManager.Get("folder.official"), "folder.official")
+                    ];
+                    Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
+                    saveSettings = true;
+                }
+                if (saveSettings) _settingsStore.Save(Settings);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                Logger.Error("Settings", "保存初始游戏文件夹失败.", error);
+            }
         }
 
         CleanupResult? cleanupResult = ReadCleanupResult(e.Args);

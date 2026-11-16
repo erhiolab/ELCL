@@ -96,12 +96,6 @@ public sealed record LauncherSettings
     /// <summary>在选择 Java 与计算游戏内存前整理 Windows 工作集; 默认关闭.</summary>
     public bool OptimizeMemoryBeforeLaunch { get; init; }
 
-    /// <summary>按优先级排列的 Java 可执行文件列表.</summary>
-    public IReadOnlyList<LauncherJavaInstallation> JavaInstallations { get; init; } = [];
-
-    /// <summary>用户主动移除的路径, 自动刷新时不会重新加入.</summary>
-    public IReadOnlyList<string> IgnoredJavaPaths { get; init; } = [];
-
     /// <summary>版本选择页显示的游戏文件夹, 顺序即列表顺序.</summary>
     public IReadOnlyList<GameFolderSetting> GameFolders { get; init; } = [];
 
@@ -166,16 +160,12 @@ public sealed record LauncherSettings
             MemoryUnit = Enum.IsDefined(MemoryUnit) ? MemoryUnit : MemoryUnitSystem.Binary,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
-            JavaInstallations = ValidJavaInstallations(JavaInstallations).DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
-            IgnoredJavaPaths = OrEmpty(IgnoredJavaPaths).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             GameFolders = gameFolders,
             SelectedGameFolderPath = selectedFolderPath,
             SelectedVersionPath = selectedVersionPath,
             SelectedVersionId = string.IsNullOrWhiteSpace(SelectedVersionId) ? null : SelectedVersionId.Trim()[..Math.Min(SelectedVersionId.Trim().Length, 128)]
         };
     }
-
-    private static IEnumerable<T> OrEmpty<T>(IEnumerable<T>? values) => values ?? [];
 
     private static string NormalizeLaunchText(string? value, int limit, string fallback = "")
     {
@@ -185,7 +175,6 @@ public sealed record LauncherSettings
 
     private static string NormalizeAccent(string? color) => color?.Trim() ?? string.Empty;
 
-    private static IEnumerable<LauncherJavaInstallation> ValidJavaInstallations(IEnumerable<LauncherJavaInstallation?>? values) => values?.Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path)).Select(java => java!) ?? [];
 
     private static IEnumerable<GameFolderSetting> ValidGameFolders(IEnumerable<GameFolderSetting?>? values)
     {
