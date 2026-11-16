@@ -152,6 +152,9 @@
                     x:Name="ResultsList"
                     Background="Transparent"
                     BorderThickness="0"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.VirtualizationMode="Recycling"
+                    VirtualizingPanel.ScrollUnit="Pixel"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                     MouseLeftButtonUp="Result_Click"
                     PreviewKeyDown="Result_KeyDown">

@@ -267,6 +267,7 @@
                                         ScrollViewer.CanContentScroll="True"
                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                                         VirtualizingPanel.IsVirtualizing="True"
+                                        VirtualizingPanel.ScrollUnit="Pixel"
                                         VirtualizingPanel.VirtualizationMode="Recycling"
                                         ItemContainerStyle="{StaticResource PlainListBoxItemStyle}" />
                                 </Border>

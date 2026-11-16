@@ -20,6 +20,12 @@ public partial class ModDownloadPage
     private CancellationTokenSource? _search;
     private ModBrowserContext? _context;
     private bool _explicitContext;
+    private ModSearchPageCache? _pageCache;
+    private ModSearchRequest? _cachedQuery;
+    private CommunitySource _cachedSource;
+    private CancellationTokenSource? _prefetch;
+    private ModSearchRequest? _lastRequest;
+    private ModSearchResult? _lastResult;
     internal event Action<ModProjectRow, ModBrowserContext>? ProjectSelected;
 
     public ModDownloadPage()
@@ -38,6 +44,7 @@ public partial class ModDownloadPage
     internal void SetContext(ModBrowserContext context)
     {
         _search?.Cancel();
+        ResetPageCache();
         _context = context;
         _explicitContext = true;
         _binding = true;
@@ -59,7 +66,12 @@ public partial class ModDownloadPage
     {
         if (ResultsList.ItemsSource is IEnumerable<ModProjectRow> rows)
             foreach (var row in rows) _ = row.EnrichAsync();
-        if (_initialized && (_explicitContext || _context?.VersionDirectory == App.Settings.SelectedVersionPath)) return;
+        if (_initialized && (_explicitContext || _context?.VersionDirectory == App.Settings.SelectedVersionPath))
+        {
+            if (_pageCache is not null && _cachedSource != CommunityMods.Source) Refresh();
+            else if (_lastRequest is { } request && _lastResult is { } result) StartPrefetch(request, result);
+            return;
+        }
         _initialized = true;
         // 元数据扫描在后台执行, 不阻塞导航动画.
         if (_context is null || !_explicitContext && _context.VersionDirectory != App.Settings.SelectedVersionPath)
@@ -72,6 +84,8 @@ public partial class ModDownloadPage
 
     private void Page_Unloaded(object sender, RoutedEventArgs e)
     {
+        CancelPrefetch();
+        _pageCache?.CancelPending();
         if (_loading)
         {
             _search?.Cancel();
@@ -81,6 +95,7 @@ public partial class ModDownloadPage
 
     internal void Refresh()
     {
+        ResetPageCache();
         LoaderPair.IsExpanded = GameVersionBox.Version is not null;
         _page = 0;
         _ = SearchAsync();
@@ -126,7 +141,7 @@ public partial class ModDownloadPage
 
     private void Previous_Click(object sender, RoutedEventArgs e)
     {
-        if (_page > 0)
+        if (!_loading && _page > 0)
         {
             _page--;
             _ = SearchAsync();
@@ -135,6 +150,7 @@ public partial class ModDownloadPage
 
     private void Next_Click(object sender, RoutedEventArgs e)
     {
+        if (_loading || _page >= 499 || !NextButton.IsEnabled) return;
         _page++;
         _ = SearchAsync();
     }
@@ -142,6 +158,7 @@ public partial class ModDownloadPage
     private async Task SearchAsync()
     {
         if (_binding) return;
+        CancelPrefetch();
         _search?.Cancel();
         var cancellation = new CancellationTokenSource();
         _search = cancellation;
@@ -158,6 +175,16 @@ public partial class ModDownloadPage
         string query = QueryBox.Text.Trim();
         ModPlatform platform = (ModPlatform)Math.Max(0, SourcesBox.SelectedIndex);
         ModSortOrder sort = SortBox.SelectedIndex == 1 ? ModSortOrder.Downloads : ModSortOrder.Relevance;
+        var queryRequest = new ModSearchRequest(query, platform, version, loader, category, SortOrder: sort);
+        if (_pageCache is null || _cachedQuery != queryRequest || _cachedSource != CommunityMods.Source)
+        {
+            ResetPageCache();
+            var client = CommunityMods.Client();
+            _pageCache = new ModSearchPageCache(client.SearchAsync);
+            _cachedQuery = queryRequest;
+            _cachedSource = CommunityMods.Source;
+        }
+        var cache = _pageCache;
         App.Logger.Information("Mods", $"查询 Mods: 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
         try
         {
@@ -168,11 +195,13 @@ public partial class ModDownloadPage
                 if (translation is { EnglishName.Length: > 0 }) query = translation.EnglishName;
             }
 
-            var result = await CommunityMods.Client().SearchAsync(new ModSearchRequest(query, platform, version, loader, category, _page, SortOrder: sort), cancellation.Token);
+            var request = queryRequest with { Query = query, Page = _page };
+            var result = await cache.GetAsync(request).WaitAsync(cancellation.Token);
             if (!ReferenceEquals(_search, cancellation)) return;
             foreach (var failure in result.SourceErrors) App.Logger.Error("Mods", $"Mods 来源暂不可用: {failure.Key}.", failure.Value);
             var rows = result.Projects.Select(project => new ModProjectRow(project)).ToArray();
             ResultsList.ItemsSource = rows;
+            if (rows.Length > 0) ResultsList.ScrollIntoView(rows[0]);
             EmptyText.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             EmptyText.Text = CommunityMods.L("empty");
             ResultStatus.Text = result.FailedPlatforms.Count > 0
@@ -181,6 +210,9 @@ public partial class ModDownloadPage
             PreviousButton.IsEnabled = _page > 0;
             NextButton.IsEnabled = result.HasMore && _page < 499;
             foreach (var row in rows) _ = row.EnrichAsync();
+            _lastRequest = request;
+            _lastResult = result;
+            if (IsLoaded) StartPrefetch(request, result);
             App.Logger.Information("Mods", $"Mods 查询完成: 条目={rows.Length}, 总数={result.Total}.");
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -207,9 +239,66 @@ public partial class ModDownloadPage
         }
     }
 
+    private void CancelPrefetch()
+    {
+        _prefetch?.Cancel();
+        _prefetch = null;
+    }
+
+    private void ResetPageCache()
+    {
+        CancelPrefetch();
+        _pageCache?.Dispose();
+        _pageCache = null;
+        _cachedQuery = null;
+        _lastRequest = null;
+        _lastResult = null;
+    }
+
+    private void StartPrefetch(ModSearchRequest request, ModSearchResult result)
+    {
+        CancelPrefetch();
+        if (!result.HasMore || request.Page >= 499 || _pageCache is not { } cache) return;
+        var cancellation = new CancellationTokenSource();
+        _prefetch = cancellation;
+        _ = PrefetchAsync(cache, request with { Page = request.Page + 1 }, cancellation);
+    }
+
+    private async Task PrefetchAsync(ModSearchPageCache cache, ModSearchRequest request, CancellationTokenSource cancellation)
+    {
+        var token = cancellation.Token;
+        try
+        {
+            App.Logger.Information("Mods", $"开始预加载 Mods 第 {request.Page + 1} 页.");
+            var result = await cache.GetAsync(request).WaitAsync(token);
+            token.ThrowIfCancellationRequested();
+            foreach (var failure in result.SourceErrors)
+                App.Logger.Error("Mods", $"预加载 Mods 来源暂不可用: {failure.Key}.", failure.Value);
+            await Parallel.ForEachAsync(result.Projects,
+                new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = token },
+                async (project, assetToken) => await Task.WhenAll(CommunityMods.ImageAsync(project.Icon),
+                    CommunityMods.TranslationAsync(project.Name, project)).WaitAsync(assetToken));
+            App.Logger.Information("Mods", $"Mods 第 {request.Page + 1} 页预加载完成: {result.Projects.Count} 项.");
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            App.Logger.Information("Mods", $"Mods 第 {request.Page + 1} 页预加载已取消.");
+        }
+        catch (Exception error)
+        {
+            App.Logger.Error("Mods", $"Mods 第 {request.Page + 1} 页预加载失败, 翻页时重新尝试.", error);
+        }
+        finally
+        {
+            if (ReferenceEquals(_prefetch, cancellation)) _prefetch = null;
+            cancellation.Dispose();
+        }
+    }
+
     private void Result_Click(object sender, MouseButtonEventArgs e)
     {
-        if (ResultsList.SelectedItem is ModProjectRow row && ItemsControl.ContainerFromElement(ResultsList, e.OriginalSource as DependencyObject) is ListBoxItem)
+        if (ResultsList.SelectedItem is ModProjectRow row && e.OriginalSource is DependencyObject source
+            && ItemsControl.ContainerFromElement(ResultsList, source) is ListBoxItem)
             Open(row);
     }
 
