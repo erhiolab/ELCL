@@ -1,4 +1,49 @@
 $ErrorActionPreference = 'Stop'
+$publishTimer = [System.Diagnostics.Stopwatch]::StartNew()
+
+function Write-ReleaseSummary {
+    param(
+        [Parameter(Mandatory)] [string] $Version,
+        [Parameter(Mandatory)] [string] $OutputDirectory,
+        [Parameter(Mandatory)] [string[]] $FileNames,
+        [Parameter(Mandatory)] [TimeSpan] $Elapsed
+    )
+
+    Write-Host ''
+    Write-Host 'ELCL release summary'
+    Write-Host "Version: $Version"
+    Write-Host 'Configuration: Release | Platform: Windows x64 | Framework: .NET 10'
+    Write-Host "Output: $OutputDirectory"
+    Write-Host "Completed (UTC): $([DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))"
+    Write-Host "Elapsed: $($Elapsed.ToString('c'))"
+
+    [long] $totalBytes = 0
+    foreach ($fileName in $FileNames) {
+        $file = Get-Item -LiteralPath (Join-Path $OutputDirectory $fileName)
+        $sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        $sha512 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA512).Hash
+        $totalBytes += $file.Length
+        $requirement = if ($fileName -like '*-framework-dependent.exe') {
+            'Requires .NET 10 Windows Desktop Runtime'
+        } elseif ($fileName -like '*-self-contained.exe') {
+            'Includes .NET runtime'
+        } else {
+            'Reusable .NET 10 core library'
+        }
+
+        Write-Host ''
+        Write-Host "File: $($file.Name)"
+        Write-Host "  Path: $($file.FullName)"
+        Write-Host "  Usage: $requirement"
+        Write-Host "  Size: $($file.Length) bytes ($(([double]$file.Length / 1MB).ToString('F2', [Globalization.CultureInfo]::InvariantCulture)) MiB)"
+        Write-Host "  Modified (UTC): $($file.LastWriteTimeUtc.ToString('yyyy-MM-dd HH:mm:ss'))"
+        Write-Host "  SHA-256: $sha256"
+        Write-Host "  SHA-512: $sha512"
+    }
+
+    Write-Host ''
+    Write-Host "Total: $($FileNames.Count) files, $totalBytes bytes ($(([double]$totalBytes / 1MB).ToString('F2', [Globalization.CultureInfo]::InvariantCulture)) MiB)"
+}
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'src\ErhioLab.Craft.Launcher\ErhioLab.Craft.Launcher.csproj'
@@ -81,13 +126,7 @@ if (-not (Test-Path -LiteralPath $coreDll -PathType Leaf)) {
 }
 Copy-Item -LiteralPath $coreDll -Destination (Join-Path $outputRoot $coreFileName) -Force
 
-# 全部产物生成成功后, 将两个单文件 EXE 和可独立引用的核心 DLL 放到发布目录.
-$stagedFiles = @(Get-ChildItem -LiteralPath $outputRoot -File)
-if ($stagedFiles.Count -ne 3) {
-    throw "Staging must contain exactly two EXEs and one core DLL: $outputRoot"
-}
-
-New-Item -ItemType Directory -Path $releasePath -Force | Out-Null
+# 依赖可能附带原生调试符号等文件, 只校验和复制明确列出的发布产物.
 $releaseFiles = @(
     "ELCL-$version-win-x64-framework-dependent.exe"
     "ELCL-$version-win-x64-self-contained.exe"
@@ -95,7 +134,22 @@ $releaseFiles = @(
 )
 foreach ($fileName in $releaseFiles) {
     $source = Join-Path $outputRoot $fileName
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Missing release artifact: $source"
+    }
+    if ((Get-Item -LiteralPath $source).Length -eq 0) {
+        throw "Release artifact is empty: $source"
+    }
+}
+
+# 全部产物校验成功后再更新发布目录, 不复制 PDB 等暂存附属文件.
+New-Item -ItemType Directory -Path $releasePath -Force | Out-Null
+foreach ($fileName in $releaseFiles) {
+    $source = Join-Path $outputRoot $fileName
     $destination = Join-Path $releasePath $fileName
     Copy-Item -LiteralPath $source -Destination $destination -Force
     Write-Host "Release artifact: $destination"
 }
+
+$publishTimer.Stop()
+Write-ReleaseSummary -Version $version -OutputDirectory $releasePath -FileNames $releaseFiles -Elapsed $publishTimer.Elapsed
