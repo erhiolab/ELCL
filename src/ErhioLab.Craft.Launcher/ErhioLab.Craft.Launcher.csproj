@@ -14,7 +14,8 @@
     <EmbeddedResource Include="Languages/**/*.json" />
     <EmbeddedResource Include="Assets/Launch/*.jar" />
     <EmbeddedResource Include="Assets/ThirdParty/*.txt" />
-    <Content Include="Assets/Launch/*.LICENSE" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Assets/Launch/*.LICENSE" />
+    <EmbeddedResource Include="../../LICENSE" Link="Licensing/ELCL-LICENSE.txt" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
     <Resource Include="Assets/Credits/Pcl.png" />

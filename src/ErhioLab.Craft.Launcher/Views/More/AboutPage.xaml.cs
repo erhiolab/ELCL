@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 
 using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Licensing;
 
 namespace ErhioLab.Craft.Launcher.Views.More;
 
@@ -25,6 +26,7 @@ public partial class AboutPage
 
     private void RefreshCredits()
     {
+        LicenseGroups.ItemsSource = ThirdPartyCatalog.Create();
         string launcherVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown";
         ImageSource brandIcon = LoadBrandIcon();
 
@@ -62,11 +64,11 @@ public partial class AboutPage
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            App.Logger.Information("More", $"打开鸣谢链接: {url}");
+            App.Logger.Information("More", $"打开关于页面链接: {url}");
         }
         catch (Exception error) when (error is Win32Exception or InvalidOperationException)
         {
-            App.Logger.Error("More", $"无法打开鸣谢链接: {url}", error);
+            App.Logger.Error("More", $"无法打开关于页面链接: {url}", error);
             LauncherToasts.Error(LocalizationManager.Get("about.openBrowserFailed"));
         }
     }

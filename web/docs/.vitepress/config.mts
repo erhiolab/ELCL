@@ -54,6 +54,7 @@ export default defineConfig({
                     text: "工具与帮助", items: [
                         { text: "百宝箱", link: "/launcher/toolbox" },
                         { text: "性能", link: "/launcher/performance" },
+                        { text: "关于与许可", link: "/launcher/about" },
                         { text: "隐私与匿名统计", link: "/launcher/privacy" },
                         { text: "文件与故障排查", link: "/launcher/files" }
                     ]

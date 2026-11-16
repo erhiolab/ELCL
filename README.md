@@ -159,6 +159,8 @@ pnpm dev
 
 本项目采用 [GNU GPL v3](LICENSE)。第三方代码、标识和资源遵循各自的许可声明。
 
+启动器内的 **更多 → 关于 → 许可与版权声明** 列出了组件、参考项目、资源与在线服务，并提供来源及许可链接。使用说明见[关于与许可](https://elcl.erhio.cn/launcher/about)。
+
 ## Star 历史
 
 <a href="https://star-history.com/#erhiolab/ELCL&amp;Date">
