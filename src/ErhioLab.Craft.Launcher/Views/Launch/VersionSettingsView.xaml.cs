@@ -65,7 +65,7 @@ public partial class VersionSettingsView
 
     private void RefreshSidebar()
     {
-        var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.GameVersions);
+        var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.VersionRelease);
         var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
         var mods = new SectionSidebarItem("mods.manage", LauncherIcons.ModsAndResources);
         var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);

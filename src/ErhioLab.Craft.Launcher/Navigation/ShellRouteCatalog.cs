@@ -20,7 +20,7 @@ internal static class ShellRouteCatalog
     internal static IReadOnlyDictionary<ShellSection, ShellRoute> Create()
     {
         // 游戏与 Java 下载共用侧栏和缓动页面容器.
-        SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.GameVersions, CanRefresh: true, ActionToolTipKey: "sidebar.refreshVanilla");
+        SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.VersionRelease, CanRefresh: true, ActionToolTipKey: "sidebar.refreshVanilla");
         SectionSidebarItem javaItem = new("javaDownload.title", LauncherIcons.Java, CanRefresh: true, ActionToolTipKey: "sidebar.refreshJava");
         SectionSidebarItem modsItem = new("mods.title", LauncherIcons.ModsAndResources, CanRefresh: true, ActionToolTipKey: "sidebar.refreshMods");
         SectionSidebarView downloadSidebar = new(vanillaItem, modsItem, javaItem);

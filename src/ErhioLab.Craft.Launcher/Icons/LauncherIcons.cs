@@ -106,9 +106,6 @@ public static class LauncherIcons
     /// <summary>顶部导航的四宫格图标.</summary>
     public static readonly Geometry More = Parse("M 0,0 H 5 V 5 H 0 Z M 8,0 H 13 V 5 H 8 Z M 0,8 H 5 V 13 H 0 Z M 8,8 H 13 V 13 H 8 Z");
 
-    /// <summary>游戏版本列表图标.</summary>
-    public static readonly Geometry GameVersions = Parse("M 3,3 L 9,1 L 15,3 L 15,16 L 9,18 L 3,16 Z M 9,1 L 9,18 M 3,7 L 9,9 L 15,7");
-
     /// <summary>正式版的方块图标.</summary>
     public static readonly Geometry VersionRelease = Parse("M 9,1 L 16,5 L 16,13 L 9,17 L 2,13 L 2,5 Z M 2,5 L 9,9 L 16,5 M 9,9 L 9,17");
 
@@ -161,7 +158,7 @@ public static class LauncherIcons
     };
 
     /// <summary>Mods 图标.</summary>
-    public static readonly Geometry ModsAndResources = Parse("M 3,5 H 6 V 3 A 2,2 0 0 1 10,3 V 5 H 13 Q 14,5 14,6 V 8 H 16 A 2,2 0 0 1 16,12 H 14 V 15 Q 14,16 13,16 H 10 V 14 A 2,2 0 0 0 6,14 V 16 H 3 Q 2,16 2,15 V 12 H 4 A 2,2 0 0 0 4,8 H 2 V 6 Q 2,5 3,5 Z");
+    public static readonly Geometry ModsAndResources = Parse("M 2 3 H 6 V 2.5 C 6 1.12 7.12 0 8.5 0 C 9.88 0 11 1.12 11 2.5 V 3 H 15 V 7 H 15.5 C 16.88 7 18 8.12 18 9.5 C 18 10.88 16.88 12 15.5 12 H 15 V 16 H 2 V 12 H 2.5 C 3.88 12 5 10.88 5 9.5 C 5 8.12 3.88 7 2.5 7 H 2 Z");
 
     /// <summary>整合包图标.</summary>
     public static readonly Geometry Modpacks = Parse("M 2,5 L 9,2 L 16,5 L 9,8 Z M 2,9 L 9,12 L 16,9 M 2,13 L 9,16 L 16,13");
