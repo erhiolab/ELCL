@@ -33,7 +33,12 @@ public partial class MainWindow
         AddHandler(DragDrop.PreviewDropEvent, new DragEventHandler(Modpack_Drop));
         foreach (var page in new FrameworkElement[] { VersionSelectionPage, VersionSettingsPage, AccountManagementPage, TaskManagerPage, DialogOverlay })
             page.IsVisibleChanged += (_, _) => UpdateModpackDropTarget();
-        Loaded += (_, _) => UpdateModpackDropTarget();
+        Loaded += (_, _) =>
+        {
+            UpdateModpackDropTarget();
+            App.DeliverModpackFiles(this);
+            _ = ProcessAssociatedModpacksAsync();
+        };
         Closed += (_, _) =>
         {
             _modpackDrop?.Dispose();
@@ -178,6 +183,7 @@ public partial class MainWindow
         {
             _modpackImportBusy = false;
             UpdateModpackDropTarget();
+            _ = ProcessAssociatedModpacksAsync();
         }
     }
 }

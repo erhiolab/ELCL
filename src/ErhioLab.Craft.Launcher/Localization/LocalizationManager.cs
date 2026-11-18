@@ -24,7 +24,6 @@ public static class LocalizationManager
     private static IReadOnlyDictionary<string, string>? _fallbackStrings;
 
     public static IReadOnlyList<string> AvailableLanguages => ResourceNames.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
-    public static string CurrentLanguage { get; private set; } = DefaultLanguage;
     public static event EventHandler? Changed;
     public static bool IsAvailable(string? language) => language is not null && ResourceNames.ContainsKey(language);
 
@@ -54,7 +53,6 @@ public static class LocalizationManager
         dictionaries.Add(resources);
         _currentResources = resources;
         _currentStrings = pack.Strings;
-        CurrentLanguage = language;
         CultureInfo culture = CultureInfo.GetCultureInfo(language.Replace('_', '-'));
         CultureInfo.CurrentCulture = culture;
         CultureInfo.CurrentUICulture = culture;

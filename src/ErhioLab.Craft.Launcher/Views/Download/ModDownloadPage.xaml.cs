@@ -13,7 +13,7 @@ namespace ErhioLab.Craft.Launcher.Views.Download;
 
 public partial class ModDownloadPage
 {
-    private bool _binding = true;
+    private bool _ready;
     private bool _initialized;
     private bool _loading;
     private int _page;
@@ -38,7 +38,7 @@ public partial class ModDownloadPage
         CategoryBox.ItemsSource = Categories();
         CategoryBox.SelectedIndex = 0;
         SortBox.SelectedIndex = 0;
-        _binding = false;
+        _ready = true;
     }
 
     internal void SetContext(ModBrowserContext context)
@@ -47,12 +47,12 @@ public partial class ModDownloadPage
         ResetPageCache();
         _context = context;
         _explicitContext = true;
-        _binding = true;
+        _ready = false;
         GameVersionBox.Version = context.GameVersion;
         LoaderBox.SelectedIndex = Array.FindIndex((FilterOption[])LoaderBox.ItemsSource, option => option.Value == context.Loader);
         if (LoaderBox.SelectedIndex < 0) LoaderBox.SelectedIndex = 0;
         LoaderPair.IsExpanded = !string.IsNullOrWhiteSpace(context.GameVersion);
-        _binding = false;
+        _ready = true;
         _initialized = false;
         _page = 0;
         if (IsLoaded)
@@ -114,12 +114,12 @@ public partial class ModDownloadPage
 
     private void Filter_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (!_binding && IsLoaded) Refresh();
+        if (_ready && IsLoaded) Refresh();
     }
 
     private void Version_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (_binding) return;
+        if (!_ready) return;
         // 可编辑 ComboBox 的 Text 在 SelectionChanged 后更新.
         Dispatcher.BeginInvoke(() => UpdateVersion());
     }
@@ -129,7 +129,7 @@ public partial class ModDownloadPage
 
     private void UpdateVersion()
     {
-        if (_binding) return;
+        if (!_ready) return;
         string version = GameVersionBox.Version ?? "";
         LoaderPair.IsExpanded = version.Length > 0;
         if (version != _lastVersion)
@@ -157,7 +157,7 @@ public partial class ModDownloadPage
 
     private async Task SearchAsync()
     {
-        if (_binding) return;
+        if (!_ready) return;
         CancelPrefetch();
         _search?.Cancel();
         var cancellation = new CancellationTokenSource();

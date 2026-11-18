@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ErhioLab.Craft.Launcher.Core.Mods;
 
 public enum ModPlatform
@@ -76,8 +78,10 @@ public sealed record ModFilePage(IReadOnlyList<ModFile> Files, bool HasMore);
 
 public sealed record ModDownloadItem(ModProject Project, ModFile File);
 
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Matched platform identifiers are part of the public library API.")]
 public sealed record McModTranslation(string ChineseName, string EnglishName, Uri Website, string? CurseForgeSlug, string? ModrinthSlug);
 
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Local mod metadata is part of the public library API.")]
 public sealed record LocalModInfo(
     string Path,
     string FileName,

@@ -53,6 +53,46 @@
                     </StackPanel>
                 </StackPanel>
             </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.fileAssociation.title}">
+                <StackPanel>
+                    <TextBlock
+                        FontSize="{DynamicResource LabelFontSize}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.fileAssociation.description}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="AssociationStatusText"
+                        Margin="0,10,0,0"
+                        FontSize="{DynamicResource LabelFontSize}"
+                        TextWrapping="Wrap" />
+                    <WrapPanel
+                        Margin="0,16,0,0">
+                        <Button
+                            MinWidth="112"
+                            Height="36"
+                            Margin="0,0,10,0"
+                            Click="BindMrpack_Click"
+                            Content="{DynamicResource I18n.fileAssociation.bind}"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            x:Name="UnbindMrpackButton"
+                            MinWidth="112"
+                            Height="36"
+                            Margin="0,0,10,0"
+                            Click="UnbindMrpack_Click"
+                            Content="{DynamicResource I18n.fileAssociation.unbind}"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                        <Button
+                            MinWidth="128"
+                            Height="36"
+                            Click="DefaultApps_Click"
+                            Content="{DynamicResource I18n.fileAssociation.defaultApps}"
+                            Style="{StaticResource SecondaryActionStyle}" />
+                    </WrapPanel>
+                </StackPanel>
+            </controls:LauncherCard>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

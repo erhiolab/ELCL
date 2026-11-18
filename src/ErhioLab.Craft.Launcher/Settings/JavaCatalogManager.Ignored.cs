@@ -27,19 +27,9 @@ internal sealed partial class JavaCatalogManager
             App.Logger.Information("Java", $"开始取消忽略并检查 Java: {string.Join(", ", paths)}.");
             LauncherToasts.Information(LocalizationManager.Get("java.restoringIgnored"));
 
-            using SemaphoreSlim probeGate = new(4);
-            JavaInstallation?[] checkedPaths = await Task.WhenAll(paths.Select(async ignored =>
-            {
-                await probeGate.WaitAsync();
-                try
-                {
-                    return await JavaDiscovery.ProbeAsync(ignored);
-                }
-                finally
-                {
-                    probeGate.Release();
-                }
-            }));
+            var checkedPaths = new JavaInstallation?[paths.Length];
+            await Parallel.ForEachAsync(Enumerable.Range(0, paths.Length), new ParallelOptions { MaxDegreeOfParallelism = 4 },
+                async (index, cancellationToken) => checkedPaths[index] = await JavaDiscovery.ProbeAsync(paths[index], cancellationToken));
             List<LauncherJavaInstallation> list = Installations.ToList();
             HashSet<string> known = new(list.Select(java => java.Path), StringComparer.OrdinalIgnoreCase);
             HashSet<string> ignoredNow = new(IgnoredPaths, StringComparer.OrdinalIgnoreCase);

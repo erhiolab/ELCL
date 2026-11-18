@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
 /// <summary>当前支持查询版本列表的附加加载器.</summary>
@@ -45,6 +47,7 @@ public sealed record MinecraftLoaderVersion(
 /// <param name="GameVersion">查询时使用的 Minecraft 版本.</param>
 /// <param name="Source">实际返回有效结果的来源.</param>
 /// <param name="Versions">匹配该游戏版本的版本列表, 可以为空.</param>
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Catalog metadata is part of the public library API.")]
 public sealed record MinecraftLoaderVersionCatalog(
     MinecraftLoaderKind Kind,
     string GameVersion,

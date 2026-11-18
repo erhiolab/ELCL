@@ -59,7 +59,7 @@ internal sealed class AnalyticsEvents : IDisposable
         lock (_sync) return CaptureLocked("game_launch_succeeded");
     }
 
-    // 调用者持有 _sync. 不重试、不补报, 不在此处采集账户或游戏详情.
+    // 调用者持有 _sync. 不重试/不补报, 不在此处采集账户或游戏详情.
     private Task CaptureLocked(string eventName)
     {
         if (_disposed || !_enabled) return Task.CompletedTask;

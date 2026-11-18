@@ -84,6 +84,12 @@
 
 - [`LocalMinecraftVersionScanner.Scan`](local-versions.md#localminecraftversionscanner-scan)
 
+## 整合包导出
+
+- [`ModpackExporter.ScanAsync`](modpack-export.md#modpackexporter-scanasync)
+- [`ModpackExporter.WriteAsync`](modpack-export.md#modpackexporter-writeasync)
+- [`ModRepositoryClient.FindFileAsync`](mods.md#modrepositoryclient-findfileasync)
+
 ## 日志
 
 [阅读本篇](logging.md)

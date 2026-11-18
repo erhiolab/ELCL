@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:licensing="clr-namespace:ErhioLab.Craft.Launcher.Licensing"
     xmlns:more="clr-namespace:ErhioLab.Craft.Launcher.Views.More"
     Background="{DynamicResource InkBrush}">
     <UserControl.Resources>
@@ -96,7 +97,8 @@
             </DataTemplate.Triggers>
         </DataTemplate>
         <DataTemplate
-            x:Key="LicenseRowTemplate">
+            x:Key="LicenseRowTemplate"
+            DataType="{x:Type licensing:ThirdPartyCatalog+Entry}">
             <Grid
                 MinHeight="56"
                 Margin="0,6">
@@ -145,7 +147,8 @@
             </Grid>
         </DataTemplate>
         <DataTemplate
-            x:Key="LicenseGroupTemplate">
+            x:Key="LicenseGroupTemplate"
+            DataType="{x:Type licensing:ThirdPartyCatalog+Group}">
             <StackPanel
                 Margin="{StaticResource FormSectionSpacing}">
                 <TextBlock

@@ -35,7 +35,7 @@ public static class ModpackArchive
             var parts = entry.FullName.Replace('\\', '/').Split('/');
             return parts.Length <= 2 && parts[0] is not ("overrides" or "client-overrides" or "minecraft" or ".minecraft") && parts[^1] is "modrinth.index.json" or "manifest.json" or "mmc-pack.json";
         }).ToArray();
-        if (metadata.Length != 1) throw new InvalidDataException("无法唯一识别整合包, 请使用 Modrinth、CurseForge 或 MultiMC 格式.");
+        if (metadata.Length != 1) throw new InvalidDataException("无法唯一识别整合包, 请使用 Modrinth/CurseForge 或 MultiMC 格式.");
         var manifest = metadata[0];
         if (manifest.Length > 8 * 1024 * 1024) throw new InvalidDataException("整合包清单超过 8 MiB.");
         using var input = manifest.Open();

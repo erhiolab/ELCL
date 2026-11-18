@@ -2,16 +2,16 @@ using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Licensing;
 
-/// <summary>启动器使用的组件、参考项目、资源与服务, 与玩家安装的游戏内容分开列出.</summary>
+/// <summary>启动器使用的组件/参考项目/资源与服务, 与玩家安装的游戏内容分开列出.</summary>
 internal static class ThirdPartyCatalog
 {
-    internal sealed record Entry(string Id, string Name, string Description, string SourceUrl, string LicenseUrl);
+    internal sealed record Entry(string Name, string Description, string SourceUrl, string LicenseUrl);
     internal sealed record Group(string Title, IReadOnlyList<Entry> Entries);
 
     internal static IReadOnlyList<Group> Create()
     {
         string L(string key) => LocalizationManager.Get("about.licenses." + key);
-        Entry Item(string id, string name, string source, string license) => new(id, name, L(id), source, license);
+        Entry Item(string id, string name, string source, string license) => new(name, L(id), source, license);
         return
         [
             new Group(L("components"),

@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ErhioLab.Craft.Launcher.Core.Downloads;
 
 /// <summary>一个文件的目标路径及按优先顺序排列的下载地址.</summary>
@@ -24,6 +26,7 @@ public enum DownloadTaskStatus
 }
 
 /// <summary>下载状态及累计进度; 总大小未知时 TotalBytes 为 null.</summary>
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Progress data is part of the public library API.")]
 public sealed record DownloadProgress(
     Guid TaskId,
     string TaskName,
@@ -35,6 +38,7 @@ public sealed record DownloadProgress(
     string? CurrentFile);
 
 /// <summary>成功完成的任务结果.</summary>
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Download results are part of the public library API.")]
 public sealed record DownloadResult(Guid TaskId, IReadOnlyList<string> SavedFiles);
 
 /// <summary>入队后可等待或取消的任务句柄.</summary>
@@ -50,6 +54,7 @@ public sealed class DownloadTaskHandle
     }
 
     /// <summary>本次任务的唯一标识.</summary>
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global", Justification = "Callers can correlate the handle with download progress and results.")]
     public Guid Id { get; }
 
     /// <summary>任务结束后返回保存路径; 失败或取消时抛出相应异常.</summary>

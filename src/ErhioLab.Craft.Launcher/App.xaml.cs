@@ -87,6 +87,7 @@ public partial class App
         try
         {
             WaitForRestartParent(e.Args);
+            if (PrepareFileActivation(e.Args)) return;
             Directory.CreateDirectory(dataDirectory);
             Directory.CreateDirectory(localGameDirectory);
             _logger = new SessionFileLogger(Path.Combine(dataDirectory, "logs"));
@@ -194,8 +195,11 @@ public partial class App
         _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
-        if (Current.MainWindow is { } mainWindow)
-            mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
+        // 文件转交与数据初始化通过后才创建窗口, 避免提前退出时仍由 StartupUri 构造界面.
+        MainWindow mainWindow = new();
+        MainWindow = mainWindow;
+        mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
+        mainWindow.Show();
         _ = JavaCatalog.InitializeIfEmptyAsync();
         Skins.RefreshAll();
         _ = _analytics.LauncherOpenedAsync();
@@ -353,6 +357,7 @@ public partial class App
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _fileActivation?.Dispose();
         _analytics?.Dispose();
         try
         {

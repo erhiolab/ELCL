@@ -3,8 +3,8 @@ using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Mods;
 
-/// <summary>社区 Mods 查询与依赖计划; API Key、HTTP 客户端及来源偏好由调用方提供.</summary>
-public sealed class ModRepositoryClient
+/// <summary>社区 Mods 查询与依赖计划; API Key/HTTP 客户端及来源偏好由调用方提供.</summary>
+public sealed partial class ModRepositoryClient
 {
     private readonly HttpClient _http;
     private readonly string? _key;

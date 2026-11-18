@@ -28,6 +28,7 @@ public partial class VersionSettingsView
     private readonly LaunchSettingsPage _launchSettingsPage;
     private readonly VersionLogsPage _logsPage;
     private readonly VersionModsPage _modsPage;
+    private readonly VersionExportPage _exportPage;
     private readonly AnimatedPageHost _pageHost;
     private readonly Stack<FrameworkElement> _modHistory = new();
     internal event Action? BackRequested;
@@ -41,6 +42,7 @@ public partial class VersionSettingsView
         _pageHost = new AnimatedPageHost(OverviewPage);
         PageHost.Content = _pageHost;
         _modsPage = new VersionModsPage();
+        _exportPage = new VersionExportPage();
         _modsPage.BrowseRequested += context =>
         {
             var browser = new ModDownloadPage();
@@ -69,8 +71,8 @@ public partial class VersionSettingsView
         var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
         var mods = new SectionSidebarItem("mods.manage", LauncherIcons.ModsAndResources);
         var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);
-        var sidebar = Version is { } current && CommunityMods.HasLoader(current)
-            ? new SectionSidebarView(overview, settings, mods, logs) : new SectionSidebarView(overview, settings, logs);
+        var export = new SectionSidebarItem("packExport.title", LauncherIcons.Toolbox, CanRefresh: true, ActionToolTipKey: "packExport.rescan");
+        var sidebar = Version is { } current && CommunityMods.HasLoader(current) ? new SectionSidebarView(overview, settings, mods, logs, export) : new SectionSidebarView(overview, settings, logs, export);
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
@@ -83,11 +85,13 @@ public partial class VersionSettingsView
             }
             else if (ReferenceEquals(item, logs)) _pageHost.Navigate(_logsPage);
             else if (ReferenceEquals(item, mods)) _pageHost.Navigate(_modsPage);
+            else if (ReferenceEquals(item, export)) _pageHost.Navigate(_exportPage);
             else _pageHost.Navigate(OverviewPage, back: true);
         };
-        sidebar.ActionRequested += item =>
+        sidebar.ActionRequested += async item =>
         {
             if (ReferenceEquals(item, settings)) _launchSettingsPage.ResetVersionOptions();
+            else if (ReferenceEquals(item, export)) await _exportPage.RefreshAsync();
         };
         _pageHost.Navigate(OverviewPage, back: true);
     }
@@ -97,6 +101,7 @@ public partial class VersionSettingsView
         _launchSettingsPage.SetVersionContext(gameDirectory, version);
         _gameDirectory = Path.GetFullPath(gameDirectory);
         Version = version;
+        _exportPage.SetContext(_gameDirectory, version);
         _modsPage.SetContext(new ModBrowserContext(version.GameVersion, CommunityMods.Loader(version.Loader), version.FolderPath));
         _modHistory.Clear();
         RefreshSidebar();

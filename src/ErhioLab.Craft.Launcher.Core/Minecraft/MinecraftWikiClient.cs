@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -6,6 +7,7 @@ namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 /// <param name="Title">Wiki 页面标题.</param>
 /// <param name="Url">可在浏览器打开的页面地址.</param>
 /// <param name="Text">页面摘要或完整文字.</param>
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Wiki result metadata is part of the public library API.")]
 public sealed record MinecraftWikiPage(string Title, Uri Url, string Text);
 
 /// <summary>某个版本页面实际提供的语言及其页面地址.</summary>

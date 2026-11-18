@@ -1,8 +1,7 @@
 <Application
     x:Class="ErhioLab.Craft.Launcher.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    StartupUri="MainWindow.xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -18,6 +17,8 @@
                     Source="Styles/NavigationStyles.xaml" />
                 <ResourceDictionary
                     Source="Styles/ListStyles.xaml" />
+                <ResourceDictionary
+                    Source="Styles/FileTreeStyles.xaml" />
                 <ResourceDictionary
                     Source="Styles/FormStyles.xaml" />
                 <ResourceDictionary

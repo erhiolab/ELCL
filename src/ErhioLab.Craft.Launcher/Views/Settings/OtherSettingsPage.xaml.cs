@@ -1,10 +1,13 @@
 using ErhioLab.Craft.Launcher.Localization;
 using System.IO;
+using System.ComponentModel;
+using System.Security;
 using System.Text.Json;
 using System.Windows;
 
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.SystemTools;
 
 using Microsoft.Win32;
 
@@ -20,6 +23,70 @@ public partial class OtherSettingsPage
         InitializeComponent();
         Loaded += (_, _) => RefreshPrivacyControls();
         RefreshPrivacyControls();
+        Loaded += (_, _) => RefreshFileAssociation();
+        LocalizationManager.Changed += (_, _) => RefreshFileAssociation();
+        RefreshFileAssociation();
+    }
+
+    private void RefreshFileAssociation()
+    {
+        try
+        {
+            var status = ModpackFileAssociation.Status();
+            string key = status.DefaultHere ? "fileAssociation.defaultHere" : status.RegisteredHere ? "fileAssociation.available" : status.RegisteredElsewhere ? "fileAssociation.otherLocation" : "fileAssociation.notBound";
+            AssociationStatusText.Text = LocalizationManager.Get(key);
+            UnbindMrpackButton.IsEnabled = status.RegisteredHere;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or SecurityException or InvalidOperationException)
+        {
+            App.Logger.Error("FileAssociation", "读取文件关联状态失败.", error);
+            AssociationStatusText.Text = LocalizationManager.Get("fileAssociation.statusFailed");
+            UnbindMrpackButton.IsEnabled = false;
+        }
+    }
+
+    private void BindMrpack_Click(object sender, RoutedEventArgs e)
+    {
+        App.Logger.Information("FileAssociation", "开始绑定 MRPACK 文件到当前 ELCL.");
+        try
+        {
+            var status = ModpackFileAssociation.Register(LocalizationManager.Get("fileAssociation.fileType"));
+            App.Logger.Information("FileAssociation", $"MRPACK 文件关联已注册, 当前默认={status.DefaultHere}.");
+            LauncherToasts.Success(LocalizationManager.Get(status.DefaultHere ? "fileAssociation.bound" : "fileAssociation.chooseDefault"));
+            RefreshFileAssociation();
+            if (!status.DefaultHere) OpenDefaultApps();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or SecurityException or InvalidOperationException or ArgumentException) { AssociationError(error); }
+    }
+
+    private void UnbindMrpack_Click(object sender, RoutedEventArgs e)
+    {
+        App.Logger.Information("FileAssociation", "开始取消当前 ELCL 的 MRPACK 文件关联.");
+        try
+        {
+            bool chooseDefault = ModpackFileAssociation.Unregister();
+            App.Logger.Information("FileAssociation", $"MRPACK 文件关联已移除, 系统默认仍需选择={chooseDefault}.");
+            LauncherToasts.Success(LocalizationManager.Get(chooseDefault ? "fileAssociation.unboundChoose" : "fileAssociation.unbound"));
+            RefreshFileAssociation();
+            if (chooseDefault) OpenDefaultApps();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or SecurityException or InvalidOperationException) { AssociationError(error); }
+    }
+
+    private void DefaultApps_Click(object sender, RoutedEventArgs e) => OpenDefaultApps();
+    private static void OpenDefaultApps()
+    {
+        try
+        {
+            ModpackFileAssociation.OpenDefaultApps();
+            App.Logger.Information("FileAssociation", "已打开 Windows 默认应用设置.");
+        }
+        catch (Exception error) when (error is Win32Exception or InvalidOperationException) { AssociationError(error); }
+    }
+    private static void AssociationError(Exception error)
+    {
+        App.Logger.Error("FileAssociation", "文件关联操作失败.", error);
+        LauncherToasts.Error(string.Format(LocalizationManager.Get("fileAssociation.failed"), error.Message));
     }
 
     private void RefreshPrivacyControls()
@@ -113,7 +180,7 @@ public partial class OtherSettingsPage
         {
             App.Restart();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception)
         {
             App.Logger.Error("Settings", "导入配置后自动重启失败.", exception);
             LauncherDialogs.Error(LocalizationManager.Get("settings.automaticRestartFailed"), string.Format(LocalizationManager.Get("settings.restartFailed"), exception.Message));

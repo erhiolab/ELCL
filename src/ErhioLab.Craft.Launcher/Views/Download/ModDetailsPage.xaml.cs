@@ -26,11 +26,11 @@ public partial class ModDetailsPage
     private readonly List<ModFile> _files = [];
     private CancellationTokenSource? _request;
     private readonly HashSet<CancellationTokenSource> _dependencyRequests = [];
-    private bool _binding = true;
+    private bool _ready;
     private bool _loaded;
     private bool _filesReady;
     private readonly Dictionary<string, IReadOnlyList<ModFile>> _fileCache = [];
-    private string _lastVersion = "";
+    private string _lastVersion;
     private IReadOnlyList<ModFileGroup> _groups = [];
     private long _entryUntil;
     internal event Action? BackRequested;
@@ -50,7 +50,7 @@ public partial class ModDetailsPage
         LoaderPair.IsExpanded = GameVersionBox.Version is not null;
         LoaderBox.ItemsSource = new[] { new FilterOption("", CommunityMods.L("all")), new("forge", "Forge"), new("neoforge", "NeoForge"), new("fabric", "Fabric"), new("quilt", "Quilt"), new("liteloader", "LiteLoader") };
         LoaderBox.SelectedIndex = Math.Max(0, Array.FindIndex((FilterOption[])LoaderBox.ItemsSource, option => option.Value == context.Loader));
-        _binding = false;
+        _ready = true;
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -103,7 +103,7 @@ public partial class ModDetailsPage
 
     private void Version_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (!_binding) Dispatcher.BeginInvoke(() => UpdateVersion());
+        if (_ready) Dispatcher.BeginInvoke(() => UpdateVersion());
     }
 
     private void Version_LostFocus(object sender, KeyboardFocusChangedEventArgs e) => UpdateVersion();
@@ -119,7 +119,7 @@ public partial class ModDetailsPage
 
     private void UpdateVersion()
     {
-        if (!_binding && (GameVersionBox.Version ?? "") != _lastVersion)
+        if (_ready && (GameVersionBox.Version ?? "") != _lastVersion)
         {
             _lastVersion = GameVersionBox.Version ?? "";
             _ = LoadFilesAsync();
@@ -128,7 +128,7 @@ public partial class ModDetailsPage
 
     private void Loader_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (!_binding) _ = LoadFilesAsync();
+        if (_ready) _ = LoadFilesAsync();
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -308,7 +308,7 @@ public partial class ModDetailsPage
 
             rows.Add(new ModSectionRow(CommunityMods.L("filesSection")));
             rows.AddRange(group.Files);
-            rows.Add(new ModGroupFooter(group));
+            rows.Add(new ModGroupFooter());
         }
 
         FilesTimeline.ItemsSource = rows;

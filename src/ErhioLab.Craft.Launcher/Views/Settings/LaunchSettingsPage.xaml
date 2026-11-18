@@ -591,6 +591,7 @@
                                                         CornerRadius="6"
                                                         Style="{StaticResource VersionListHoverStyle}" />
                                                     <TextBlock
+                                                        Grid.Column="0"
                                                         Margin="0,0,8,0"
                                                         VerticalAlignment="Center"
                                                         FontSize="{DynamicResource LabelFontSize}"

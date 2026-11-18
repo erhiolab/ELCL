@@ -9,7 +9,7 @@ using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>保存版本来源、连接数与速度上限的下载设置页面.</summary>
+/// <summary>保存版本来源/连接数与速度上限的下载设置页面.</summary>
 public partial class DownloadSettingsPage
 {
     private bool _initializing = true;

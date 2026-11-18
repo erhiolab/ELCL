@@ -13,10 +13,10 @@ internal sealed record JavaCatalogData
 
     internal JavaCatalogData Normalize() => this with
     {
-        JavaInstallations = (JavaInstallations ?? []).Where(java => java is not null && !string.IsNullOrWhiteSpace(java.Path))
-        .DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
-        IgnoredJavaPaths = (IgnoredJavaPaths ?? []).Where(path => !string.IsNullOrWhiteSpace(path))
-        .Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
+        JavaInstallations = JavaInstallations.Where(java => !string.IsNullOrWhiteSpace(java.Path))
+            .DistinctBy(java => java.Path, StringComparer.OrdinalIgnoreCase).ToArray(),
+        IgnoredJavaPaths = IgnoredJavaPaths.Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
     };
 }
 
@@ -37,6 +37,16 @@ internal sealed class JavaCatalogStore(string filePath)
 
     internal void Save(JavaCatalogData data) => _store.Save(data.Normalize());
 
-    private static JavaCatalogData Read(string path) => JsonSerializer.Deserialize<JavaCatalogData>(File.ReadAllText(path))
-                                                        ?? throw new JsonException($"Java 列表内容不能为 null: {path}.");
+    private static JavaCatalogData Read(string path)
+    {
+        var data = JsonSerializer.Deserialize<JavaCatalogFile>(File.ReadAllText(path))
+            ?? throw new JsonException($"Java 列表内容不能为 null: {path}.");
+        return new JavaCatalogData
+        {
+            JavaInstallations = (data.JavaInstallations ?? []).OfType<LauncherJavaInstallation>().ToArray(),
+            IgnoredJavaPaths = (data.IgnoredJavaPaths ?? []).OfType<string>().ToArray()
+        };
+    }
+
+    private sealed record JavaCatalogFile(IReadOnlyList<LauncherJavaInstallation?>? JavaInstallations, IReadOnlyList<string?>? IgnoredJavaPaths);
 }

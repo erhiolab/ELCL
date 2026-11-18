@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -271,6 +272,7 @@ public static class MinecraftVanillaDownloadPlanner
     }
 }
 
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Download plan metadata is part of the public library API.")]
 public sealed record MinecraftVanillaDownloadPlan(
     string VersionJson,
     string AssetIndexId,

@@ -33,7 +33,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/download">
         <span class="feature-number">01 / 下载</span>
         <h3>原版与加载器一起安装</h3>
-        <p>支持 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine，也能导入通用格式整合包。多文件并发下载，首选来源失败后尝试备用来源。</p>
+        <p>支持 Forge、NeoForge、Fabric、Quilt、LiteLoader 和 OptiFine，也能导入、制作通用整合包。多文件并发下载，首选来源失败后尝试备用来源。</p>
         <span class="home-feature-link">查看安装方法</span>
       </a>
       <a class="home-feature" href="./launcher/accounts">

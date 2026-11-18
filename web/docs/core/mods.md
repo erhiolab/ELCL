@@ -146,6 +146,8 @@ foreach (var file in files) Console.WriteLine(file.Name);
 
 ## ModRepositoryClient.IdentifyAsync
 
+按摘要寻找可下载的确切文件可使用 [`FindFileAsync`](#modrepositoryclient-findfileasync)，与此处按文件识别项目的用途不同。
+
 通过本地文件的 SHA-1 或 CurseForge 指纹查找来源项目，不上传文件内容。
 
 ```csharp
@@ -162,6 +164,24 @@ Console.WriteLine(project?.Website.ToString() ?? "没有找到来源");
 `local` 应来自 `ReadAsync` 或成功解析的扫描项。先查询 Modrinth；明确返回未找到后，再使用 CurseForge 指纹查询。未提供 CurseForge Key 时不查询其指纹接口。
 
 两个平台都没有匹配时返回 `null`；网络故障会抛异常，应与“未找到”分别处理。本方法不改变本地文件。
+
+## ModRepositoryClient.FindFileAsync
+
+读取本地 JAR／ZIP 的 SHA-1，查找完全匹配的上游文件，适合为整合包生成下载引用。返回 `ModFile?`，未匹配或没有可用的下载地址时返回 `null`。不会上传文件内容或下载远端资源。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Mods;
+
+using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+var client = new ModRepositoryClient(http,
+    Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY"));
+ModFile? file = await client.FindFileAsync("game/mods/example.jar", onlyModrinth: true);
+Console.WriteLine(file?.DownloadUri);
+```
+
+`filePath` 是本地文件路径，`onlyModrinth` 默认为 `false`，`cancellationToken` 可取消读取与请求。首先通过 SHA-1 查询 Modrinth，并在版本的所有文件中选择摘要和大小均相符的文件；允许 ZIP，不局限于主 JAR。未匹配且未限定平台时，若调用方提供 CurseForge Key，会继续通过指纹查询，并核对 SHA-1、大小和第三方下载许可；CurseForge 检查最多处理 512 MiB 的本地归档。
+
+请求沿用构造时指定的官方／镜像顺序。仅 Modrinth 模式不访问 CurseForge。网络和解析失败保留对应异常，不自动当成未匹配；调用方可自行决定是否改为内嵌。文件不可读保留 I/O 或访问异常，取消抛出 `OperationCanceledException`。
 
 ## ModRepositoryClient.GetDependenciesAsync
 

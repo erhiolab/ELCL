@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace ErhioLab.Craft.Launcher.Core.Java;
@@ -59,6 +60,7 @@ public sealed record JavaDownloadVersion(
 public sealed record JavaVersionPage(IReadOnlyList<JavaDownloadVersion> Versions, bool HasMore);
 
 /// <summary>Mojang 清单条目, 路径相对于运行时根目录; 链接目标仍需由安装方验证.</summary>
+[SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Global", Justification = "Runtime metadata supports cross-platform library consumers.")]
 public sealed record JavaRuntimeEntry(
     string Path,
     JavaRuntimeEntryType Type,

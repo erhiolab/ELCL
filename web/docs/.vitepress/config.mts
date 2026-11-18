@@ -35,6 +35,7 @@ export default defineConfig({
                         { text: "皮肤与披风", link: "/launcher/appearance" },
                         { text: "版本选择", link: "/launcher/versions" },
                         { text: "导入整合包", link: "/launcher/modpacks" },
+                        { text: "导出整合包", link: "/launcher/modpack-export" },
                         { text: "下载与安装", link: "/launcher/download" },
                         { text: "下载 Java", link: "/launcher/java-downloads" },
                         { text: "下载与管理 Mods", link: "/launcher/mods" },
@@ -78,7 +79,8 @@ export default defineConfig({
                         { text: "安装原版", link: "/core/vanilla-installation" },
                         { text: "安装加载器", link: "/core/loader-installation" },
                         { text: "社区 Mods", link: "/core/mods" },
-                        { text: "整合包", link: "/core/modpacks" }
+                        { text: "整合包导入", link: "/core/modpacks" },
+                        { text: "整合包导出", link: "/core/modpack-export" }
                     ]
                 },
                 {

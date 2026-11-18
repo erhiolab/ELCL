@@ -100,12 +100,6 @@
                 Property="TextTrimming"
                 Value="None" />
             <Setter
-                Property="FontFamily"
-                Value="Consolas, Microsoft YaHei UI" />
-            <Setter
-                Property="FontSize"
-                Value="12" />
-            <Setter
                 Property="TextWrapping"
                 Value="NoWrap" />
             <Style.Triggers>

@@ -2,6 +2,8 @@
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Modpacks`。
 
+本页说明导入。扫描本地内容并生成整合包，请参阅[整合包导出](modpack-export.md)。
+
 `ModpackArchive` 读取通用整合包，返回游戏版本、加载器、下载文件和覆盖文件。它不创建安装任务、不选择数据目录、不运行 Java，也不自行调用下载器。调用方决定安装顺序和进度展示。
 
 支持 Modrinth、CurseForge 和 MultiMC 的格式版本 1，按包内清单识别。清单可在根目录或单层包装目录中；不支持普通备份 ZIP、自定义 MultiMC 组件或不明确的多个清单。
