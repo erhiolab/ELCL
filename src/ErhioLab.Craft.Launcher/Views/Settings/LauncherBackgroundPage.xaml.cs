@@ -126,7 +126,7 @@ public partial class LauncherBackgroundPage
             try
             {
                 var thumbnail = tile.File.IsVideo
-                    ? await Task.Run(() => VideoThumbnailReader.ReadFirstFrameAsync(tile.File.Path, 192, token), token)
+                    ? await Task.Run(() => VideoThumbnailReader.Read(tile.File.Path, 192, token), token)
                     : await Task.Run(() => LauncherBackgroundPresenter.ReadImage(tile.File.Path, 192), token);
                 if (!token.IsCancellationRequested) tile.SetThumbnail(thumbnail);
             }

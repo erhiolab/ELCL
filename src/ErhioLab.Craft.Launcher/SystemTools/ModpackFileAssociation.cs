@@ -17,7 +17,9 @@ internal static class ModpackFileAssociation
     private const string Application = @"Software\Classes\Applications\ErhioLab.Craft.Launcher.exe";
     private const string Capabilities = @"Software\ErhioLab\ELCL\FileAssociation\Capabilities";
 
-    internal static string CurrentCommand => BuildCommand(Environment.ProcessPath ?? throw new InvalidOperationException("无法确定启动器程序路径."), typeof(App).Assembly.Location);
+    internal static string CurrentCommand => BuildCommand(
+        Environment.ProcessPath ?? throw new InvalidOperationException("无法确定启动器程序路径."),
+        Path.Combine(AppContext.BaseDirectory, typeof(App).Assembly.GetName().Name + ".dll"));
     internal static string CurrentIcon => "\"" + Path.Combine(AppContext.BaseDirectory, "ErhioLab.Craft.Launcher.exe") + "\",0";
 
     internal static string BuildCommand(string executable, string assemblyPath)
