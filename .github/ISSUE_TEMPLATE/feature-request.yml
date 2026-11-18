@@ -1,0 +1,39 @@
+name: 新功能建议
+description: 建议新增功能、改进现有操作或补充文档。
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              请先搜索类似的建议。有相关 Issue 可以直接参与讨论，或在这里贴出链接并说明你的需求哪里不同。
+    - type: dropdown
+      id: component
+      attributes:
+          label: 建议改进哪部分？
+          options:
+              - ELCL 启动器
+              - ELCLC 核心库
+              - 官网、文档或发布流程
+              - 不确定
+      validations:
+          required: true
+    - type: textarea
+      id: problem
+      attributes:
+          label: 你想解决什么问题？
+          description: 说说你什么时候会遇到、现在是怎么做的，以及最不方便的是哪一步。一个具体例子比一句「希望支持」更有帮助。
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: 你希望怎么用？
+          description: 描述理想的使用过程，以及怎样算解决了问题。可以写入口、操作和结果；不需要先想好技术实现。
+      validations:
+          required: true
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: 参考、替代办法或其他说明
+          description: 可以附界面草图、其他工具的相关功能、API 调用示例，或说明哪些细节是必须的、哪些可以以后再做。

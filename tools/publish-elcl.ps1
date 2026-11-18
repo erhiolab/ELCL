@@ -1,3 +1,9 @@
+﻿param(
+    [ValidatePattern('^v[0-9]+\.[0-9]+\.[0-9]+$')] [string] $ReleaseTag,
+    [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')] [string] $Repository = 'erhiolab/ELCL',
+    [string] $ArtifactsDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts')
+)
+
 $ErrorActionPreference = 'Stop'
 $publishTimer = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -48,9 +54,9 @@ function Write-ReleaseSummary {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'src\ErhioLab.Craft.Launcher\ErhioLab.Craft.Launcher.csproj'
 $coreProjectPath = Join-Path $projectRoot 'src\ErhioLab.Craft.Launcher.Core\ErhioLab.Craft.Launcher.Core.csproj'
-$releasePath = Join-Path $projectRoot 'artifacts\publish'
-$outputRoot = Join-Path $projectRoot 'artifacts\staging\publish\win-x64'
-$coreOutputRoot = Join-Path $projectRoot 'artifacts\staging\publish\core'
+$releasePath = Join-Path $ArtifactsDirectory 'publish'
+$outputRoot = Join-Path $ArtifactsDirectory 'staging\publish\win-x64'
+$coreOutputRoot = Join-Path $ArtifactsDirectory 'staging\publish\core'
 $dotnetCandidates = @(
     Join-Path $env:USERPROFILE '.dotnet\dotnet.exe'
     (Get-Command dotnet -ErrorAction SilentlyContinue).Source
@@ -66,6 +72,17 @@ if (-not $dotnetPath) {
 $version = (& $dotnetPath msbuild $projectPath -getProperty:Version -nologo).Trim()
 if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') {
     throw "Invalid ELCL version: $version"
+}
+
+if ($ReleaseTag) {
+    $coreVersion = (& $dotnetPath msbuild $coreProjectPath -getProperty:Version -nologo).Trim()
+    if ($LASTEXITCODE -ne 0 -or $ReleaseTag -cne "v$version" -or $coreVersion -cne $version) {
+        throw "Release tag and both project versions must match. Tag: $ReleaseTag; ELCL: $version; ELCLC: $coreVersion."
+    }
+    $changelogPath = Join-Path $projectRoot "web/docs/changelog/$ReleaseTag.md"
+    if (-not (Test-Path -LiteralPath $changelogPath -PathType Leaf)) {
+        throw "Missing website changelog: $changelogPath"
+    }
 }
 
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
@@ -149,6 +166,26 @@ foreach ($fileName in $releaseFiles) {
     $destination = Join-Path $releasePath $fileName
     Copy-Item -LiteralPath $source -Destination $destination -Force
     Write-Host "Release artifact: $destination"
+}
+
+if ($ReleaseTag) {
+    $downloadUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
+    $notes = @(
+        "[更新日志（中文）](https://elcl.erhio.cn/changelog/$ReleaseTag)"
+        ''
+        '| 文件 | SHA-256 |'
+        '| --- | --- |'
+    )
+    $checksums = foreach ($fileName in $releaseFiles) {
+        $hash = (Get-FileHash -LiteralPath (Join-Path $releasePath $fileName) -Algorithm SHA256).Hash.ToLowerInvariant()
+        $notes += '| [{0}]({1}/{0}) | `{2}` |' -f $fileName, $downloadUrl, $hash
+        "$hash  $fileName"
+    }
+    $notes += @('', "[下载 SHA256SUMS.txt]($downloadUrl/SHA256SUMS.txt)")
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    $lf = [string][char]10
+    [System.IO.File]::WriteAllText((Join-Path $releasePath 'SHA256SUMS.txt'), ($checksums -join $lf) + $lf, $utf8)
+    [System.IO.File]::WriteAllText((Join-Path $releasePath 'release-notes.md'), ($notes -join $lf) + $lf, $utf8)
 }
 
 $publishTimer.Stop()

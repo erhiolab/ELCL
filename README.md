@@ -17,6 +17,7 @@
     <a href="https://elcl.erhio.cn/">官网</a> ·
     <a href="https://elcl.erhio.cn/launcher/">使用指南</a> ·
     <a href="https://elcl.erhio.cn/core/README">核心库文档</a> ·
+    <a href="https://elcl.erhio.cn/changelog/">更新日志</a> ·
     <a href="https://github.com/erhiolab/ELCL/issues">反馈问题</a>
 </p>
 
@@ -42,6 +43,8 @@
 启动选项默认跟随全局，也可以为单个版本指定 Java、内存和高级选项。独立设置与描述随版本目录保存。支持导入 Modrinth、CurseForge 和 MultiMC 格式整合包；单独安装加载器不会自动安装 Mods 或 Fabric API。具体操作与限制见[完整使用指南](https://elcl.erhio.cn/launcher/)。
 
 ## 开始使用
+
+在 [GitHub Releases](https://github.com/erhiolab/ELCL/releases) 获取 Windows x64 启动器或核心 DLL。每次发布的变动见[更新日志](https://elcl.erhio.cn/changelog/)。
 
 1. 打开账户管理，添加并选择 Microsoft 账户或离线账户。
 2. 在下载页选择游戏版本，按需添加加载器并完成安装。
@@ -110,6 +113,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish-elcl.ps1
 脚本会先在暂存目录生成并校验以上三个产物，再复制到发布目录。依赖附带的 PDB 等调试文件保留在暂存目录，不作为发布产物复制。
 
 发布结束后，控制台汇总版本、目标平台、完成时间和发布耗时，并逐项显示最终文件的完整路径、运行要求、字节大小、MiB 大小、修改时间及 SHA－256、SHA－512 校验码，最后显示产物数量和总大小。校验码根据发布目录中的最终文件计算，便于分发后核对文件完整性。
+
+### 通过 Git 标签发布
+
+1. 确认 ELCL 与 ELCLC 的项目版本一致，为该版本新增 `web/docs/changelog/vX.Y.Z.md`，并把它加到更新日志索引与侧栏。
+2. 推送这些改动并部署官网。确认版本日志页面能打开后，给对应提交创建并推送同版本的标签，例如 `v0.0.1`。只支持 `vX.Y.Z` 形式的发布标签；普通分支推送不会发布。
+3. GitHub Actions 会构建上述三个文件，生成 Release 说明与 `SHA256SUMS.txt`。发布任务在上传前会再次验证校验值；Release 页面显示对应版本的官网更新日志链接、文件下载链接和 SHA－256 表格。
+
+只想在本地预演，可以运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish-elcl.ps1 -ReleaseTag v0.0.1`。这会生成同样的说明和校验文件，不会创建标签或访问 GitHub Release。可加 `-ArtifactsDirectory <目录>`，让预演输出和已有发布产物分开。
 
 ## 参与开发
 

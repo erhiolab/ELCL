@@ -24,9 +24,18 @@ export default defineConfig({
             { text: "首页", link: "/" },
             { text: "启动器文档", link: "/launcher/", activeMatch: "/launcher/" },
             { text: "核心库文档", link: "/core/README", activeMatch: "/core/" },
+            { text: "更新日志", link: "/changelog/", activeMatch: "/changelog/" },
             { text: "GitHub", link: "https://github.com/erhiolab/ELCL" }
         ],
         sidebar: {
+            "/changelog/": [
+                {
+                    text: "更新日志", items: [
+                        { text: "版本列表", link: "/changelog/" },
+                        { text: "v0.0.1 · 首个公开版本", link: "/changelog/v0.0.1" }
+                    ]
+                }
+            ],
             "/launcher/": [
                 {
                     text: "开始使用", items: [
