@@ -171,7 +171,7 @@ foreach ($fileName in $releaseFiles) {
 if ($ReleaseTag) {
     $downloadUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
     $notes = @(
-        "[更新日志（中文）](https://elcl.erhio.cn/changelog/$ReleaseTag)"
+        "[更新日志（中文）](https://elcl.erhio.cn/changelog/$ReleaseTag.html)"
         ''
         '| 文件 | SHA-256 |'
         '| --- | --- |'

@@ -118,7 +118,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish-elcl.ps1
 
 1. 确认 ELCL 与 ELCLC 的项目版本一致，为该版本新增 `web/docs/changelog/vX.Y.Z.md`，并把它加到更新日志索引与侧栏。
 2. 推送这些改动并部署官网。确认版本日志页面能打开后，给对应提交创建并推送同版本的标签，例如 `v0.0.1`。只支持 `vX.Y.Z` 形式的发布标签；普通分支推送不会发布。
-3. GitHub Actions 会构建上述三个文件，生成 Release 说明与 `SHA256SUMS.txt`。发布任务在上传前会再次验证校验值；Release 页面显示对应版本的官网更新日志链接、文件下载链接和 SHA－256 表格。
+3. GitHub Actions 会构建上述三个文件，生成 Release 说明与 `SHA256SUMS.txt`。发布任务在上传前会再次验证校验值；Release 页面显示官网更新日志、文件下载链接和 SHA－256 表格。官网更新日志链接保留 `.html` 后缀，便于从 GitHub 直接打开。
 
 只想在本地预演，可以运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish-elcl.ps1 -ReleaseTag v0.0.1`。这会生成同样的说明和校验文件，不会创建标签或访问 GitHub Release。可加 `-ArtifactsDirectory <目录>`，让预演输出和已有发布产物分开。
 
