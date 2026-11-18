@@ -23,6 +23,7 @@ public partial class PersonalizationPage
 
     private bool _initializing = true;
     private bool _draggingOpacity;
+    internal event Action? BackgroundManagementRequested;
 
     /// <summary>从当前配置初始化个性化控件.</summary>
     public PersonalizationPage()
@@ -54,6 +55,7 @@ public partial class PersonalizationPage
                 ModTranslationEnabled = true,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
+                Background = new LauncherBackgroundSettings(),
                 TitleBarMode = TitleBarMode.Default,
                 TitleBarText = "ELCL"
             })
@@ -63,6 +65,7 @@ public partial class PersonalizationPage
         }
 
         RefreshControls();
+
     }
 
     private void RefreshControls()
@@ -75,6 +78,7 @@ public partial class PersonalizationPage
         DayThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Day;
         NightThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Night;
         AccentPicker.SetColor(App.Settings.AccentColor);
+        BackgroundEnabledBox.IsChecked = App.Settings.BackgroundOptions.Enabled;
         LanguageComboBox.SelectedValue = App.Settings.Language;
         MemoryUnitBox.SelectedIndex = Array.IndexOf(MemoryUnitChoices, App.Settings.MemoryUnit);
         ModPresentationBox.SelectedIndex = (int)App.Settings.ModListPresentation;
@@ -87,6 +91,15 @@ public partial class PersonalizationPage
         _initializing = false;
         App.PreviewWindowOpacity(App.Settings.WindowOpacity);
         App.PreviewTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
+    }
+
+    private void BackgroundManagement_Click(object sender, RoutedEventArgs e) => BackgroundManagementRequested?.Invoke();
+
+    private void BackgroundEnabled_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        var options = App.Settings.BackgroundOptions with { Enabled = BackgroundEnabledBox.IsChecked == true };
+        if (options != App.Settings.BackgroundOptions && !App.UpdateSettings(App.Settings with { Background = options })) RefreshControls();
     }
 
     private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

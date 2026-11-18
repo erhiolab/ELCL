@@ -48,7 +48,8 @@ export default defineConfig({
                         { text: "任务管理", link: "/launcher/tasks" },
                         { text: "启动设置", link: "/launcher/launch-settings" },
                         { text: "高级启动选项", link: "/launcher/advanced-options" },
-                        { text: "外观与配置", link: "/launcher/settings" }
+                        { text: "外观与配置", link: "/launcher/settings" },
+                        { text: "背景管理", link: "/launcher/backgrounds" }
                     ]
                 },
                 {

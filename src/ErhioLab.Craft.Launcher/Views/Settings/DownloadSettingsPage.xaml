@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     Loaded="DownloadSettingsPage_Loaded">
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">

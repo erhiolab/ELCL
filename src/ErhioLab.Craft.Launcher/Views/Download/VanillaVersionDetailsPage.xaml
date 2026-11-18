@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 输入框的背景和边框由外层容器绘制. -->

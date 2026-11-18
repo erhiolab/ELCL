@@ -43,7 +43,8 @@ public partial class App
             new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(),
             new JsonStringEnumConverter<VersionListSource>(), new JsonStringEnumConverter<GameProcessPriority>(),
             new JsonStringEnumConverter<GameWindowMode>(), new JsonStringEnumConverter<GameGarbageCollector>(),
-            new JsonStringEnumConverter<MemoryUnitSystem>()
+            new JsonStringEnumConverter<MemoryUnitSystem>(), new JsonStringEnumConverter<BackgroundFit>(),
+            new JsonStringEnumConverter<BackgroundPlaybackMode>()
         }
     };
 
@@ -229,6 +230,7 @@ public partial class App
         bool languageChanged = Settings.Language != normalized.Language;
         bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
+        bool backgroundChanged = Settings.BackgroundOptions != normalized.BackgroundOptions;
         MainWindow? window = Current.MainWindow as MainWindow;
         if (themeChanged)
         {
@@ -249,6 +251,7 @@ public partial class App
         if (window is not null)
         {
             window.ApplyContentOpacity(Settings.WindowOpacity);
+            if (backgroundChanged || paletteChanged) window.ApplyLauncherBackground(Settings.BackgroundOptions);
             if (titleChanged)
             {
                 window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText ?? string.Empty);

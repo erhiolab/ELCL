@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Download"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     Foreground="{DynamicResource TextBrush}"
     Loaded="Page_Loaded">
     <Grid

@@ -5,7 +5,7 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Tasks"
     xmlns:logs="clr-namespace:ErhioLab.Craft.Launcher.Launching"
-    Background="{DynamicResource InkBrush}">
+    Background="{DynamicResource PageSurfaceBrush}">
     <UserControl.Resources>
         <Style
             x:Key="LogMetadataTextStyle"

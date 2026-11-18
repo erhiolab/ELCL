@@ -4,7 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
-    Background="{DynamicResource InkBrush}"
+
+    Background="{DynamicResource PageSurfaceBrush}"
     Loaded="PersonalizationPage_Loaded"
     Unloaded="PersonalizationPage_Unloaded">
     <UserControl.Resources>
@@ -289,6 +290,32 @@
                     </Grid>
                 </StackPanel>
             </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.background.title}">
+                <Grid
+                    Style="{StaticResource FormSettingRowStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="*" />
+                        <ColumnDefinition
+                            Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox
+                        x:Name="BackgroundEnabledBox"
+                        VerticalAlignment="Center"
+                        Checked="BackgroundEnabled_Changed"
+                        Content="{DynamicResource I18n.background.enabled}"
+                        Style="{StaticResource FormCheckBoxStyle}"
+                        Unchecked="BackgroundEnabled_Changed" />
+                    <Button
+                        Grid.Column="1"
+                        Click="BackgroundManagement_Click"
+                        Content="{DynamicResource I18n.background.manage}"
+                        Style="{StaticResource PageActionButtonStyle}" />
+                </Grid>
+            </controls:LauncherCard>
+
             <controls:LauncherCard
                 Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.personalization.memoryUnit}">

@@ -220,6 +220,7 @@ public partial class MainWindow
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         });
         page.Visibility = Visibility.Visible;
+        UpdateVisiblePageLayers();
         page.BeginAnimation(OpacityProperty, null);
         page.Opacity = 0;
         page.RenderTransform = new TranslateTransform(0, 14);
@@ -274,6 +275,7 @@ public partial class MainWindow
             page.BeginAnimation(OpacityProperty, null);
             page.RenderTransform.BeginAnimation(TranslateTransform.YProperty, null);
             page.Visibility = Visibility.Collapsed;
+            UpdateVisiblePageLayers();
             page.IsHitTestVisible = true;
             page.Opacity = 1;
             title.BeginAnimation(OpacityProperty, null);
@@ -332,6 +334,7 @@ public partial class MainWindow
         VersionSettingsTitle.Visibility = Visibility.Collapsed;
         TaskTitle.Visibility = Visibility.Visible;
         TaskManagerPage.Visibility = Visibility.Visible;
+        UpdateVisiblePageLayers();
         TaskManagerPage.Opacity = 0;
         TaskManagerPage.RenderTransform = new TranslateTransform(0, 14);
         TaskManagerPage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
@@ -365,6 +368,7 @@ public partial class MainWindow
         {
             TaskManagerPage.BeginAnimation(OpacityProperty, null);
             TaskManagerPage.Visibility = Visibility.Collapsed;
+            UpdateVisiblePageLayers();
             TaskManagerPage.Opacity = 1;
             TaskTitle.Visibility = Visibility.Collapsed;
             if (VersionSettingsPage.Visibility == Visibility.Visible)
@@ -453,6 +457,7 @@ public partial class MainWindow
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateWindowClip();
+        InitializeLauncherBackground();
         _navigationIndicatorReady = true;
         MoveNavigationIndicator(_selectedNavigationButton ?? LaunchNavigation, false);
     }
@@ -725,6 +730,7 @@ public partial class MainWindow
     {
         UpdateWindowClip();
         MaximizeGlyph.Data = WindowState == WindowState.Maximized ? LauncherIcons.Restore : LauncherIcons.Maximize;
+        BackgroundPresenter.SetMinimized(WindowState == WindowState.Minimized);
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 

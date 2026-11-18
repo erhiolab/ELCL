@@ -1,0 +1,93 @@
+using System.IO;
+using System.Windows;
+
+using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Styles;
+using ErhioLab.Craft.Launcher.SystemTools;
+
+namespace ErhioLab.Craft.Launcher;
+
+public partial class MainWindow
+{
+    private bool _backgroundInitialized;
+    private int _backgroundScanVersion;
+    private LauncherBackgroundSettings _backgroundPreview = new();
+    internal LauncherBackgroundFile[] BackgroundFiles { get; private set; } = [];
+    internal event Action? BackgroundFilesChanged;
+    internal event Action? BackgroundDisplayChanged;
+    internal LauncherBackgroundFile? DisplayedBackground => BackgroundPresenter.DisplayedFile;
+    internal void AdvanceLauncherBackground() => BackgroundPresenter.Advance();
+
+    private void InitializeLauncherBackground()
+    {
+        if (_backgroundInitialized) return;
+        _backgroundInitialized = true;
+        BackgroundPresenter.BackgroundChanged += () =>
+        {
+            UpdateBackgroundSurfaces();
+            BackgroundDisplayChanged?.Invoke();
+        };
+        BackgroundPresenter.MediaReady += file => App.Logger.Information("Background", $"背景已显示: {file.Path}.");
+        BackgroundPresenter.MediaRejected += (file, error) => App.Logger.Error("Background", $"无法显示背景: {file.Path}.", error);
+        Closed += (_, _) =>
+        {
+            _backgroundScanVersion++;
+            BackgroundPresenter.Stop();
+        };
+        ApplyLauncherBackground(App.Settings.BackgroundOptions);
+        _ = LoadInitialBackgroundAsync();
+    }
+
+    internal void ApplyLauncherBackground(LauncherBackgroundSettings options)
+    {
+        _backgroundPreview = options;
+        BackgroundPresenter.Apply(options);
+        UpdateBackgroundSurfaces();
+    }
+
+    private void UpdateBackgroundSurfaces() => LauncherThemeManager.ApplyBackgroundSurfaces(
+        BackgroundPresenter.IsDisplayingBackground, _backgroundPreview.CardOpacity / 100.0);
+
+    private async Task LoadInitialBackgroundAsync()
+    {
+        try
+        {
+            await RefreshLauncherBackgroundAsync();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            App.Logger.Error("Background", "启动时读取背景目录失败.", error);
+        }
+    }
+
+    internal async Task RefreshLauncherBackgroundAsync()
+    {
+        var version = ++_backgroundScanVersion;
+        var directory = LauncherBackgroundFiles.DirectoryPath;
+        App.Logger.Information("Background", $"开始刷新背景目录: {directory}.");
+        var files = await Task.Run(() => LauncherBackgroundFiles.Scan(directory));
+        if (version != _backgroundScanVersion) return;
+        BackgroundFiles = files;
+        BackgroundPresenter.SetFiles(files);
+        BackgroundFilesChanged?.Invoke();
+        App.Logger.Information("Background", $"背景目录刷新完成, 找到 {files.Length} 个媒体文件.");
+    }
+
+    internal void ReleaseLauncherBackground()
+    {
+        _backgroundScanVersion++;
+        BackgroundPresenter.SetFiles([]);
+    }
+
+    private void UpdateVisiblePageLayers()
+    {
+        var tasks = TaskManagerPage.Visibility == Visibility.Visible;
+        var settings = VersionSettingsPage.Visibility == Visibility.Visible;
+        var accounts = AccountManagementPage.Visibility == Visibility.Visible;
+        var versions = VersionSelectionPage.Visibility == Visibility.Visible;
+        PrimaryPageLayer.Visibility = tasks || settings || accounts || versions ? Visibility.Hidden : Visibility.Visible;
+        VersionSelectionLayer.Visibility = tasks || settings || accounts ? Visibility.Hidden : Visibility.Visible;
+        AccountManagementLayer.Visibility = tasks || settings ? Visibility.Hidden : Visibility.Visible;
+        VersionSettingsLayer.Visibility = tasks ? Visibility.Hidden : Visibility.Visible;
+    }
+}

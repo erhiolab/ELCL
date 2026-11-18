@@ -168,7 +168,7 @@
         TargetType="Border">
         <Setter
             Property="Background"
-            Value="{DynamicResource PanelBrush}" />
+            Value="{DynamicResource CardSurfaceBrush}" />
         <Setter
             Property="BorderBrush"
             Value="{DynamicResource LineBrush}" />
@@ -189,7 +189,7 @@
                     TargetType="{x:Type controls:LauncherCard}">
                     <Border
                         Padding="20"
-                        Background="{DynamicResource PanelBrush}"
+                        Background="{DynamicResource CardSurfaceBrush}"
                         BorderBrush="{DynamicResource LineBrush}"
                         BorderThickness="1"
                         CornerRadius="10">

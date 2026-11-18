@@ -7,7 +7,7 @@
     xmlns:mods="clr-namespace:ErhioLab.Craft.Launcher.Mods"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Download"
     Foreground="{DynamicResource TextBrush}"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <UserControl.Resources>

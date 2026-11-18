@@ -5,7 +5,7 @@
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:licensing="clr-namespace:ErhioLab.Craft.Launcher.Licensing"
     xmlns:more="clr-namespace:ErhioLab.Craft.Launcher.Views.More"
-    Background="{DynamicResource InkBrush}">
+    Background="{DynamicResource PageSurfaceBrush}">
     <UserControl.Resources>
         <DataTemplate
             x:Key="CreditRowTemplate"

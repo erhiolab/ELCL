@@ -9,6 +9,7 @@
 | `ELCL/config.json` | 全局设置、游戏文件夹与当前选择。 |
 | `ELCL/java.json` | 本机 Java 列表、优先顺序、主动移除的路径与 ELCL 安装标记。 |
 | `ELCL/accounts.json` | 账户列表与受保护的 Microsoft 令牌。 |
+| `ELCL/backgrounds/` | 个性化背景使用的本地图片和视频，不属于缓存。 |
 | `ELCL/cache/` | 版本信息、安装和运行等缓存。 |
 | `ELCL/cache/skins/` | 皮肤、头像与披风图片缓存。 |
 | `ELCL/cache/game-logs/` | 查看压缩日志时解压的临时文件，关闭查看页后删除。 |

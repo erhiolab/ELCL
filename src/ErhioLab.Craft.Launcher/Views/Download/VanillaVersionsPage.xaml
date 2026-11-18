@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:download="clr-namespace:ErhioLab.Craft.Launcher.Views.Download"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     Loaded="Page_Loaded">
     <UserControl.Resources>
         <!-- 搜索输入框只显示文字和光标, 外观由外层 Border 绘制. -->

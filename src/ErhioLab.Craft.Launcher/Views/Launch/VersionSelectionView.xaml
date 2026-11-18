@@ -5,7 +5,7 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     IsVisibleChanged="View_IsVisibleChanged">
     <UserControl.Resources>
         <Style
@@ -341,7 +341,7 @@
         </Grid.ColumnDefinitions>
         <Border
             Grid.Column="0"
-            Background="{DynamicResource InkRaisedBrush}"
+            Background="{DynamicResource ChromeSurfaceBrush}"
             BorderBrush="{DynamicResource LineSoftBrush}"
             BorderThickness="0,1,1,0">
             <ScrollViewer
@@ -402,19 +402,27 @@
             VerticalScrollBarVisibility="Auto">
             <StackPanel
                 Margin="{StaticResource FormPageContentMargin}">
-                <TextBlock
-                    x:Name="FolderTitle"
-                    FontSize="17"
-                    FontWeight="SemiBold"
-                    Text="{DynamicResource I18n.versionSelector.versionList}" />
-                <TextBlock
-                    x:Name="FolderPathText"
-                    Margin="0,4,0,15"
-                    FontSize="{DynamicResource CaptionFontSize}"
-                    Foreground="{DynamicResource TextMutedBrush}"
-                    TextTrimming="CharacterEllipsis" />
                 <Border
-                    CornerRadius="8"
+                    Padding="20,14"
+                    TextElement.Foreground="{DynamicResource TextBrush}"
+                    Style="{StaticResource PanelCardStyle}">
+                    <StackPanel>
+                        <TextBlock
+                            x:Name="FolderTitle"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            Text="{DynamicResource I18n.versionSelector.versionList}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="FolderPathText"
+                            Margin="0,4,0,0"
+                            FontSize="{DynamicResource CaptionFontSize}"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    </StackPanel>
+                </Border>
+                <Border
+                    Margin="{StaticResource FormSectionSpacing}"
                     Style="{StaticResource PanelCardStyle}">
                     <StackPanel>
                         <TextBlock

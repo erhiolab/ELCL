@@ -24,6 +24,7 @@ internal static class LauncherThemeManager
         Set("LineSoftBrush", day ? "#FFE2EBF2" : "#FF1D222B");
         Set("TextBrush", day ? "#FF1B2733" : "#FFF1F3F5");
         Set("TextMutedBrush", day ? "#FF647587" : "#FF7F8998");
+        ApplyBackgroundSurfaces(false, 1);
         Set("DangerTextBrush", day ? "#FFBD2D37" : "#FFFF717D");
         Set("WarningTextBrush", day ? "#FF916208" : "#FFE6BD6A");
         Set("AccentBrush", accent);
@@ -45,6 +46,35 @@ internal static class LauncherThemeManager
         Set("MemoryFreeBrush", Blend(Colors.White, memoryAccent, day ? 0.24 : 0.4));
     }
 
+    internal static void ApplyBackgroundSurfaces(bool active, double cardOpacity)
+    {
+        UpdateSurface("PageSurfaceBrush", GetThemeColor("InkBrush"), active ? 0 : 1);
+        var panel = GetThemeColor("PanelBrush");
+        UpdateSurface("CardSurfaceBrush", panel, active ? cardOpacity : 1);
+        UpdateSurface("ButtonSurfaceBrush", panel, active ? 1 : 0);
+        UpdateSurface("ButtonBorderBrush", active ? Blend(panel, GetThemeColor("TextBrush"), 0.55) : GetThemeColor("LineBrush"), 1);
+        var raised = GetThemeColor("InkRaisedBrush");
+        UpdateSurface("RaisedCardSurfaceBrush", raised, active ? cardOpacity : 1);
+        UpdateSurface("ChromeSurfaceBrush", raised, active ? 0.9 : 1);
+    }
+
+    private static Color GetThemeColor(string key) => Application.Current.TryFindResource(key) is SolidColorBrush brush
+        ? brush.Color
+        : throw new InvalidOperationException($"缺少主题资源: {key}");
+
+    private static void UpdateSurface(string key, Color color, double opacity)
+    {
+        if (Application.Current.Resources[key] is SolidColorBrush { IsFrozen: false } brush)
+        {
+            brush.Color = color;
+            brush.Opacity = opacity;
+        }
+        else
+        {
+            Set(key, color, opacity);
+        }
+    }
+
     private static Color Parse(string value) => (Color)ColorConverter.ConvertFromString(value);
 
     private static Color Blend(Color baseColor, Color accent, double amount) => Color.FromRgb(
@@ -54,14 +84,14 @@ internal static class LauncherThemeManager
 
     private static void Set(string key, string color) => Set(key, Parse(color));
 
-    private static void Set(string key, Color color)
+    private static void Set(string key, Color color, double opacity = 1)
     {
         // WPF 会冻结从 XAML 加载的画刷; 替换资源后 DynamicResource 才能通知现有控件.
         foreach (ResourceDictionary dictionary in Application.Current.Resources.MergedDictionaries.Reverse())
         {
             if (dictionary.Contains(key))
             {
-                dictionary[key] = new SolidColorBrush(color);
+                dictionary[key] = new SolidColorBrush(color) { Opacity = opacity };
                 return;
             }
         }

@@ -16,14 +16,18 @@ internal sealed class AnimatedPageHost : Grid
     private bool _transitioning;
 
     /// <summary>以指定页面作为初始内容.</summary>
-    internal AnimatedPageHost(UIElement initialPage)
+    internal AnimatedPageHost(UIElement initialPage, bool resetOnUnload = false)
     {
         ClipToBounds = true;
         _layers[0].Content = initialPage;
         _layers[1].Opacity = 0;
         Children.Add(_layers[0]);
         Children.Add(_layers[1]);
-        Unloaded += (_, _) => CompleteTransition(_transitionVersion);
+        Unloaded += (_, _) =>
+        {
+            CompleteTransition(_transitionVersion);
+            if (resetOnUnload) _layers[_activeIndex].Content = initialPage;
+        };
     }
 
     /// <summary>切换到目标页面; 返回时位移方向相反.</summary>

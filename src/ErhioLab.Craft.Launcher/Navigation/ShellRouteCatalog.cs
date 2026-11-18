@@ -56,6 +56,10 @@ internal static class ShellRouteCatalog
         SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.Launch, CanReset: true);
         PersonalizationPage personalizationPage = new();
         SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true);
+        var backgroundPage = new LauncherBackgroundPage();
+        var personalizationHost = new AnimatedPageHost(personalizationPage, resetOnUnload: true);
+        personalizationPage.BackgroundManagementRequested += () => personalizationHost.Navigate(backgroundPage);
+        backgroundPage.BackRequested += () => personalizationHost.Navigate(personalizationPage, back: true);
         DownloadSettingsPage downloadSettingsPage = new();
         SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.Download, CanReset: true);
         OtherSettingsPage otherSettingsPage = new();
@@ -95,7 +99,7 @@ internal static class ShellRouteCatalog
             }
             else
             {
-                settingsContent.Content = personalizationPage;
+                settingsContent.Content = personalizationHost;
             }
         };
         settingsSidebar.ActionRequested += async item =>
@@ -107,6 +111,7 @@ internal static class ShellRouteCatalog
             else if (ReferenceEquals(item, personalizationItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.personalizationTitle"), LocalizationManager.Get("reset.personalizationPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {
                 personalizationPage.ResetToDefaults();
+                backgroundPage.ReloadOptions();
             }
             else if (ReferenceEquals(item, downloadSettingsItem) && await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("reset.downloadTitle"), LocalizationManager.Get("reset.downloadPrompt"), confirmText: LocalizationManager.Get("reset.button")))
             {

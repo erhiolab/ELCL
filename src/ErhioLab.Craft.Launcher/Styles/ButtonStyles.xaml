@@ -345,16 +345,19 @@
             Value="42" />
         <Setter
             Property="Background"
-            Value="Transparent" />
+            Value="{DynamicResource ButtonSurfaceBrush}" />
         <Setter
             Property="Foreground"
             Value="{DynamicResource TextBrush}" />
         <Setter
             Property="BorderBrush"
-            Value="{DynamicResource LineBrush}" />
+            Value="{DynamicResource ButtonBorderBrush}" />
         <Setter
             Property="BorderThickness"
             Value="1" />
+        <Setter
+            Property="SnapsToDevicePixels"
+            Value="True" />
         <Setter
             Property="FontFamily"
             Value="{StaticResource TextFont}" />
@@ -437,9 +440,6 @@
         <Setter
             Property="VerticalAlignment"
             Value="Center" />
-        <Setter
-            Property="SnapsToDevicePixels"
-            Value="True" />
         <Setter
             Property="Content"
             Value="{Binding Icon, RelativeSource={RelativeSource Self}}" />
@@ -546,7 +546,7 @@
                     <Border
                         x:Name="Root"
                         Background="{TemplateBinding Background}"
-                        BorderBrush="{DynamicResource LineBrush}"
+                        BorderBrush="{DynamicResource ButtonBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="6">
                         <Grid>

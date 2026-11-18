@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:versions="clr-namespace:ErhioLab.Craft.Launcher.Versions"
-    Background="{DynamicResource InkBrush}">
+    Background="{DynamicResource PageSurfaceBrush}">
     <UserControl.Resources>
         <HierarchicalDataTemplate
             DataType="{x:Type versions:ModpackExportNode}"
@@ -223,7 +223,7 @@
         <Border
             Grid.Row="1"
             Padding="24,12"
-            Background="{DynamicResource InkRaisedBrush}"
+            Background="{DynamicResource RaisedCardSurfaceBrush}"
             BorderBrush="{DynamicResource LineSoftBrush}"
             BorderThickness="0,1,0,0">
             <Grid>

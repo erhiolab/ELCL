@@ -19,6 +19,18 @@
     <SolidColorBrush
         x:Key="PanelBrush"
         Color="#FF141820" />
+    <SolidColorBrush
+        x:Key="PageSurfaceBrush"
+        Color="#FF0B0D12" />
+    <SolidColorBrush
+        x:Key="CardSurfaceBrush"
+        Color="#FF141820" />
+    <SolidColorBrush
+        x:Key="RaisedCardSurfaceBrush"
+        Color="#FF10131A" />
+    <SolidColorBrush
+        x:Key="ChromeSurfaceBrush"
+        Color="#FF10131A" />
     <!-- 按钮和导航项鼠标悬停时的背景色. -->
     <SolidColorBrush
         x:Key="PanelHoverBrush"
@@ -27,6 +39,12 @@
     <SolidColorBrush
         x:Key="LineBrush"
         Color="#FF292F39" />
+    <SolidColorBrush
+        x:Key="ButtonBorderBrush"
+        Color="#FF292F39" />
+    <SolidColorBrush
+        x:Key="ButtonSurfaceBrush"
+        Color="Transparent" />
     <!-- 主区域分隔线使用的弱边框色. -->
     <SolidColorBrush
         x:Key="LineSoftBrush"

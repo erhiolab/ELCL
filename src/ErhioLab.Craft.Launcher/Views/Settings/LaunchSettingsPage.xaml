@@ -6,7 +6,7 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:java="clr-namespace:ErhioLab.Craft.Launcher.Core.Java;assembly=ErhioLab.Craft.Launcher.Core"
     xmlns:settings="clr-namespace:ErhioLab.Craft.Launcher.Settings"
-    Background="{DynamicResource InkBrush}">
+    Background="{DynamicResource PageSurfaceBrush}">
     <ScrollViewer
         HorizontalScrollBarVisibility="Disabled"
         VerticalScrollBarVisibility="Auto">

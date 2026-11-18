@@ -33,7 +33,7 @@
             Value="12,9" />
         <Setter
             Property="Background"
-            Value="{DynamicResource InkRaisedBrush}" />
+            Value="{DynamicResource RaisedCardSurfaceBrush}" />
         <Setter
             Property="BorderBrush"
             Value="{DynamicResource LineBrush}" />

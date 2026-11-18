@@ -6,7 +6,7 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
     Foreground="{DynamicResource TextBrush}"
-    Background="{DynamicResource InkBrush}"
+    Background="{DynamicResource PageSurfaceBrush}"
     AllowDrop="True"
     PreviewDragEnter="Page_DragOver"
     PreviewDragOver="Page_DragOver"

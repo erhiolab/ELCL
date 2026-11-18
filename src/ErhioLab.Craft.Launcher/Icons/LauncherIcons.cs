@@ -169,6 +169,12 @@ public static class LauncherIcons
     /// <summary>打开本地文件夹按钮图标.</summary>
     public static readonly Geometry Folder = Parse("M 2,4 L 7,4 L 9,6 L 16,6 L 16,15 L 2,15 Z");
 
+    /// <summary>图片图标.</summary>
+    public static readonly Geometry Image = Parse("M 2,3 H 16 V 15 H 2 Z M 2,13 L 6,9 L 9,12 L 12,8 L 16,12 M 6,6 H 6.25");
+
+    /// <summary>视频图标.</summary>
+    public static readonly Geometry Video = Parse("M 2,3 H 16 V 15 H 2 Z M 7,6 L 12,9 L 7,12 Z");
+
     /// <summary>文档与日志文件.</summary>
     public static readonly Geometry Document = Parse("M 4,1 H 11 L 16,6 V 17 H 4 Z M 11,1 V 6 H 16 M 7,9 H 13 M 7,12 H 13 M 7,15 H 11");
 

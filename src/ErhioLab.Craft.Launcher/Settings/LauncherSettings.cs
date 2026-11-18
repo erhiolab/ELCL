@@ -22,6 +22,8 @@ public sealed record LauncherSettings
 
     /// <summary>窗口不透明度, 范围为 0.40 到 1.00.</summary>
     public double WindowOpacity { get; init; } = 1.0;
+    public LauncherBackgroundSettings? Background { get; init; } = new();
+    internal LauncherBackgroundSettings BackgroundOptions => Background ?? new LauncherBackgroundSettings();
 
     /// <summary>自绘标题栏左侧文字的显示方式.</summary>
     public TitleBarMode TitleBarMode { get; init; } = TitleBarMode.Default;
@@ -160,6 +162,7 @@ public sealed record LauncherSettings
             MemoryUnit = Enum.IsDefined(MemoryUnit) ? MemoryUnit : MemoryUnitSystem.Binary,
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
+            Background = BackgroundOptions.Normalize(),
             GameFolders = gameFolders,
             SelectedGameFolderPath = selectedFolderPath,
             SelectedVersionPath = selectedVersionPath,
