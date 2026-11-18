@@ -195,7 +195,7 @@
         "versionLaunch.saveFailed": "版本设置保存失败。请检查版本文件夹是否存在，以及是否允许写入。",
         "privacy.title": "隐私",
         "privacy.anonymousAnalytics": "允许匿名数据收集",
-        "privacy.analyticsDescription": "匿名统计 ELCL 和游戏的启动次数，用于了解使用情况。不会发送账户、存档或聊天内容，可随时关闭。",
+        "privacy.analyticsDescription": "匿名统计 ELCL 和游戏的启动次数，并发送 ELCL、核心库和 Windows 版本，用于按版本了解使用情况。不会发送硬件信息、账户、存档或聊天内容，可随时关闭。",
         "sidebar.performance": "性能",
         "performance.interval": "刷新间隔",
         "performance.processor": "处理器",

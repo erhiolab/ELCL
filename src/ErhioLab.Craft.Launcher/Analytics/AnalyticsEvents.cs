@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 
+using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Settings;
 
@@ -86,6 +87,9 @@ internal sealed class AnalyticsEvents : IDisposable
                 timestamp,
                 properties = new Dictionary<string, object?>
                 {
+                    ["launcher_version"] = AnalyticsClientInfo.LauncherVersion,
+                    ["core_version"] = CoreInfo.Version,
+                    ["os_version"] = AnalyticsClientInfo.WindowsVersion,
                     ["$process_person_profile"] = false,
                     ["$is_identified"] = false,
                     ["$geoip_disable"] = true,
