@@ -38,6 +38,7 @@ public partial class GameLogView
     private LauncherTask? _task;
     private string? _filePath;
     private string _fileTitle = "";
+    private bool _launcherLog;
     private bool _snapshot;
     private GameLogReader? _reader;
     private CancellationTokenSource? _readCancellation;
@@ -117,6 +118,7 @@ public partial class GameLogView
         if (!task.CanViewLog) throw new ArgumentException("运行任务没有对应的游戏日志.", nameof(task));
         StopReading();
         _task = task;
+        _launcherLog = false;
         _snapshot = false;
         ResetDocument(task.GameLogPath!);
         AutoUpdateBox.Visibility = Visibility.Visible;
@@ -125,15 +127,24 @@ public partial class GameLogView
         if (IsLoaded && IsVisible) StartReading();
     }
 
-    internal void ShowFile(string path, string title, bool snapshot)
+    internal void ShowFile(string path, string title, bool snapshot) => ShowFile(path, title, snapshot, launcherLog: false);
+
+    internal void ShowLauncherFile(string path, bool isCurrent)
+    {
+        App.Logger.Information("LogViewer", $"打开启动器日志: {path}, 当前会话={isCurrent}.");
+        ShowFile(path, Path.GetFileName(path), snapshot: !isCurrent, launcherLog: true);
+    }
+
+    private void ShowFile(string path, string title, bool snapshot, bool launcherLog)
     {
         StopReading();
         _task = null;
         _fileTitle = title;
+        _launcherLog = launcherLog;
         _snapshot = snapshot;
         ResetDocument(path);
         AutoUpdateBox.Visibility = snapshot ? Visibility.Collapsed : Visibility.Visible;
-        BackButton.SetResourceReference(ToolTipProperty, "I18n.versionLogs.back");
+        BackButton.SetResourceReference(ToolTipProperty, launcherLog ? "I18n.debug.backToDebug" : "I18n.versionLogs.back");
         if (IsLoaded && IsVisible) StartReading();
     }
 
@@ -150,7 +161,8 @@ public partial class GameLogView
     {
         _filePath = path;
         _reader = new GameLogReader(path);
-        _parser = new GameLogParser();
+        _parser = new GameLogParser(_launcherLog);
+        SourceColumnText.SetResourceReference(TextBlock.TextProperty, _launcherLog ? "I18n.debug.logSourceColumn" : "I18n.gameLogs.threadColumn");
         _lines.Clear();
         _retainedCharacters = _errors = _warnings = 0;
         _trimmed = false;
@@ -187,12 +199,13 @@ public partial class GameLogView
         var token = _readCancellation.Token;
         try
         {
-            reader.ReadFinalLine = _task?.IsActive != true;
+            bool live = _task?.IsActive == true || (_launcherLog && !_snapshot);
+            reader.ReadFinalLine = !live;
             var batch = await reader.ReadAsync(token);
             if (revision != _revision || token.IsCancellationRequested) return;
             _trimmed |= batch.Truncated;
             var entries = _parser.Parse(batch.Lines, batch.Truncated);
-            if (batch.Lines.Count == 0 && _task?.IsActive != true)
+            if (batch.Lines.Count == 0 && !live)
             {
                 entries = entries.Concat(_parser.Flush()).ToArray();
                 if (_snapshot) _timer.Stop();
@@ -226,7 +239,7 @@ public partial class GameLogView
             if (revision != _revision) return;
             _failed = true;
             EmptyText.Text = L("gameLogs.readFailed");
-            App.Logger.Error("GameLogs", $"读取游戏日志失败: {_filePath}.", error);
+            App.Logger.Error("LogViewer", $"读取日志失败: {_filePath}.", error);
             LauncherToasts.Error(L("gameLogs.readFailed"));
         }
         finally
@@ -238,7 +251,7 @@ public partial class GameLogView
     private void UpdateHeader()
     {
         if (_filePath is null) return;
-        TitleText.Text = string.Format(L("gameLogs.title"), _task?.Title ?? _fileTitle);
+        TitleText.Text = string.Format(L(_launcherLog ? "debug.launcherLogTitle" : "gameLogs.title"), _task?.Title ?? _fileTitle);
         TitleText.ToolTip = _task?.Title ?? _fileTitle;
         StateText.Text = (_task is not null
                              ? string.Format(L("gameLogs.state"), _task.ProcessId, _task.StatusText, _lines.Count)
@@ -323,12 +336,12 @@ public partial class GameLogView
         try
         {
             Clipboard.SetText(string.Join(Environment.NewLine, text));
-            App.Logger.Information("GameLogs", $"已复制实例日志: task={_task?.Id}, 行数={text.Length}.");
+            App.Logger.Information("LogViewer", $"已复制日志: 文件={_filePath}, 行数={text.Length}.");
             LauncherToasts.Success(L("gameLogs.copied"));
         }
         catch (ExternalException error)
         {
-            App.Logger.Error("GameLogs", "无法复制实例日志.", error);
+            App.Logger.Error("LogViewer", "无法复制日志.", error);
             LauncherToasts.Error(L("gameLogs.copyFailed"));
         }
     }
@@ -342,20 +355,20 @@ public partial class GameLogView
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            App.Logger.Error("GameLogs", "无法清空实例日志显示.", error);
+            App.Logger.Error("LogViewer", "无法清空日志显示.", error);
             LauncherToasts.Error(L("gameLogs.readFailed"));
             return;
         }
 
         _revision++;
         _lines.Clear();
-        _parser = new GameLogParser();
+        _parser = new GameLogParser(_launcherLog);
         _retainedCharacters = _errors = _warnings = 0;
         _trimmed = false;
         _failed = false;
         _reader = reader;
         UpdateHeader();
-        App.Logger.Information("GameLogs", $"已清空游戏日志显示, 保留磁盘文件: {_filePath}.");
+        App.Logger.Information("LogViewer", $"已清空日志显示, 保留磁盘文件: {_filePath}.");
         LauncherToasts.Success(L("gameLogs.cleared"));
     }
 
@@ -365,12 +378,12 @@ public partial class GameLogView
         try
         {
             if (!File.Exists(path)) throw new FileNotFoundException(null, path);
-            App.Logger.Information("GameLogs", $"打开实例日志文件: {path}.");
-            Process.Start(new ProcessStartInfo("notepad.exe") { ArgumentList = { path }, UseShellExecute = false });
+            App.Logger.Information("LogViewer", $"打开日志文件: {path}.");
+            using var process = Process.Start(new ProcessStartInfo("notepad.exe") { ArgumentList = { path }, UseShellExecute = false });
         }
         catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException)
         {
-            App.Logger.Error("GameLogs", "无法打开实例日志文件.", error);
+            App.Logger.Error("LogViewer", "无法打开日志文件.", error);
             LauncherToasts.Error(L("gameLogs.openFailed"));
         }
     }

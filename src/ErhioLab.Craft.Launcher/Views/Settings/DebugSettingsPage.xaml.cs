@@ -1,13 +1,15 @@
-using ErhioLab.Craft.Launcher.Localization;
+using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>集中提供弹窗和通知条的调试入口.</summary>
+/// <summary>集中提供启动器日志/弹窗和通知条的调试入口.</summary>
 public partial class DebugSettingsPage
 {
     private const int StressToastCount = 1000;
@@ -18,12 +20,44 @@ public partial class DebugSettingsPage
     };
 
     private int _toastStressIndex;
+    internal event Action<string, bool>? LauncherLogRequested;
+
+    private sealed record LauncherLogEntry(string Name, string Path, bool IsCurrent, bool Exists);
 
     /// <summary>初始化调试页面.</summary>
     public DebugSettingsPage()
     {
         InitializeComponent();
         _toastStressTimer.Tick += ToastStressTimer_Tick;
+    }
+
+    private void LauncherLogs_Loaded(object sender, RoutedEventArgs e) => RefreshLauncherLogs();
+
+    private void RefreshLauncherLogs()
+    {
+        string current = App.Logger.FilePath;
+        string directory = Path.GetDirectoryName(current)!;
+        LauncherLogs.ItemsSource = Enumerable.Range(1, 5).Select(index =>
+        {
+            bool isCurrent = index == 1;
+            string path = isCurrent ? current : Path.Combine(directory, $"Log{index}.txt");
+            string name = isCurrent ? LocalizationManager.Get("debug.openCurrentLauncherLog") : Path.GetFileName(path);
+            return new LauncherLogEntry(name, path, isCurrent, File.Exists(path));
+        }).ToArray();
+    }
+
+    private void LauncherLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: LauncherLogEntry entry }) return;
+        if (!File.Exists(entry.Path))
+        {
+            App.Logger.Warning("Debug", $"启动器日志不存在: {entry.Path}.");
+            LauncherToasts.Error(LocalizationManager.Get("gameLogs.openFailed"));
+            RefreshLauncherLogs();
+            return;
+        }
+
+        LauncherLogRequested?.Invoke(entry.Path, entry.IsCurrent);
     }
 
     private void InformationButton_Click(object sender, RoutedEventArgs e)

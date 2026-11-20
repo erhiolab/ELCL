@@ -6,6 +6,7 @@ using ErhioLab.Craft.Launcher.Views.Launch;
 using ErhioLab.Craft.Launcher.Views.More;
 using ErhioLab.Craft.Launcher.Views.Settings;
 using ErhioLab.Craft.Launcher.Views.Shared;
+using ErhioLab.Craft.Launcher.Views.Tasks;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Localization;
@@ -65,6 +66,20 @@ internal static class ShellRouteCatalog
         OtherSettingsPage otherSettingsPage = new();
         SectionSidebarItem otherItem = new("sidebar.other", LauncherIcons.More);
         DebugSettingsPage debugSettingsPage = new();
+        var debugHost = new AnimatedPageHost(debugSettingsPage, resetOnUnload: true);
+        GameLogView? launcherLogView = null;
+        debugSettingsPage.LauncherLogRequested += (path, isCurrent) =>
+        {
+            if (launcherLogView is null)
+            {
+                launcherLogView = new GameLogView();
+                launcherLogView.BackRequested += () => debugHost.Navigate(debugSettingsPage, back: true);
+                launcherLogView.Unloaded += (_, _) => launcherLogView.CloseFile();
+            }
+
+            launcherLogView.ShowLauncherFile(path, isCurrent);
+            debugHost.Navigate(launcherLogView);
+        };
         SectionSidebarItem debugItem = new("sidebar.debug", LauncherIcons.Debug);
         SectionSidebarView settingsSidebar = new(
             launchSettingsItem,
@@ -95,7 +110,7 @@ internal static class ShellRouteCatalog
             }
             else if (ReferenceEquals(item, debugItem))
             {
-                settingsContent.Content = debugSettingsPage;
+                settingsContent.Content = debugHost;
             }
             else
             {

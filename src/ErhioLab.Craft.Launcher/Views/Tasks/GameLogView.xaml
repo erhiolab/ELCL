@@ -8,6 +8,14 @@
     Background="{DynamicResource PageSurfaceBrush}">
     <UserControl.Resources>
         <Style
+            x:Key="LogSurfaceStyle"
+            TargetType="Border"
+            BasedOn="{StaticResource PanelCardStyle}">
+            <Setter
+                Property="Background"
+                Value="{DynamicResource PanelBrush}" />
+        </Style>
+        <Style
             x:Key="LogMetadataTextStyle"
             TargetType="TextBlock">
             <Setter
@@ -127,7 +135,12 @@
             <RowDefinition
                 Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid>
+        <Border
+            Grid.RowSpan="3"
+            IsHitTestVisible="False"
+            Style="{StaticResource LogSurfaceStyle}" />
+        <Grid
+            Margin="12,12,12,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition
                     Width="Auto" />
@@ -168,7 +181,7 @@
         </Grid>
         <WrapPanel
             Grid.Row="1"
-            Margin="0,10,0,12">
+            Margin="12,10,12,12">
             <CheckBox
                 x:Name="AutoUpdateBox"
                 Margin="0,0,18,0"
@@ -216,7 +229,7 @@
         </WrapPanel>
         <Grid
             Grid.Row="2"
-            Margin="0,0,0,10">
+            Margin="12,0,12,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition
                     Width="170" />
@@ -245,8 +258,9 @@
         </Grid>
         <Border
             Grid.Row="3"
+            Margin="0,10,0,0"
             Padding="8"
-            Style="{StaticResource PanelCardStyle}">
+            Style="{StaticResource LogSurfaceStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition
@@ -288,6 +302,7 @@
                         Text="{DynamicResource I18n.gameLogs.levelColumn}"
                         Style="{StaticResource LogMetadataTextStyle}" />
                     <TextBlock
+                        x:Name="SourceColumnText"
                         Grid.Column="2"
                         Text="{DynamicResource I18n.gameLogs.threadColumn}"
                         Style="{StaticResource LogMetadataTextStyle}" />

@@ -9,6 +9,38 @@
         <StackPanel
             Margin="{StaticResource FormPageContentMargin}">
             <controls:LauncherCard
+                Header="{DynamicResource I18n.debug.launcherLogs}">
+                <StackPanel>
+                    <TextBlock
+                        FontSize="{DynamicResource LabelFontSize}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.debug.launcherLogsDescription}"
+                        TextWrapping="Wrap" />
+                    <ItemsControl
+                        x:Name="LauncherLogs"
+                        Margin="{StaticResource FormSectionSpacing}"
+                        Loaded="LauncherLogs_Loaded">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button
+                                    Margin="0,0,8,8"
+                                    Click="LauncherLog_Click"
+                                    Content="{Binding Name}"
+                                    IsEnabled="{Binding Exists}"
+                                    Style="{StaticResource PageActionButtonStyle}"
+                                    ToolTip="{Binding Path}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.debug.dialogs}">
                 <StackPanel>
                     <TextBlock

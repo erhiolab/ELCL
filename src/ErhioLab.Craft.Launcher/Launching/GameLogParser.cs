@@ -15,7 +15,7 @@ internal sealed record GameLogLine(string Message, string Level, string Time, st
 }
 
 /// <summary>将按行保存的 Log4j XML 与普通文本转换成事件, 分别维护输出和错误流的未完成片段.</summary>
-internal sealed partial class GameLogParser
+internal sealed partial class GameLogParser(bool launcherLog = false)
 {
     private const int MaximumEventLength = 256 * 1024;
     private readonly Dictionary<string, Frame> _frames = new(StringComparer.Ordinal);
@@ -30,6 +30,8 @@ internal sealed partial class GameLogParser
 
     internal IReadOnlyList<GameLogLine> Parse(IReadOnlyList<string> lines, bool reset = false)
     {
+        if (launcherLog) return lines.Select(LauncherLine).ToArray();
+
         List<GameLogLine> result = [];
         if (reset)
         {
@@ -144,6 +146,14 @@ internal sealed partial class GameLogParser
         return XElement.Load(reader, LoadOptions.PreserveWhitespace);
     }
 
+    private static GameLogLine LauncherLine(string raw)
+    {
+        Match header = LauncherHeader().Match(raw);
+        if (!header.Success) return new GameLogLine(raw, "Info", "", "", "", raw);
+        return new GameLogLine(raw[header.Length..], Level(header.Groups["level"].Value), header.Groups["time"].Value,
+            header.Groups["source"].Value, "", raw);
+    }
+
     private static GameLogLine Plain(string body, string time, string raw)
     {
         Match match = PlainHeader().Match(body);
@@ -164,6 +174,9 @@ internal sealed partial class GameLogParser
 
     [GeneratedRegex(@"^(?<time>\d{4}-\d{2}-\d{2}T\S+) \[(?<channel>OUT|ERR)\] (?<body>.*)$")]
     private static partial Regex Envelope();
+
+    [GeneratedRegex(@"^\d{4}-\d{2}-\d{2} (?<time>\d{2}:\d{2}:\d{2}\.\d{3}) [+-]\d{2}:\d{2} \[(?<level>Debug|Information|Warning|Error)\] \[(?<source>[^\]]*)\] ")]
+    private static partial Regex LauncherHeader();
 
     [GeneratedRegex(@"^\s*(?:\[(?<time>\d{2}:\d{2}:\d{2}(?:[.,]\d+)?)\]\s*)?\[(?<thread>[^\]\r\n]+)/(?<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]:?\s*", RegexOptions.IgnoreCase)]
     private static partial Regex PlainHeader();
