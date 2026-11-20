@@ -20,6 +20,7 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
     public string ToolTip => File.WallpaperId is null ? File.RelativePath : Name;
     public Geometry Icon => File.IsVideo ? LauncherIcons.Video : LauncherIcons.Image;
     public ImageSource? Thumbnail { get; private set; }
+    internal bool ThumbnailResolved { get; private set; }
     public bool IsCurrent => _isDisplayed || _isFixed;
 
     public string StatusLabel
@@ -45,12 +46,16 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
 
     internal void SetThumbnail(ImageSource thumbnail)
     {
+        ThumbnailResolved = true;
         Thumbnail = thumbnail;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Thumbnail)));
     }
 
-    internal void MarkUnavailable()
+    internal void MarkThumbnailFailed()
     {
+        ThumbnailResolved = true;
+        // 封面解码失败不代表视频无法作为背景播放.
+        if (File.IsVideo) return;
         _unavailable = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusLabel)));
     }

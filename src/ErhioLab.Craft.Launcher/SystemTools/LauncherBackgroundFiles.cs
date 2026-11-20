@@ -2,11 +2,20 @@
 
 namespace ErhioLab.Craft.Launcher.SystemTools;
 
+internal enum WallpaperAgeRating
+{
+    Unrated,
+    Everyone,
+    ParentalGuidance,
+    AdultsOnly
+}
+
 internal sealed record LauncherBackgroundFile(string Path, string RelativePath, bool IsVideo)
 {
     internal string? WallpaperId { get; init; }
     internal string? Title { get; init; }
     internal string? PreviewPath { get; init; }
+    internal WallpaperAgeRating AgeRating { get; init; }
 }
 
 internal static class LauncherBackgroundFiles

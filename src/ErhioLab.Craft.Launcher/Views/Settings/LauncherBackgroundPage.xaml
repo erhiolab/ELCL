@@ -26,10 +26,26 @@
                         Icon="{x:Static icons:LauncherIcons.Back}"
                         ToolTip="{DynamicResource I18n.common.back}" />
                     <TextBlock
+                        DockPanel.Dock="Left"
                         VerticalAlignment="Center"
                         FontSize="18"
                         FontWeight="SemiBold"
                         Text="{DynamicResource I18n.background.manage}" />
+                    <Border
+                        x:Name="CurrentBackgroundDetail"
+                        Margin="14,0,0,0"
+                        Padding="14,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        BorderBrush="{DynamicResource LineBrush}"
+                        BorderThickness="1,0,0,0"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            x:Name="CurrentBackgroundLabel"
+                            FontSize="{DynamicResource LabelFontSize}"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            TextTrimming="CharacterEllipsis" />
+                    </Border>
                 </DockPanel>
             </Border>
             <controls:LauncherCard
@@ -99,12 +115,14 @@
                                 Style="{StaticResource FormComboBoxStyle}" />
                         </Grid>
                     </controls:AnimatedReveal>
-                    <TextBlock
-                        x:Name="NowShowing"
-                        Margin="0,14,0,0"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        TextTrimming="CharacterEllipsis"
-                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    <controls:AnimatedReveal
+                        x:Name="MissingBackgroundReveal">
+                        <TextBlock
+                            x:Name="MissingBackgroundLabel"
+                            Margin="{StaticResource FormSectionSpacing}"
+                            Foreground="{DynamicResource WarningTextBrush}"
+                            TextWrapping="Wrap" />
+                    </controls:AnimatedReveal>
                     <controls:AnimatedReveal
                         x:Name="OptionsReveal">
                         <StackPanel>
@@ -304,6 +322,76 @@
                             Content="{DynamicResource I18n.background.clear}"
                             Style="{StaticResource PageActionButtonStyle}"
                             Visibility="Collapsed" />
+                    </WrapPanel>
+                    <WrapPanel
+                        Margin="{StaticResource FormSectionSpacing}"
+                        IsEnabled="{Binding IsEnabled, ElementName=Actions}">
+                        <StackPanel
+                            Margin="0,0,16,8"
+                            Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                Text="{DynamicResource I18n.background.filterSearch}" />
+                            <TextBox
+                                x:Name="GallerySearchBox"
+                                Width="176"
+                                AutomationProperties.Name="{DynamicResource I18n.background.filterSearch}"
+                                Style="{StaticResource FormTextBoxStyle}"
+                                TextChanged="GallerySearch_Changed"
+                                ToolTip="{DynamicResource I18n.background.filterSearchTip}" />
+                        </StackPanel>
+                        <StackPanel
+                            Margin="0,0,16,8"
+                            Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                Text="{DynamicResource I18n.background.filterMedia}" />
+                            <ComboBox
+                                x:Name="MediaFilterBox"
+                                MinWidth="124"
+                                AutomationProperties.Name="{DynamicResource I18n.background.filterMedia}"
+                                SelectedIndex="0"
+                                SelectionChanged="GalleryFilter_Changed"
+                                Style="{StaticResource FormComboBoxStyle}">
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.filterAllMedia}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.imageTile}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.videoTile}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <controls:AnimatedReveal
+                            x:Name="AgeFilterReveal">
+                            <StackPanel
+                                Margin="0,0,0,8"
+                                Orientation="Horizontal">
+                                <TextBlock
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.filterAge}" />
+                                <ComboBox
+                                    x:Name="AgeFilterBox"
+                                    MinWidth="148"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.filterAge}"
+                                    SelectedIndex="0"
+                                    SelectionChanged="GalleryFilter_Changed"
+                                    Style="{StaticResource FormComboBoxStyle}">
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.filterAllAges}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.ratingEveryone}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.ratingGuidance}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.ratingAdultsOnly}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.ratingUnrated}" />
+                                </ComboBox>
+                            </StackPanel>
+                        </controls:AnimatedReveal>
                     </WrapPanel>
                     <TextBlock
                         x:Name="EmptyText"

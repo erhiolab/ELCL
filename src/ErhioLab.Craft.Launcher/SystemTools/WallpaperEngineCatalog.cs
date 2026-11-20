@@ -190,7 +190,14 @@ internal static class WallpaperEngineCatalog
             {
                 Title = string.IsNullOrWhiteSpace(title) ? folderName : title,
                 WallpaperId = key,
-                PreviewPath = preview
+                PreviewPath = preview,
+                AgeRating = GetText(root, "contentrating")?.Trim().ToUpperInvariant() switch
+                {
+                    "EVERYONE" => WallpaperAgeRating.Everyone,
+                    "QUESTIONABLE" => WallpaperAgeRating.ParentalGuidance,
+                    "MATURE" => WallpaperAgeRating.AdultsOnly,
+                    _ => WallpaperAgeRating.Unrated
+                }
             };
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)

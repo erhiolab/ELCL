@@ -20,10 +20,12 @@ public partial class LauncherBackgroundPage
 {
     private static readonly int[] IntervalPresets = [10, 15, 30, 60, 120, 300, 600, 1800, 3600];
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+    private readonly DispatcherTimer _searchTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private MainWindow? _window;
     private bool _binding = true;
     private bool _refreshingWallpaper;
     private bool ShowWallpaper => WallpaperSource?.IsChecked == true;
+    private LauncherBackgroundTile[] _sourceTiles = [];
     private LauncherBackgroundTile[] _tiles = [];
     private CancellationTokenSource? _thumbnailCancellation;
     private Task _thumbnailLoading = Task.CompletedTask;
@@ -33,6 +35,7 @@ public partial class LauncherBackgroundPage
     {
         InitializeComponent();
         _saveTimer.Tick += (_, _) => SaveOptions();
+        _searchTimer.Tick += (_, _) => ApplyGalleryFilters(animate: false);
     }
 
     internal void ReloadOptions()
@@ -90,7 +93,9 @@ public partial class LauncherBackgroundPage
             _window.BackgroundDisplayChanged -= UpdateFileState;
         }
 
+        _searchTimer.Stop();
         StopThumbnails();
+        _sourceTiles = [];
         _tiles = [];
         Gallery.ItemsSource = null;
         _window = null;
@@ -122,24 +127,62 @@ public partial class LauncherBackgroundPage
     private void Source_Checked(object sender, RoutedEventArgs args)
     {
         if (_window is null) return;
-        RebuildGallery();
-        Gallery.BeginAnimation(OpacityProperty, new DoubleAnimation(0.3, 1, TimeSpan.FromMilliseconds(180))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            FillBehavior = FillBehavior.Stop
-        });
+        RebuildGallery(animate: true);
         if (ShowWallpaper && !_window.WallpaperBackgroundLoaded) _ = RefreshWallpaperAsync(notify: false);
     }
 
-    private void RebuildGallery()
+    private void GalleryFilter_Changed(object sender, SelectionChangedEventArgs args)
     {
-        StopThumbnails();
-        _tiles = ((ShowWallpaper ? _window?.WallpaperBackgroundFiles : _window?.BackgroundFiles) ?? [])
+        if (_window is not null) ApplyGalleryFilters(animate: true);
+    }
+
+    private void GallerySearch_Changed(object sender, TextChangedEventArgs args)
+    {
+        if (_window is null) return;
+        _searchTimer.Stop();
+        _searchTimer.Start();
+    }
+
+    private void RebuildGallery(bool animate = false)
+    {
+        AgeFilterReveal.IsExpanded = ShowWallpaper;
+        _sourceTiles = ((ShowWallpaper ? _window?.WallpaperBackgroundFiles : _window?.BackgroundFiles) ?? [])
             .Select(file => new LauncherBackgroundTile(file)).ToArray();
+        ApplyGalleryFilters(animate);
+    }
+
+    private void ApplyGalleryFilters(bool animate)
+    {
+        _searchTimer.Stop();
+        StopThumbnails();
+        bool? isVideo = MediaFilterBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
+        WallpaperAgeRating? rating = (ShowWallpaper ? AgeFilterBox.SelectedIndex : 0) switch
+        {
+            1 => WallpaperAgeRating.Everyone,
+            2 => WallpaperAgeRating.ParentalGuidance,
+            3 => WallpaperAgeRating.AdultsOnly,
+            4 => WallpaperAgeRating.Unrated,
+            _ => null
+        };
+        var search = GallerySearchBox.Text.Trim();
+        _tiles = _sourceTiles.Where(tile => (isVideo is null || tile.File.IsVideo == isVideo)
+            && (rating is null || tile.File.AgeRating == rating)
+            && (search.Length == 0 || tile.Name.Contains(search, StringComparison.CurrentCultureIgnoreCase)
+                || tile.RelativePath.Contains(search, StringComparison.OrdinalIgnoreCase))).ToArray();
         Gallery.ItemsSource = _tiles;
         UpdateFileState();
+        if (animate)
+        {
+            Gallery.BeginAnimation(OpacityProperty, new DoubleAnimation(0.3, 1, TimeSpan.FromMilliseconds(180))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                FillBehavior = FillBehavior.Stop
+            });
+        }
+
+        if (_tiles.All(tile => tile.ThumbnailResolved)) return;
         _thumbnailCancellation = new CancellationTokenSource();
-        _thumbnailLoading = LoadThumbnailsAsync(_tiles, _thumbnailCancellation.Token);
+        _thumbnailLoading = LoadThumbnailsAsync(_thumbnailLoading, _tiles, _thumbnailCancellation.Token);
     }
 
     private void StopThumbnails()
@@ -149,11 +192,13 @@ public partial class LauncherBackgroundPage
         _thumbnailCancellation = null;
     }
 
-    private static async Task LoadThumbnailsAsync(LauncherBackgroundTile[] tiles, CancellationToken token)
+    private static async Task LoadThumbnailsAsync(Task previous, LauncherBackgroundTile[] tiles, CancellationToken token)
     {
+        await previous;
         foreach (var tile in tiles.OrderBy(tile => tile.File.IsVideo))
         {
             if (token.IsCancellationRequested) return;
+            if (tile.ThumbnailResolved) continue;
             try
             {
                 var thumbnail = tile.File.PreviewPath is { } preview
@@ -171,8 +216,7 @@ public partial class LauncherBackgroundPage
             {
                 if (token.IsCancellationRequested) return;
                 App.Logger.Error("Background", $"无法生成背景缩略图: {tile.File.Path}.", error);
-                // 封面解码失败不代表视频无法作为背景播放.
-                if (!tile.File.IsVideo) tile.MarkUnavailable();
+                tile.MarkThumbnailFailed();
             }
         }
     }
@@ -184,24 +228,34 @@ public partial class LauncherBackgroundPage
         var count = _tiles.Length;
         GalleryCard.Header = count == 0 ? L("gallery") : string.Format(L("galleryCount"), count);
         var options = App.Settings.BackgroundOptions;
-        var current = _window?.DisplayedBackground;
+        var current = options.Enabled ? _window?.DisplayedBackground : null;
         var wallpaperId = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? options.SelectedWallpaperId : null;
         OptionsReveal.IsExpanded = local.Length + wallpapers.Length > 0;
         OpenFolderButton.Visibility = ShowWallpaper ? Visibility.Collapsed : Visibility.Visible;
-        ClearButton.Visibility = !ShowWallpaper && count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ClearButton.Visibility = !ShowWallpaper && local.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyText.Text = L(!ShowWallpaper ? "emptyLibrary" : _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
+        EmptyText.Text = L(_sourceTiles.Length != 0 ? "noFilterMatches"
+            : !ShowWallpaper ? "emptyLibrary" : _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
         NextButton.Visibility = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? Visibility.Collapsed : Visibility.Visible;
         NextButton.IsEnabled = options.Enabled && local.Length > 1;
-        NowShowing.Text = !options.Enabled
-            ? L("disabledStatus")
-            : current is not null
-                ? string.Format(L("nowShowing"), current.Title ?? current.RelativePath)
-                : wallpaperId is not null && _window is { WallpaperBackgroundLoaded: true } && !wallpapers.Any(file => Same(file.WallpaperId, wallpaperId))
-                    ? L("wallpaperMissing")
-                : wallpaperId is null && options.PlaybackMode == BackgroundPlaybackMode.Fixed && options.SelectedRelativePath is { } selected && !local.Any(file => Same(file.RelativePath, selected))
-                    ? string.Format(L("fixedMissing"), selected)
-                    : L("nothingShowing");
+        CurrentBackgroundDetail.Visibility = current is null ? Visibility.Collapsed : Visibility.Visible;
+        if (current is not null)
+        {
+            CurrentBackgroundLabel.Text = string.Format(L("nowShowing"), current.Title ?? Path.GetFileName(current.RelativePath));
+            CurrentBackgroundLabel.ToolTip = current.Title ?? current.RelativePath;
+        }
+
+        string? missing = null;
+        if (options.Enabled && current is null && options.PlaybackMode == BackgroundPlaybackMode.Fixed)
+        {
+            if (wallpaperId is not null && _window is { WallpaperBackgroundLoaded: true } && !wallpapers.Any(file => Same(file.WallpaperId, wallpaperId)))
+                missing = L("wallpaperMissing");
+            else if (wallpaperId is null && options.SelectedRelativePath is { } selected && !local.Any(file => Same(file.RelativePath, selected)))
+                missing = string.Format(L("fixedMissing"), selected);
+        }
+
+        if (missing is not null) MissingBackgroundLabel.Text = missing;
+        MissingBackgroundReveal.IsExpanded = missing is not null;
         foreach (var tile in _tiles)
         {
             var isCurrent = current is not null && Same(tile.File.Path, current.Path) && Same(tile.File.WallpaperId, current.WallpaperId);
