@@ -29,7 +29,6 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
             var status = LocalizationManager.Get(_isDisplayed ? "background.playingTile"
                 : _isFixed ? "background.fixedTile"
                 : _unavailable ? "background.unavailableTile"
-                : File.IsPreviewOnly ? "background.staticPreviewTile"
                 : File.IsVideo ? "background.videoTile" : "background.imageTile");
             return string.IsNullOrEmpty(_folder) ? status : string.Format(LocalizationManager.Get("background.tileInFolder"), status, _folder);
         }

@@ -27,6 +27,9 @@ public partial class MainWindow
     {
         if (_backgroundInitialized) return;
         _backgroundInitialized = true;
+        Activated += (_, _) => UpdateBackgroundPlayback();
+        Deactivated += (_, _) => UpdateBackgroundPlayback();
+        UpdateBackgroundPlayback();
         BackgroundPresenter.BackgroundChanged += () =>
         {
             UpdateBackgroundSurfaces();
@@ -48,6 +51,7 @@ public partial class MainWindow
     {
         _backgroundPreview = options;
         BackgroundPresenter.Apply(options);
+        UpdateBackgroundPlayback();
         UpdateBackgroundSurfaces();
         if (_backgroundInitialized && options.Enabled && options.PlaybackMode == BackgroundPlaybackMode.Fixed
             && options.SelectedWallpaperId is not null && !WallpaperBackgroundLoaded)
@@ -80,6 +84,9 @@ public partial class MainWindow
 
     private void UpdateBackgroundSurfaces() => LauncherThemeManager.ApplyBackgroundSurfaces(
         BackgroundPresenter.IsDisplayingBackground, _backgroundPreview.CardOpacity / 100.0);
+
+    private void UpdateBackgroundPlayback() => BackgroundPresenter.SetPlaybackActive(
+        _backgroundPreview.PlayInBackground || (IsActive && WindowState != WindowState.Minimized));
 
     private async Task LoadInitialBackgroundAsync()
     {

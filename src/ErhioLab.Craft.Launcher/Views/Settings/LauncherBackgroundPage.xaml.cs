@@ -47,6 +47,7 @@ public partial class LauncherBackgroundPage
         _binding = true;
         var options = App.Settings.BackgroundOptions;
         EnabledBox.IsChecked = options.Enabled;
+        PlayInBackgroundBox.IsChecked = options.PlayInBackground;
         FitBox.SelectedIndex = (int)options.Fit;
         ModeBox.SelectedIndex = (int)options.PlaybackMode;
         IntervalBox.ItemsSource = IntervalPresets.Append(options.SlideIntervalSeconds).Distinct().Order()
@@ -213,6 +214,7 @@ public partial class LauncherBackgroundPage
     private LauncherBackgroundSettings ReadOptions() => App.Settings.BackgroundOptions with
     {
         Enabled = EnabledBox.IsChecked == true,
+        PlayInBackground = PlayInBackgroundBox.IsChecked == true,
         Fit = (BackgroundFit)Math.Max(FitBox.SelectedIndex, 0),
         Opacity = (int)BackgroundOpacitySlider.Value,
         CardOpacity = (int)CardOpacitySlider.Value,
@@ -222,7 +224,7 @@ public partial class LauncherBackgroundPage
         SlideIntervalSeconds = IntervalBox.SelectedValue is int seconds ? seconds : App.Settings.BackgroundOptions.SlideIntervalSeconds
     };
 
-    private void Enabled_Changed(object sender, RoutedEventArgs args) => SaveOptions();
+    private void PlaybackOption_Changed(object sender, RoutedEventArgs args) => SaveOptions();
     private void Fit_Changed(object sender, SelectionChangedEventArgs args) => SaveOptions();
     private void Interval_Changed(object sender, SelectionChangedEventArgs args) => SaveOptions();
 
@@ -273,10 +275,16 @@ public partial class LauncherBackgroundPage
         {
             window.ApplyLauncherBackground(previous);
         }
-        else if (options.PlaybackMode != previous.PlaybackMode || options.SelectedRelativePath != previous.SelectedRelativePath
-            || options.SelectedWallpaperId != previous.SelectedWallpaperId)
+        else
         {
-            App.Logger.Information("Background", $"背景模式已设置: {options.PlaybackMode}, 固定素材: {options.SelectedWallpaperId ?? options.SelectedRelativePath}.");
+            if (options.PlaybackMode != previous.PlaybackMode || options.SelectedRelativePath != previous.SelectedRelativePath
+                || options.SelectedWallpaperId != previous.SelectedWallpaperId)
+            {
+                App.Logger.Information("Background", $"背景模式已设置: {options.PlaybackMode}, 固定素材: {options.SelectedWallpaperId ?? options.SelectedRelativePath}.");
+            }
+
+            if (options.PlayInBackground != previous.PlayInBackground)
+                App.Logger.Information("Background", $"后台播放已设置: {options.PlayInBackground}.");
         }
 
         RefreshOptions();

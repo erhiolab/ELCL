@@ -21,6 +21,7 @@ public enum BackgroundPlaybackMode
 public sealed record LauncherBackgroundSettings
 {
     public bool Enabled { get; init; } = true;
+    public bool PlayInBackground { get; init; }
     public BackgroundFit Fit { get; init; }
     public int Opacity { get; init; } = 85;
     public int CardOpacity { get; init; } = 85;

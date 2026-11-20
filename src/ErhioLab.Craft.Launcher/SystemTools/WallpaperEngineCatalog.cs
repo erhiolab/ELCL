@@ -174,12 +174,12 @@ internal static class WallpaperEngineCatalog
             using var reader = new StreamReader(manifest.FullName);
             using var json = JsonDocument.Parse(reader.ReadToEnd());
             var root = json.RootElement;
-            var type = GetText(root, "type");
+            var type = GetText(root, "type")?.Trim().ToLowerInvariant();
+            if (type is not (null or "" or "video" or "image")) return null;
+            var path = GetMediaPath(project.Path, GetText(root, "file"));
+            if (path is null) return null;
             var preview = GetMediaPath(project.Path, GetText(root, "preview"));
             if (preview is not null && LauncherBackgroundFiles.IsVideo(Path.GetExtension(preview))) preview = null;
-            var media = type is "scene" or "web" or "application" ? null : GetMediaPath(project.Path, GetText(root, "file"));
-            var path = media ?? preview;
-            if (path is null) return null;
 
             var folderName = Path.GetFileName(project.Path);
             var key = project.IsWorkshop && folderName.All(char.IsAsciiDigit)
@@ -190,8 +190,7 @@ internal static class WallpaperEngineCatalog
             {
                 Title = string.IsNullOrWhiteSpace(title) ? folderName : title,
                 WallpaperId = key,
-                PreviewPath = preview,
-                IsPreviewOnly = media is null
+                PreviewPath = preview
             };
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
@@ -221,10 +220,7 @@ internal static class WallpaperEngineCatalog
         return directory.Exists && !directory.Attributes.HasFlag(FileAttributes.ReparsePoint);
     }
 
-    private static string? GetText(JsonElement item, string key) => item.ValueKind == JsonValueKind.Object && item.TryGetProperty(key, out var value)
-                                                                                                           && value.ValueKind == JsonValueKind.String
-        ? value.GetString()
-        : null;
+    private static string? GetText(JsonElement item, string key) => item.ValueKind == JsonValueKind.Object && item.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     private sealed record ProjectRoot(string Path, bool IsWorkshop);
 

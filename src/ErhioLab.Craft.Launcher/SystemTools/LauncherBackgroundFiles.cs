@@ -7,7 +7,6 @@ internal sealed record LauncherBackgroundFile(string Path, string RelativePath, 
     internal string? WallpaperId { get; init; }
     internal string? Title { get; init; }
     internal string? PreviewPath { get; init; }
-    internal bool IsPreviewOnly { get; init; }
 }
 
 internal static class LauncherBackgroundFiles

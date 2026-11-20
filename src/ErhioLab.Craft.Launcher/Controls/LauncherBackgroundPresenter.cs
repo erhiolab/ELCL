@@ -26,7 +26,7 @@ public sealed class LauncherBackgroundPresenter : Grid
     private Image? _image;
     private int _index;
     private int _generation;
-    private bool _minimized;
+    private bool _playbackActive;
 
     internal event Action? BackgroundChanged;
     internal event Action<LauncherBackgroundFile, Exception>? MediaRejected;
@@ -121,13 +121,14 @@ public sealed class LauncherBackgroundPresenter : Grid
         else if (intervalChanged) RestartSlideTimer();
     }
 
-    internal void SetMinimized(bool minimized)
+    internal void SetPlaybackActive(bool active)
     {
-        _minimized = minimized;
+        if (_playbackActive == active) return;
+        _playbackActive = active;
         RestartSlideTimer();
         if (_video is not { } video || !IsDisplayingBackground) return;
-        if (minimized) video.Pause();
-        else video.Play();
+        if (active) video.Play();
+        else video.Pause();
     }
 
     internal void Stop()
@@ -218,15 +219,15 @@ public sealed class LauncherBackgroundPresenter : Grid
             }
 
             _videoTimeout.Stop();
+            if (!_playbackActive) video.Pause();
             video.Volume = _options.Volume / 100.0;
-            if (_minimized) video.Pause();
             ShowMedia(file);
         };
         video.MediaEnded += (_, _) =>
         {
             if (!ReferenceEquals(_video, video)) return;
             video.Position = TimeSpan.Zero;
-            if (!_minimized) video.Play();
+            if (_playbackActive) video.Play();
         };
         video.MediaFailed += (_, args) =>
         {
@@ -263,7 +264,7 @@ public sealed class LauncherBackgroundPresenter : Grid
     private void RestartSlideTimer()
     {
         _slideshow.Stop();
-        if (!_minimized && IsDisplayingBackground && _options.PlaybackMode == BackgroundPlaybackMode.Slideshow && _catalog.Length > 1)
+        if (_playbackActive && IsDisplayingBackground && _options.PlaybackMode == BackgroundPlaybackMode.Slideshow && _catalog.Length > 1)
         {
             _slideshow.Interval = TimeSpan.FromSeconds(_options.SlideIntervalSeconds);
             _slideshow.Start();

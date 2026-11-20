@@ -730,7 +730,7 @@ public partial class MainWindow
     {
         UpdateWindowClip();
         MaximizeGlyph.Data = WindowState == WindowState.Maximized ? LauncherIcons.Restore : LauncherIcons.Maximize;
-        BackgroundPresenter.SetMinimized(WindowState == WindowState.Minimized);
+        UpdateBackgroundPlayback();
         App.Logger.Information("Window", $"窗口状态: {WindowState}");
     }
 

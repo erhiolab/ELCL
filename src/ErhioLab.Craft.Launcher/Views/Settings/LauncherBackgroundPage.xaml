@@ -38,10 +38,17 @@
                 <StackPanel>
                     <CheckBox
                         x:Name="EnabledBox"
-                        Checked="Enabled_Changed"
+                        Checked="PlaybackOption_Changed"
                         Content="{DynamicResource I18n.background.enabled}"
                         Style="{StaticResource FormCheckBoxStyle}"
-                        Unchecked="Enabled_Changed" />
+                        Unchecked="PlaybackOption_Changed" />
+                    <CheckBox
+                        x:Name="PlayInBackgroundBox"
+                        Checked="PlaybackOption_Changed"
+                        Content="{DynamicResource I18n.background.playInBackground}"
+                        Style="{StaticResource FormCheckBoxStyle}"
+                        ToolTip="{DynamicResource I18n.background.playInBackgroundTip}"
+                        Unchecked="PlaybackOption_Changed" />
                     <Grid
                         Style="{StaticResource FormFollowingSettingRowStyle}">
                         <Grid.ColumnDefinitions>
