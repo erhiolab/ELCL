@@ -436,7 +436,7 @@ public partial class VanillaVersionDetailsPage
     private static HttpClient CreateHttpClient()
     {
         HttpClient client = new();
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("ELCL/0.0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherHttpUserAgent.Value);
         return client;
     }
 

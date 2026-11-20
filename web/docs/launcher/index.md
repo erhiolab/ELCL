@@ -30,7 +30,7 @@ ELCL 是 Minecraft Java 版启动器。第一次使用，按下面三步就能�
 | [启动设置](launch-settings.md) | 设置窗口、优先级、内存和 Java 顺序，管理已忽略的 Java，执行内存优化。 |
 | [高级启动选项](advanced-options.md) | 编辑 JVM 参数、游戏参数、启动前命令和替换标记，调整兼容选项。 |
 | [外观与配置](settings.md) | 设置主题、语言、容量单位和标题栏，管理配置与 MRPACK 文件关联。 |
-| [背景管理](backgrounds.md) | 浏览图片和视频，固定喜欢的背景，或开启启动随机与定时轮播。 |
+| [背景管理](backgrounds.md) | 浏览本地和 Wallpaper Engine 素材，固定喜欢的背景，或让本地图库随机播放与定时轮播。 |
 
 ## 其他工具
 

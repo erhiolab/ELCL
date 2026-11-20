@@ -25,12 +25,6 @@
                         Click="Back_Click"
                         Icon="{x:Static icons:LauncherIcons.Back}"
                         ToolTip="{DynamicResource I18n.common.back}" />
-                    <Button
-                        x:Name="AppearanceButton"
-                        DockPanel.Dock="Right"
-                        Click="Appearance_Click"
-                        Content="{DynamicResource I18n.background.appearance}"
-                        Style="{StaticResource PageActionButtonStyle}" />
                     <TextBlock
                         VerticalAlignment="Center"
                         FontSize="18"
@@ -39,9 +33,8 @@
                 </DockPanel>
             </Border>
             <controls:LauncherCard
-                x:Name="BackgroundCard"
                 Margin="{StaticResource FormSectionSpacing}"
-                Header="{DynamicResource I18n.background.title}">
+                Header="{DynamicResource I18n.background.settings}">
                 <StackPanel>
                     <CheckBox
                         x:Name="EnabledBox"
@@ -105,21 +98,198 @@
                         Foreground="{DynamicResource TextMutedBrush}"
                         TextTrimming="CharacterEllipsis"
                         ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    <controls:AnimatedReveal
+                        x:Name="OptionsReveal">
+                        <StackPanel>
+                            <Grid
+                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.fit}" />
+                                <ComboBox
+                                    x:Name="FitBox"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Left"
+                                    MinWidth="180"
+                                    SelectionChanged="Fit_Changed"
+                                    Style="{StaticResource FormComboBoxStyle}">
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.cover}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.contain}" />
+                                    <ComboBoxItem
+                                        Content="{DynamicResource I18n.background.stretch}" />
+                                </ComboBox>
+                            </Grid>
+                            <Grid
+                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="48" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.opacity}" />
+                                <Slider
+                                    x:Name="BackgroundOpacitySlider"
+                                    Grid.Column="1"
+                                    Margin="0,0,16,0"
+                                    VerticalAlignment="Center"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="100"
+                                    TickFrequency="1"
+                                    ValueChanged="Options_ValueChanged" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding Value, ElementName=BackgroundOpacitySlider, StringFormat={}{0:0}%}"
+                                    TextAlignment="Right" />
+                            </Grid>
+                            <Grid
+                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="48" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.cardOpacity}" />
+                                <Slider
+                                    x:Name="CardOpacitySlider"
+                                    Grid.Column="1"
+                                    Margin="0,0,16,0"
+                                    VerticalAlignment="Center"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="100"
+                                    TickFrequency="1"
+                                    ValueChanged="Options_ValueChanged" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding Value, ElementName=CardOpacitySlider, StringFormat={}{0:0}%}"
+                                    TextAlignment="Right" />
+                            </Grid>
+                            <Grid
+                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="48" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.blur}" />
+                                <Slider
+                                    x:Name="BlurSlider"
+                                    Grid.Column="1"
+                                    Margin="0,0,16,0"
+                                    VerticalAlignment="Center"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="32"
+                                    TickFrequency="1"
+                                    ValueChanged="Options_ValueChanged" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding Value, ElementName=BlurSlider, StringFormat={}{0:0}}"
+                                    TextAlignment="Right" />
+                            </Grid>
+                            <Grid
+                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="155" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="48" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{DynamicResource I18n.background.volume}" />
+                                <Slider
+                                    x:Name="VolumeSlider"
+                                    Grid.Column="1"
+                                    Margin="0,0,16,0"
+                                    VerticalAlignment="Center"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="100"
+                                    TickFrequency="1"
+                                    ValueChanged="Options_ValueChanged" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Text="{Binding Value, ElementName=VolumeSlider, StringFormat={}{0:0}%}"
+                                    TextAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+                    </controls:AnimatedReveal>
+                    <Button
+                        x:Name="NextButton"
+                        Margin="0,14,0,0"
+                        HorizontalAlignment="Left"
+                        Click="Next_Click"
+                        Content="{DynamicResource I18n.background.next}"
+                        Style="{StaticResource PageActionButtonStyle}" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                x:Name="GalleryCard"
+                Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.background.gallery}">
+                <StackPanel>
+                    <StackPanel
+                        Orientation="Horizontal">
+                        <RadioButton
+                            x:Name="LocalSource"
+                            GroupName="BackgroundGallerySource"
+                            IsChecked="True"
+                            Checked="Source_Checked"
+                            Content="{DynamicResource I18n.background.localSource}"
+                            Style="{StaticResource GalleryTabStyle}" />
+                        <RadioButton
+                            x:Name="WallpaperSource"
+                            GroupName="BackgroundGallerySource"
+                            Checked="Source_Checked"
+                            Content="{DynamicResource I18n.background.wallpaperSource}"
+                            Style="{StaticResource GalleryTabStyle}" />
+                    </StackPanel>
                     <WrapPanel
                         x:Name="Actions"
                         Margin="0,14,0,0">
                         <Button
+                            x:Name="OpenFolderButton"
                             Click="OpenFolder_Click"
                             Content="{DynamicResource I18n.toolbox.openFolder}"
                             Style="{StaticResource PageActionButtonStyle}" />
                         <Button
                             Click="Refresh_Click"
                             Content="{DynamicResource I18n.background.refresh}"
-                            Style="{StaticResource PageActionButtonStyle}" />
-                        <Button
-                            x:Name="NextButton"
-                            Click="Next_Click"
-                            Content="{DynamicResource I18n.background.next}"
                             Style="{StaticResource PageActionButtonStyle}" />
                         <Button
                             x:Name="ClearButton"
@@ -132,13 +302,6 @@
                         x:Name="EmptyText"
                         Margin="0,10,0,0"
                         Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.background.emptyLibrary}"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        x:Name="GalleryHint"
-                        Margin="0,10,0,0"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.background.libraryHint}"
                         TextWrapping="Wrap" />
                     <ItemsControl
                         x:Name="Gallery"
@@ -159,7 +322,7 @@
                                     HorizontalContentAlignment="Stretch"
                                     VerticalContentAlignment="Stretch"
                                     Click="SelectTile_Click"
-                                    ToolTip="{Binding RelativePath}">
+                                    ToolTip="{Binding ToolTip}">
                                     <Button.Style>
                                         <Style
                                             TargetType="Button"
@@ -217,162 +380,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </controls:LauncherCard>
-            <controls:LauncherCard
-                x:Name="AppearanceCard"
-                Margin="{StaticResource FormSectionSpacing}"
-                Header="{DynamicResource I18n.background.appearance}">
-                <controls:AnimatedReveal
-                    x:Name="OptionsReveal">
-                    <StackPanel>
-                        <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition
-                                    Width="155" />
-                                <ColumnDefinition
-                                    Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.fit}" />
-                            <ComboBox
-                                x:Name="FitBox"
-                                Grid.Column="1"
-                                HorizontalAlignment="Left"
-                                MinWidth="180"
-                                SelectionChanged="Fit_Changed"
-                                Style="{StaticResource FormComboBoxStyle}">
-                                <ComboBoxItem
-                                    Content="{DynamicResource I18n.background.cover}" />
-                                <ComboBoxItem
-                                    Content="{DynamicResource I18n.background.contain}" />
-                                <ComboBoxItem
-                                    Content="{DynamicResource I18n.background.stretch}" />
-                            </ComboBox>
-                        </Grid>
-                        <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition
-                                    Width="155" />
-                                <ColumnDefinition
-                                    Width="*" />
-                                <ColumnDefinition
-                                    Width="48" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.opacity}" />
-                            <Slider
-                                x:Name="BackgroundOpacitySlider"
-                                Grid.Column="1"
-                                Margin="0,0,16,0"
-                                VerticalAlignment="Center"
-                                IsSnapToTickEnabled="True"
-                                Maximum="100"
-                                TickFrequency="1"
-                                ValueChanged="Options_ValueChanged" />
-                            <TextBlock
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontFamily="{StaticResource MonoFont}"
-                                Foreground="{DynamicResource AccentTextBrush}"
-                                Text="{Binding Value, ElementName=BackgroundOpacitySlider, StringFormat={}{0:0}%}"
-                                TextAlignment="Right" />
-                        </Grid>
-                        <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition
-                                    Width="155" />
-                                <ColumnDefinition
-                                    Width="*" />
-                                <ColumnDefinition
-                                    Width="48" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.cardOpacity}" />
-                            <Slider
-                                x:Name="CardOpacitySlider"
-                                Grid.Column="1"
-                                Margin="0,0,16,0"
-                                VerticalAlignment="Center"
-                                IsSnapToTickEnabled="True"
-                                Maximum="100"
-                                TickFrequency="1"
-                                ValueChanged="Options_ValueChanged" />
-                            <TextBlock
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontFamily="{StaticResource MonoFont}"
-                                Foreground="{DynamicResource AccentTextBrush}"
-                                Text="{Binding Value, ElementName=CardOpacitySlider, StringFormat={}{0:0}%}"
-                                TextAlignment="Right" />
-                        </Grid>
-                        <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition
-                                    Width="155" />
-                                <ColumnDefinition
-                                    Width="*" />
-                                <ColumnDefinition
-                                    Width="48" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.blur}" />
-                            <Slider
-                                x:Name="BlurSlider"
-                                Grid.Column="1"
-                                Margin="0,0,16,0"
-                                VerticalAlignment="Center"
-                                IsSnapToTickEnabled="True"
-                                Maximum="32"
-                                TickFrequency="1"
-                                ValueChanged="Options_ValueChanged" />
-                            <TextBlock
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontFamily="{StaticResource MonoFont}"
-                                Foreground="{DynamicResource AccentTextBrush}"
-                                Text="{Binding Value, ElementName=BlurSlider, StringFormat={}{0:0}}"
-                                TextAlignment="Right" />
-                        </Grid>
-                        <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition
-                                    Width="155" />
-                                <ColumnDefinition
-                                    Width="*" />
-                                <ColumnDefinition
-                                    Width="48" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.volume}" />
-                            <Slider
-                                x:Name="VolumeSlider"
-                                Grid.Column="1"
-                                Margin="0,0,16,0"
-                                VerticalAlignment="Center"
-                                IsSnapToTickEnabled="True"
-                                Maximum="100"
-                                TickFrequency="1"
-                                ValueChanged="Options_ValueChanged" />
-                            <TextBlock
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontFamily="{StaticResource MonoFont}"
-                                Foreground="{DynamicResource AccentTextBrush}"
-                                Text="{Binding Value, ElementName=VolumeSlider, StringFormat={}{0:0}%}"
-                                TextAlignment="Right" />
-                        </Grid>
-                    </StackPanel>
-                </controls:AnimatedReveal>
             </controls:LauncherCard>
         </StackPanel>
     </ScrollViewer>

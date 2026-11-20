@@ -10,10 +10,15 @@ namespace ErhioLab.Craft.Launcher;
 public partial class MainWindow
 {
     private bool _backgroundInitialized;
+    private bool _backgroundClosed;
     private int _backgroundScanVersion;
+    private Task? _wallpaperRefresh;
     private LauncherBackgroundSettings _backgroundPreview = new();
     internal LauncherBackgroundFile[] BackgroundFiles { get; private set; } = [];
+    internal LauncherBackgroundFile[] WallpaperBackgroundFiles { get; private set; } = [];
+    internal bool WallpaperBackgroundLoaded { get; private set; }
     internal event Action? BackgroundFilesChanged;
+    internal event Action? WallpaperBackgroundFilesChanged;
     internal event Action? BackgroundDisplayChanged;
     internal LauncherBackgroundFile? DisplayedBackground => BackgroundPresenter.DisplayedFile;
     internal void AdvanceLauncherBackground() => BackgroundPresenter.Advance();
@@ -31,6 +36,7 @@ public partial class MainWindow
         BackgroundPresenter.MediaRejected += (file, error) => App.Logger.Error("Background", $"无法显示背景: {file.Path}.", error);
         Closed += (_, _) =>
         {
+            _backgroundClosed = true;
             _backgroundScanVersion++;
             BackgroundPresenter.Stop();
         };
@@ -43,6 +49,33 @@ public partial class MainWindow
         _backgroundPreview = options;
         BackgroundPresenter.Apply(options);
         UpdateBackgroundSurfaces();
+        if (_backgroundInitialized && options.Enabled && options.PlaybackMode == BackgroundPlaybackMode.Fixed
+            && options.SelectedWallpaperId is not null && !WallpaperBackgroundLoaded)
+            _ = LoadInitialWallpaperAsync();
+    }
+
+    private async Task LoadInitialWallpaperAsync()
+    {
+        try { await RefreshWallpaperBackgroundAsync(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            App.Logger.Error("Background", "无法读取 Wallpaper Engine 素材.", error);
+        }
+    }
+
+    internal Task RefreshWallpaperBackgroundAsync() => _wallpaperRefresh is { IsCompleted: false } pending
+        ? pending : _wallpaperRefresh = LoadWallpaperBackgroundAsync();
+
+    private async Task LoadWallpaperBackgroundAsync()
+    {
+        App.Logger.Information("Background", "开始读取 Wallpaper Engine 素材.");
+        var (files, usedApi) = await Task.Run(WallpaperEngineCatalog.LoadAsync);
+        if (_backgroundClosed) return;
+        WallpaperBackgroundFiles = files;
+        WallpaperBackgroundLoaded = true;
+        BackgroundPresenter.SetWallpaperFiles(files);
+        WallpaperBackgroundFilesChanged?.Invoke();
+        App.Logger.Information("Background", $"Wallpaper Engine 素材读取完成, 来源: {(usedApi ? "本地接口" : "Steam 目录")}, 数量: {files.Length}.");
     }
 
     private void UpdateBackgroundSurfaces() => LauncherThemeManager.ApplyBackgroundSurfaces(

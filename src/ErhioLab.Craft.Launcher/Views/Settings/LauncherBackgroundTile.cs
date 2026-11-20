@@ -17,6 +17,7 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
     internal LauncherBackgroundFile File { get; }
     public string Name { get; }
     public string RelativePath => File.RelativePath;
+    public string ToolTip => File.WallpaperId is null ? File.RelativePath : Name;
     public Geometry Icon => File.IsVideo ? LauncherIcons.Video : LauncherIcons.Image;
     public ImageSource? Thumbnail { get; private set; }
     public bool IsCurrent => _isDisplayed || _isFixed;
@@ -28,6 +29,7 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
             var status = LocalizationManager.Get(_isDisplayed ? "background.playingTile"
                 : _isFixed ? "background.fixedTile"
                 : _unavailable ? "background.unavailableTile"
+                : File.IsPreviewOnly ? "background.staticPreviewTile"
                 : File.IsVideo ? "background.videoTile" : "background.imageTile");
             return string.IsNullOrEmpty(_folder) ? status : string.Format(LocalizationManager.Get("background.tileInFolder"), status, _folder);
         }
@@ -38,8 +40,8 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
     internal LauncherBackgroundTile(LauncherBackgroundFile file)
     {
         File = file;
-        Name = Path.GetFileName(file.Path);
-        _folder = Path.GetDirectoryName(file.RelativePath);
+        Name = file.Title ?? Path.GetFileName(file.Path);
+        _folder = file.WallpaperId is null ? Path.GetDirectoryName(file.RelativePath) : null;
     }
 
     internal void SetThumbnail(ImageSource thumbnail)

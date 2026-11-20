@@ -2,7 +2,13 @@
 
 namespace ErhioLab.Craft.Launcher.SystemTools;
 
-internal sealed record LauncherBackgroundFile(string Path, string RelativePath, bool IsVideo);
+internal sealed record LauncherBackgroundFile(string Path, string RelativePath, bool IsVideo)
+{
+    internal string? WallpaperId { get; init; }
+    internal string? Title { get; init; }
+    internal string? PreviewPath { get; init; }
+    internal bool IsPreviewOnly { get; init; }
+}
 
 internal static class LauncherBackgroundFiles
 {
@@ -49,6 +55,7 @@ internal static class LauncherBackgroundFiles
 
     internal static bool TryDelete(string directory, LauncherBackgroundFile file)
     {
+        if (file.WallpaperId is not null) throw new IOException("不能清理 Wallpaper Engine 素材.");
         var folder = new DirectoryInfo(directory);
         var candidate = new FileInfo(file.Path);
         var relative = NormalizeRelativePath(Path.GetRelativePath(folder.FullName, candidate.FullName));
@@ -72,7 +79,9 @@ internal static class LauncherBackgroundFiles
         return true;
     }
 
-    private static bool IsSupported(string extension) => ImageExtensions.Contains(extension) || VideoExtensions.Contains(extension);
+    internal static bool IsSupported(string extension) => ImageExtensions.Contains(extension) || IsVideo(extension);
+
+    internal static bool IsVideo(string extension) => VideoExtensions.Contains(extension);
 
     private static void RejectLink(FileSystemInfo entry)
     {

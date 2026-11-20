@@ -19,6 +19,7 @@ public sealed class LauncherBackgroundPresenter : Grid
     private readonly DispatcherTimer _videoTimeout = new() { Interval = TimeSpan.FromSeconds(15) };
     private readonly DispatcherTimer _slideshow = new();
     private LauncherBackgroundFile[] _catalog = [];
+    private LauncherBackgroundFile[] _wallpaperFiles = [];
     private LauncherBackgroundFile[] _files = [];
     private LauncherBackgroundSettings _options = new();
     private MediaElement? _video;
@@ -48,8 +49,17 @@ public sealed class LauncherBackgroundPresenter : Grid
     internal void SetFiles(LauncherBackgroundFile[] files)
     {
         _catalog = files;
-        SelectMedia(DisplayedFile?.Path, advance: false);
+        if (!UsesWallpaper(_options)) SelectMedia(DisplayedFile?.Path, advance: false);
     }
+
+    internal void SetWallpaperFiles(LauncherBackgroundFile[] files)
+    {
+        _wallpaperFiles = files;
+        if (UsesWallpaper(_options)) SelectMedia(null, advance: false);
+    }
+
+    private static bool UsesWallpaper(LauncherBackgroundSettings options) =>
+        options.PlaybackMode == BackgroundPlaybackMode.Fixed && options.SelectedWallpaperId is not null;
 
     internal void Advance()
     {
@@ -62,7 +72,9 @@ public sealed class LauncherBackgroundPresenter : Grid
         switch (_options.PlaybackMode)
         {
             case BackgroundPlaybackMode.Fixed:
-                var fixedFile = _catalog.FirstOrDefault(file => string.Equals(file.RelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase));
+                var fixedFile = UsesWallpaper(_options)
+                    ? _wallpaperFiles.FirstOrDefault(file => string.Equals(file.WallpaperId, _options.SelectedWallpaperId, StringComparison.OrdinalIgnoreCase))
+                    : _catalog.FirstOrDefault(file => string.Equals(file.RelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase));
                 _files = fixedFile is null ? [] : [fixedFile];
                 break;
             case BackgroundPlaybackMode.Slideshow:
@@ -90,7 +102,8 @@ public sealed class LauncherBackgroundPresenter : Grid
     {
         var enabledChanged = options.Enabled != _options.Enabled;
         var modeChanged = options.PlaybackMode != _options.PlaybackMode || options.PlaybackMode == BackgroundPlaybackMode.Fixed
-            && !string.Equals(options.SelectedRelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase);
+            && (!string.Equals(options.SelectedRelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(options.SelectedWallpaperId, _options.SelectedWallpaperId, StringComparison.OrdinalIgnoreCase));
         var intervalChanged = options.SlideIntervalSeconds != _options.SlideIntervalSeconds;
         _options = options;
         _surface.Opacity = options.Opacity / 100.0;

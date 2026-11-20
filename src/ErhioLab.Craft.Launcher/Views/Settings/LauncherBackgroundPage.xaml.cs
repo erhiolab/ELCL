@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Controls;
@@ -21,6 +22,8 @@ public partial class LauncherBackgroundPage
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private MainWindow? _window;
     private bool _binding = true;
+    private bool _refreshingWallpaper;
+    private bool ShowWallpaper => WallpaperSource?.IsChecked == true;
     private LauncherBackgroundTile[] _tiles = [];
     private CancellationTokenSource? _thumbnailCancellation;
     private Task _thumbnailLoading = Task.CompletedTask;
@@ -64,13 +67,16 @@ public partial class LauncherBackgroundPage
         _window = Window.GetWindow(this) as MainWindow;
         if (_window is not null)
         {
-            _window.BackgroundFilesChanged += RebuildGallery;
+            _window.BackgroundFilesChanged += LocalFilesChanged;
+            _window.WallpaperBackgroundFilesChanged += WallpaperFilesChanged;
             _window.BackgroundDisplayChanged += UpdateFileState;
         }
 
         LocalizationManager.Changed += Language_Changed;
         RefreshOptions();
+        if (App.Settings.BackgroundOptions.SelectedWallpaperId is not null) WallpaperSource.IsChecked = true;
         RebuildGallery();
+        if (ShowWallpaper && _window is { WallpaperBackgroundLoaded: false }) _ = RefreshWallpaperAsync(notify: false);
     }
 
     private void Card_Unloaded(object sender, RoutedEventArgs args)
@@ -78,7 +84,8 @@ public partial class LauncherBackgroundPage
         if (_saveTimer.IsEnabled) SaveOptions();
         if (_window is not null)
         {
-            _window.BackgroundFilesChanged -= RebuildGallery;
+            _window.BackgroundFilesChanged -= LocalFilesChanged;
+            _window.WallpaperBackgroundFilesChanged -= WallpaperFilesChanged;
             _window.BackgroundDisplayChanged -= UpdateFileState;
         }
 
@@ -98,12 +105,35 @@ public partial class LauncherBackgroundPage
 
     private void Back_Click(object sender, RoutedEventArgs args) => BackRequested?.Invoke();
     private void Next_Click(object sender, RoutedEventArgs args) => _window?.AdvanceLauncherBackground();
-    private void Appearance_Click(object sender, RoutedEventArgs args) => AppearanceCard.BringIntoView();
+
+    private void LocalFilesChanged()
+    {
+        if (!ShowWallpaper) RebuildGallery();
+        else UpdateFileState();
+    }
+
+    private void WallpaperFilesChanged()
+    {
+        if (ShowWallpaper) RebuildGallery();
+        else UpdateFileState();
+    }
+
+    private void Source_Checked(object sender, RoutedEventArgs args)
+    {
+        if (_window is null) return;
+        RebuildGallery();
+        Gallery.BeginAnimation(OpacityProperty, new DoubleAnimation(0.3, 1, TimeSpan.FromMilliseconds(180))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            FillBehavior = FillBehavior.Stop
+        });
+        if (ShowWallpaper && !_window.WallpaperBackgroundLoaded) _ = RefreshWallpaperAsync(notify: false);
+    }
 
     private void RebuildGallery()
     {
         StopThumbnails();
-        _tiles = (_window?.BackgroundFiles ?? [])
+        _tiles = ((ShowWallpaper ? _window?.WallpaperBackgroundFiles : _window?.BackgroundFiles) ?? [])
             .Select(file => new LauncherBackgroundTile(file)).ToArray();
         Gallery.ItemsSource = _tiles;
         UpdateFileState();
@@ -125,9 +155,11 @@ public partial class LauncherBackgroundPage
             if (token.IsCancellationRequested) return;
             try
             {
-                var thumbnail = tile.File.IsVideo
-                    ? await Task.Run(() => VideoThumbnailReader.Read(tile.File.Path, 192, token), token)
-                    : await Task.Run(() => LauncherBackgroundPresenter.ReadImage(tile.File.Path, 192), token);
+                var thumbnail = tile.File.PreviewPath is { } preview
+                    ? await Task.Run(() => LauncherBackgroundPresenter.ReadImage(preview, 192), token)
+                    : tile.File.IsVideo
+                        ? await Task.Run(() => VideoThumbnailReader.Read(tile.File.Path, 192, token), token)
+                        : await Task.Run(() => LauncherBackgroundPresenter.ReadImage(tile.File.Path, 192), token);
                 if (!token.IsCancellationRequested) tile.SetThumbnail(thumbnail);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -146,29 +178,34 @@ public partial class LauncherBackgroundPage
 
     private void UpdateFileState()
     {
-        var count = _window?.BackgroundFiles.Length ?? 0;
-        BackgroundCard.Header = count == 0 ? L("title") : string.Format(L("titleCount"), count);
+        var local = _window?.BackgroundFiles ?? [];
+        var wallpapers = _window?.WallpaperBackgroundFiles ?? [];
+        var count = _tiles.Length;
+        GalleryCard.Header = count == 0 ? L("gallery") : string.Format(L("galleryCount"), count);
         var options = App.Settings.BackgroundOptions;
         var current = _window?.DisplayedBackground;
-        AppearanceCard.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        AppearanceButton.IsEnabled = count > 0;
-        OptionsReveal.IsExpanded = count > 0;
-        ClearButton.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var wallpaperId = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? options.SelectedWallpaperId : null;
+        OptionsReveal.IsExpanded = local.Length + wallpapers.Length > 0;
+        OpenFolderButton.Visibility = ShowWallpaper ? Visibility.Collapsed : Visibility.Visible;
+        ClearButton.Visibility = !ShowWallpaper && count > 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        GalleryHint.Visibility = count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        EmptyText.Text = L(!ShowWallpaper ? "emptyLibrary" : _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
         NextButton.Visibility = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? Visibility.Collapsed : Visibility.Visible;
-        NextButton.IsEnabled = options.Enabled && count > 1;
+        NextButton.IsEnabled = options.Enabled && local.Length > 1;
         NowShowing.Text = !options.Enabled
             ? L("disabledStatus")
             : current is not null
-                ? string.Format(L("nowShowing"), current.RelativePath)
-                : options.PlaybackMode == BackgroundPlaybackMode.Fixed && options.SelectedRelativePath is { } selected && !_tiles.Any(tile => string.Equals(tile.RelativePath, selected, StringComparison.OrdinalIgnoreCase))
+                ? string.Format(L("nowShowing"), current.Title ?? current.RelativePath)
+                : wallpaperId is not null && _window is { WallpaperBackgroundLoaded: true } && !wallpapers.Any(file => Same(file.WallpaperId, wallpaperId))
+                    ? L("wallpaperMissing")
+                : wallpaperId is null && options.PlaybackMode == BackgroundPlaybackMode.Fixed && options.SelectedRelativePath is { } selected && !local.Any(file => Same(file.RelativePath, selected))
                     ? string.Format(L("fixedMissing"), selected)
                     : L("nothingShowing");
         foreach (var tile in _tiles)
         {
-            var isCurrent = string.Equals(tile.File.Path, current?.Path, StringComparison.OrdinalIgnoreCase);
-            var isFixed = options.PlaybackMode == BackgroundPlaybackMode.Fixed && string.Equals(tile.RelativePath, options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase);
+            var isCurrent = current is not null && Same(tile.File.Path, current.Path) && Same(tile.File.WallpaperId, current.WallpaperId);
+            var isFixed = options.PlaybackMode == BackgroundPlaybackMode.Fixed && (tile.File.WallpaperId is { } id
+                ? Same(id, wallpaperId) : wallpaperId is null && Same(tile.RelativePath, options.SelectedRelativePath));
             tile.Refresh(isCurrent, isFixed);
         }
     }
@@ -192,11 +229,10 @@ public partial class LauncherBackgroundPage
     private void Mode_Changed(object sender, SelectionChangedEventArgs args)
     {
         if (_binding || _window is not { } window) return;
-        var options = ReadOptions();
-        if (options.PlaybackMode == BackgroundPlaybackMode.Fixed && !window.BackgroundFiles.Any(file =>
-                string.Equals(file.RelativePath, options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase)))
+        var options = ReadOptions() with { SelectedWallpaperId = null };
+        if (options.PlaybackMode == BackgroundPlaybackMode.Fixed && !window.BackgroundFiles.Any(file => Same(file.RelativePath, options.SelectedRelativePath)))
         {
-            var chosen = window.DisplayedBackground ?? _tiles.FirstOrDefault()?.File;
+            var chosen = window.DisplayedBackground is { WallpaperId: null } current ? current : window.BackgroundFiles.FirstOrDefault();
             options = options with { SelectedRelativePath = chosen?.RelativePath };
         }
 
@@ -206,7 +242,12 @@ public partial class LauncherBackgroundPage
     private void SelectTile_Click(object sender, RoutedEventArgs args)
     {
         if (sender is not Button { DataContext: LauncherBackgroundTile tile }) return;
-        CommitOptions(ReadOptions() with { PlaybackMode = BackgroundPlaybackMode.Fixed, SelectedRelativePath = tile.RelativePath });
+        CommitOptions(ReadOptions() with
+        {
+            PlaybackMode = BackgroundPlaybackMode.Fixed,
+            SelectedRelativePath = tile.File.WallpaperId is null ? tile.RelativePath : App.Settings.BackgroundOptions.SelectedRelativePath,
+            SelectedWallpaperId = tile.File.WallpaperId
+        });
     }
 
     private void Options_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> args)
@@ -232,9 +273,10 @@ public partial class LauncherBackgroundPage
         {
             window.ApplyLauncherBackground(previous);
         }
-        else if (options.PlaybackMode != previous.PlaybackMode || options.SelectedRelativePath != previous.SelectedRelativePath)
+        else if (options.PlaybackMode != previous.PlaybackMode || options.SelectedRelativePath != previous.SelectedRelativePath
+            || options.SelectedWallpaperId != previous.SelectedWallpaperId)
         {
-            App.Logger.Information("Background", $"背景模式已设置: {options.PlaybackMode}, 固定文件: {options.SelectedRelativePath}.");
+            App.Logger.Information("Background", $"背景模式已设置: {options.PlaybackMode}, 固定素材: {options.SelectedWallpaperId ?? options.SelectedRelativePath}.");
         }
 
         RefreshOptions();
@@ -259,6 +301,11 @@ public partial class LauncherBackgroundPage
 
     private async void Refresh_Click(object sender, RoutedEventArgs args)
     {
+        if (ShowWallpaper)
+        {
+            await RefreshWallpaperAsync(notify: true);
+            return;
+        }
         if (_window is not { } window) return;
         Actions.IsEnabled = false;
         try
@@ -278,9 +325,32 @@ public partial class LauncherBackgroundPage
         }
     }
 
+    private async Task RefreshWallpaperAsync(bool notify)
+    {
+        if (_refreshingWallpaper || _window is not { } window) return;
+        _refreshingWallpaper = true;
+        UpdateFileState();
+        try
+        {
+            await window.RefreshWallpaperBackgroundAsync();
+            var count = window.WallpaperBackgroundFiles.Length;
+            if (notify) LauncherToasts.Information(count == 0 ? L("wallpaperEmpty") : string.Format(L("refreshed"), count));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            App.Logger.Error("Background", "刷新 Wallpaper Engine 素材失败.", error);
+            if (notify) LauncherToasts.Error(L("wallpaperRefreshFailed"));
+        }
+        finally
+        {
+            _refreshingWallpaper = false;
+            if (_window is not null) UpdateFileState();
+        }
+    }
+
     private async void Clear_Click(object sender, RoutedEventArgs args)
     {
-        if (_window is not { } window || window.BackgroundFiles.Length == 0) return;
+        if (ShowWallpaper || _window is not { } window || window.BackgroundFiles.Length == 0) return;
         var files = window.BackgroundFiles;
         Actions.IsEnabled = false;
         try
@@ -329,5 +399,6 @@ public partial class LauncherBackgroundPage
         return (deleted, failed);
     }
 
+    private static bool Same(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     private static string L(string key) => LocalizationManager.Get("background." + key);
 }
