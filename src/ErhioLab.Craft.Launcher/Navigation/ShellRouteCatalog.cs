@@ -59,7 +59,8 @@ internal static class ShellRouteCatalog
         SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true);
         var backgroundPage = new LauncherBackgroundPage();
         var personalizationHost = new AnimatedPageHost(personalizationPage, resetOnUnload: true);
-        personalizationPage.BackgroundManagementRequested += () => personalizationHost.Navigate(backgroundPage);
+        personalizationPage.BackgroundManagementRequested += () =>
+            personalizationHost.Navigate(backgroundPage, onShown: backgroundPage.QueueGalleryLoad);
         backgroundPage.BackRequested += () => personalizationHost.Navigate(personalizationPage, back: true);
         DownloadSettingsPage downloadSettingsPage = new();
         SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.Download, CanReset: true);

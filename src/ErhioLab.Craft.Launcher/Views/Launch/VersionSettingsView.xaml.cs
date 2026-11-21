@@ -22,6 +22,7 @@ namespace ErhioLab.Craft.Launcher.Views.Launch;
 
 public partial class VersionSettingsView
 {
+    internal FrameworkElement Sidebar => SidebarHost;
     internal LocalMinecraftVersion? Version { get; private set; }
     private string _gameDirectory = "";
     private int _generation;
@@ -36,6 +37,7 @@ public partial class VersionSettingsView
     public VersionSettingsView()
     {
         InitializeComponent();
+        ViewLayout.Children.Remove(SidebarHost);
         _launchSettingsPage = new LaunchSettingsPage();
         _logsPage = new VersionLogsPage();
         PageHost.Content = null;

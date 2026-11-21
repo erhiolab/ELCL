@@ -8,6 +8,7 @@
 
 [阅读本篇](downloader.md)
 
+- [`DownloadManager` 构造方法与 HTTP 诊断](downloader.md#downloadmanager-constructor)
 - [`DownloadManager.Enqueue`](downloader.md#downloadmanager-enqueue)
 - [`DownloadTaskHandle.Cancel`](downloader.md#downloadtaskhandle-cancel)
 - [`DownloadManager.DisposeAsync`](downloader.md#downloadmanager-disposeasync)

@@ -61,6 +61,7 @@
                                     CornerRadius="5"
                                     Style="{StaticResource HoverLayerStyle}" />
                                 <ContentPresenter
+                                    Margin="{TemplateBinding Padding}"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center" />
                             </Grid>
@@ -148,6 +149,7 @@
                     Height="2"
                     Margin="0,12,0,18" />
                 <ScrollViewer
+                    x:Name="DialogScroll"
                     Grid.Row="2"
                     MaxHeight="260"
                     VerticalScrollBarVisibility="Auto">

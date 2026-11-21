@@ -51,6 +51,6 @@ MinecraftVersionDirectory.Delete(gameDirectory, renamed.FolderPath);
 
 删除整个目标版本目录，包括其中的存档、Mods 与配置，不删除根目录的 `libraries`、`assets` 或其他版本。
 
-目标必须是 `versions` 的直接子目录。越界、不存在、链接目录或仍被引用的目录会被拒绝，权限与占用问题也会抛出异常。
+目标必须是 `versions` 的直接子目录，目标已不存在时直接返回。越界、非目录、链接或仍被引用的目录会被拒绝，权限与占用问题也会抛出异常。不需要有版本 JSON 才能删除。
 
 核心不清理你的当前选择、独立配置索引或安装档案。重命名和删除后，请同步这些应用状态；官方档案可用[安装档案 API](launcher-profiles.md)。

@@ -4,25 +4,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     Background="{DynamicResource PageSurfaceBrush}">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition
-                Width="180" />
-            <ColumnDefinition
-                Width="*" />
-        </Grid.ColumnDefinitions>
-        <Border
-            Background="{DynamicResource ChromeSurfaceBrush}"
-            BorderBrush="{DynamicResource LineSoftBrush}"
-            BorderThickness="0,1,1,0">
-            <ContentControl
-                x:Name="SidebarHost"
-                HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch" />
-        </Border>
+    <Grid
+        x:Name="ViewLayout">
+        <ContentControl
+            x:Name="SidebarHost"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch" />
         <ContentControl
             x:Name="PageHost"
-            Grid.Column="1"
             HorizontalContentAlignment="Stretch"
             VerticalContentAlignment="Stretch">
             <ScrollViewer

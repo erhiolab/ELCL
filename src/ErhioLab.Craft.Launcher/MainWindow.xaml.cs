@@ -7,6 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Dialogs;
@@ -38,8 +39,13 @@ public partial class MainWindow
     private const uint MonitorDefaultToNearest = 2;
     private const double MinSidebarWidth = 135;
     private readonly IReadOnlyDictionary<ShellSection, ShellRoute> _routes;
+    private readonly VersionSelectionView VersionSelectionPage;
+    private readonly VersionSettingsView VersionSettingsPage;
+    private readonly ShellRoute _versionSelectionRoute;
+    private readonly ShellRoute _versionSettingsRoute;
     private readonly SemaphoreSlim _dialogGate = new(1, 1);
-    private bool _hasNavigated;
+    private ShellRoute? _activeRoute;
+    private int _routeVersion;
     private bool _navigationIndicatorReady;
     private int _sidebarAnimationVersion;
     private int _themeTransitionVersion;
@@ -63,6 +69,10 @@ public partial class MainWindow
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
         _routes = ShellRouteCatalog.Create();
+        VersionSelectionPage = new VersionSelectionView();
+        VersionSettingsPage = new VersionSettingsView();
+        _versionSelectionRoute = new ShellRoute(260, VersionSelectionPage.Sidebar, VersionSelectionPage);
+        _versionSettingsRoute = new ShellRoute(180, VersionSettingsPage.Sidebar, VersionSettingsPage);
         InitializeVersionSettings();
         VersionSelectionPage.VersionChosen += OnVersionChosen;
         VersionSelectionPage.VersionSelectionChanged += version =>
@@ -187,10 +197,19 @@ public partial class MainWindow
     /// <summary>从启动页打开本地游戏版本选择.</summary>
     internal void OpenVersionSelection()
     {
-        if (VersionSelectionPage.Visibility == Visibility.Visible) return;
-        VersionSelectionPage.PrepareForOpen();
-        OpenSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择",
-            () => _ = VersionSelectionPage.LoadAfterEntranceAsync());
+        if (ReferenceEquals(_activeRoute, _routes[ShellSection.Launch])) ShowVersionSelection();
+    }
+
+    private void ShowVersionSelection(bool back = false)
+    {
+        if (!back) VersionSelectionPage.PrepareForOpen();
+        ApplyShellRoute(_versionSelectionRoute, back);
+        int routeVersion = _routeVersion;
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            if (routeVersion == _routeVersion) _ = VersionSelectionPage.LoadForRouteAsync();
+        }, DispatcherPriority.Background);
+        App.Logger.Information("Navigation", "打开版本选择.");
     }
 
     /// <summary>从启动页打开账户管理.</summary>
@@ -200,14 +219,14 @@ public partial class MainWindow
         OpenSecondaryPage(AccountManagementPage, AccountManagementTitle, "账户管理");
     }
 
-    private void OpenSecondaryPage(FrameworkElement page, FrameworkElement title, string name, Action? onOpened = null)
+    private void OpenSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
     {
         if (page.Visibility == Visibility.Visible)
         {
             return;
         }
 
-        int version = ++_secondaryPageTransitionVersion;
+        ++_secondaryPageTransitionVersion;
         page.IsHitTestVisible = true;
         TaskManagerButton.Visibility = Visibility.Collapsed;
         TitleBarLabel.Visibility = Visibility.Collapsed;
@@ -228,11 +247,6 @@ public partial class MainWindow
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        entrance.Completed += (_, _) =>
-        {
-            if (version == _secondaryPageTransitionVersion && page.IsVisible && page.IsHitTestVisible)
-                onOpened?.Invoke();
-        };
         page.BeginAnimation(OpacityProperty, entrance);
         page.RenderTransform.BeginAnimation(TranslateTransform.YProperty,
             new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(220))
@@ -247,9 +261,14 @@ public partial class MainWindow
 
     private void CloseAccountManagement_Click(object sender, RoutedEventArgs e) => CloseSecondaryPage(AccountManagementPage, AccountManagementTitle, "账户管理");
 
-    private void CloseVersionSelection() => CloseSecondaryPage(VersionSelectionPage, VersionSelectionTitle, "版本选择");
+    private void CloseVersionSelection()
+    {
+        if (!ReferenceEquals(_activeRoute, _versionSelectionRoute)) return;
+        ApplyShellRoute(_routes[ShellSection.Launch], back: true);
+        App.Logger.Information("Navigation", "关闭版本选择.");
+    }
 
-    private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name, Action? onClosed = null)
+    private void CloseSecondaryPage(FrameworkElement page, FrameworkElement title, string name)
     {
         if (page.Visibility != Visibility.Visible || !page.IsHitTestVisible)
         {
@@ -284,7 +303,6 @@ public partial class MainWindow
             TopNavigationHost.Visibility = Visibility.Visible;
             TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
-            onClosed?.Invoke();
             UpdateTaskManagerButton();
         };
         page.BeginAnimation(OpacityProperty, fade);
@@ -295,7 +313,7 @@ public partial class MainWindow
 
     private void OnVersionChosen(LocalMinecraftVersion version)
     {
-        if (VersionSelectionPage.Visibility != Visibility.Visible || !VersionSelectionPage.IsHitTestVisible) return;
+        if (!ReferenceEquals(_activeRoute, _versionSelectionRoute) || !VersionSelectionPage.IsVisible) return;
 
         if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
         {
@@ -307,11 +325,8 @@ public partial class MainWindow
 
     private void UpdateTaskManagerButton()
     {
-        bool versionSettings = VersionSettingsPage.Visibility == Visibility.Visible;
-        bool secondaryClosing = versionSettings ? !VersionSettingsPage.IsHitTestVisible
-            : VersionSelectionPage.Visibility == Visibility.Visible && !VersionSelectionPage.IsHitTestVisible;
         TaskManagerButton.Visibility = TaskManagerPage.Visibility == Visibility.Visible
-            || secondaryClosing || !versionSettings && AccountManagementPage.Visibility == Visibility.Visible
+            || AccountManagementPage.Visibility == Visibility.Visible
             || App.Tasks.Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -371,12 +386,7 @@ public partial class MainWindow
             UpdateVisiblePageLayers();
             TaskManagerPage.Opacity = 1;
             TaskTitle.Visibility = Visibility.Collapsed;
-            if (VersionSettingsPage.Visibility == Visibility.Visible)
-                VersionSettingsTitle.Visibility = Visibility.Visible;
-            else if (VersionSelectionPage.Visibility == Visibility.Visible)
-                VersionSelectionTitle.Visibility = Visibility.Visible;
-            else
-                TitleBarLabel.Visibility = TopNavigationHost.Visibility = Visibility.Visible;
+            UpdateShellRouteTitle();
             _taskManagerClosing = false;
             UpdateTaskManagerButton();
         };
@@ -433,25 +443,50 @@ public partial class MainWindow
             return;
         }
 
-        SidebarHost.Content = route.Sidebar;
-        PageHost.Content = route.Page;
-        UpdateModpackDropTarget();
         _selectedNavigationButton = button;
+        ApplyShellRoute(route);
         App.Logger.Information("Navigation", $"打开主页面: {section}");
 
         if (_navigationIndicatorReady)
         {
             MoveNavigationIndicator(_selectedNavigationButton, true);
         }
+    }
 
-        if (!_hasNavigated)
+    private void UpdateShellRouteTitle()
+    {
+        bool showRoute = TaskManagerPage.Visibility != Visibility.Visible && AccountManagementPage.Visibility != Visibility.Visible;
+        bool selecting = ReferenceEquals(_activeRoute, _versionSelectionRoute);
+        bool settings = ReferenceEquals(_activeRoute, _versionSettingsRoute);
+        VersionSelectionTitle.Visibility = showRoute && selecting ? Visibility.Visible : Visibility.Collapsed;
+        VersionSettingsTitle.Visibility = showRoute && settings ? Visibility.Visible : Visibility.Collapsed;
+        TitleBarLabel.Visibility = TopNavigationHost.Visibility = showRoute && !selecting && !settings
+            ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void ApplyShellRoute(ShellRoute route, bool back = false)
+    {
+        if (ReferenceEquals(_activeRoute, route)) return;
+        bool first = _activeRoute is null;
+        bool versionNavigation = ReferenceEquals(_activeRoute, _versionSelectionRoute) || ReferenceEquals(_activeRoute, _versionSettingsRoute)
+            || ReferenceEquals(route, _versionSelectionRoute) || ReferenceEquals(route, _versionSettingsRoute);
+        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) VersionSelectionPage.CancelPendingScan();
+        _activeRoute = route;
+        _routeVersion++;
+
+        SidebarHost.Content = route.Sidebar;
+        PageHost.Content = route.Page;
+        UpdateShellRouteTitle();
+        UpdateModpackDropTarget();
+        if (first) SetInitialSidebarWidth(route);
+        else AnimateSidebarWidth(route);
+
+        DoubleAnimation? slide = versionNavigation ? new DoubleAnimation(back ? -10 : 10, 0, TimeSpan.FromMilliseconds(230))
         {
-            SetInitialSidebarWidth(route);
-            _hasNavigated = true;
-            return;
-        }
-
-        AnimateSidebarWidth(route);
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            FillBehavior = FillBehavior.Stop
+        } : null;
+        ShellPageOffset.BeginAnimation(TranslateTransform.XProperty, slide);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)

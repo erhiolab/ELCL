@@ -54,7 +54,11 @@ public partial class App
     private static LauncherSkinService? _skinService;
     private static AnalyticsEvents? _analytics;
     private static readonly HttpClient DownloadHttpClient = new();
-    private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient);
+    private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient, diagnostic =>
+    {
+        string headers = string.Join(", ", diagnostic.ResponseHeaders.Select(header => $"{header.Key}={header.Value}"));
+        _logger?.Warning("DownloadHttp", $"{diagnostic.Phase}: {diagnostic.Method} {diagnostic.Origin}, Range={diagnostic.Range ?? "-"}, HTTP={diagnostic.StatusCode?.ToString() ?? "-"}, 响应头=[{headers}], 详情={diagnostic.Detail ?? "-"}.");
+    });
     private static readonly LauncherTaskManager TaskEngine = new();
     private static readonly JavaCatalogManager JavaEngine = new();
     internal static GameLaunchService GameLauncher { get; } = new();
@@ -113,7 +117,7 @@ public partial class App
         };
         TaskScheduler.UnobservedTaskException += (_, args) => LogUnhandled("后台任务", args.Exception);
 
-        var analyticsSettingsLoaded = true;
+        var settingsLoaded = true;
         try
         {
             Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
@@ -125,8 +129,15 @@ public partial class App
             // 保留无法解析的配置文件, 只在本次运行中使用默认值.
             Logger.Error("Settings", "读取配置失败, 本次使用默认设置.", exception);
             Settings = new LauncherSettings();
-            analyticsSettingsLoaded = false;
+            settingsLoaded = false;
             LocalizationManager.Apply(Settings.Language);
+        }
+
+        LauncherThemeManager.Apply(Settings);
+        if (!EnsureStartupConsent(dataDirectory))
+        {
+            Shutdown();
+            return;
         }
 
         string javaCatalogPath = Path.Combine(dataDirectory, "java.json");
@@ -144,7 +155,7 @@ public partial class App
             return;
         }
 
-        if (analyticsSettingsLoaded)
+        if (settingsLoaded)
         {
             try
             {
@@ -187,11 +198,10 @@ public partial class App
             }
         }
 
-        LauncherThemeManager.Apply(Settings);
         _ = LauncherProfileCompatibility.InitializeFolderAsync(localGameDirectory);
         _analytics = new AnalyticsEvents(
             () => InstallationIdentity.GetOrCreate(Path.Combine(dataDirectory, "installation-id")), Logger);
-        _analytics.SetEnabled(analyticsSettingsLoaded && Settings.AnonymousAnalyticsEnabled);
+        _analytics.SetEnabled(AnonymousAnalyticsEnabled);
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
@@ -238,7 +248,6 @@ public partial class App
         }
 
         Settings = normalized;
-        _analytics?.SetEnabled(Settings.AnonymousAnalyticsEnabled);
         if (languageChanged)
         {
             LocalizationManager.Apply(Settings.Language);
@@ -283,7 +292,6 @@ public partial class App
         LauncherSettings normalized = imported.Normalize();
         _settingsStore!.Save(normalized);
         _ = _settingsStore.Load(new LauncherSettings()).Normalize();
-        if (!normalized.AnonymousAnalyticsEnabled) _analytics?.SetEnabled(false);
         Logger.Information("Settings", $"配置已导入并验证: {path}");
     }
 

@@ -50,6 +50,7 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     internal CancellationTokenSource Cancellation { get; } = new();
     internal Task Completion { get; set; } = Task.CompletedTask;
     internal Func<Task>? CleanupOnRemove { get; set; }
+    internal Func<Task>? CleanupOnFailure { get; init; }
     internal Action? OnCompleted { get; init; }
     internal Func<Task>? StopAsync { get; init; }
     internal string? JavaExecutablePath { get; set; }
@@ -80,12 +81,13 @@ internal sealed class LauncherTask(string title, IEnumerable<LauncherTaskStage> 
     public bool IsActive => Status is LauncherTaskStatus.Queued or LauncherTaskStatus.Running;
     public string ActionText => LocalizationManager.Get(IsRunningGame && IsActive
         ? IsStopping ? "gameTask.stopping" : "gameTask.terminate"
-        : IsActive ? "task.cancel" : "task.remove");
+        : IsActive ? IsStopping ? "task.canceling" : "task.cancel" : "task.remove");
     public string StatusCode => Status.ToString();
     public string StatusText => Status switch
     {
         LauncherTaskStatus.Queued => LocalizationManager.Get("task.queued"),
-        LauncherTaskStatus.Running => LocalizationManager.Get(IsRunningGame ? IsStopping ? "gameTask.stopping" : "gameTask.running" : "task.running"),
+        LauncherTaskStatus.Running => LocalizationManager.Get(IsRunningGame ? IsStopping ? "gameTask.stopping" : "gameTask.running"
+            : IsStopping ? "task.canceling" : "task.running"),
         LauncherTaskStatus.Completed => LocalizationManager.Get("task.completed"),
         LauncherTaskStatus.Canceled => LocalizationManager.Get("task.canceled"),
         _ => LocalizationManager.Get("task.failed")

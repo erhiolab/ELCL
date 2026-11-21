@@ -22,7 +22,8 @@ public partial class MainWindow
     private bool _modpackImportInitialized;
     private WindowsFileDropTarget? _modpackDrop;
 
-    private bool IsModpackDropPage => !AccountManagementPage.IsVisible && !VersionSettingsPage.IsVisible && !TaskManagerPage.IsVisible && !DialogOverlay.IsVisible && (VersionSelectionPage.IsVisible || PageHost.Content is LaunchPage && LaunchNavigation.IsChecked == true);
+    private bool IsModpackDropPage => !AccountManagementPage.IsVisible && !TaskManagerPage.IsVisible && !DialogOverlay.IsVisible
+        && (ReferenceEquals(_activeRoute, _versionSelectionRoute) || _activeRoute?.Page is LaunchPage);
 
     private void InitializeModpackImport()
     {
@@ -31,7 +32,7 @@ public partial class MainWindow
         AddHandler(DragDrop.PreviewDragEnterEvent, new DragEventHandler(Modpack_DragOver));
         AddHandler(DragDrop.PreviewDragOverEvent, new DragEventHandler(Modpack_DragOver));
         AddHandler(DragDrop.PreviewDropEvent, new DragEventHandler(Modpack_Drop));
-        foreach (var page in new FrameworkElement[] { VersionSelectionPage, VersionSettingsPage, AccountManagementPage, TaskManagerPage, DialogOverlay })
+        foreach (var page in new FrameworkElement[] { AccountManagementPage, TaskManagerPage, DialogOverlay })
             page.IsVisibleChanged += (_, _) => UpdateModpackDropTarget();
         Loaded += (_, _) =>
         {
@@ -51,7 +52,7 @@ public partial class MainWindow
     private void ModpackImported(string directory)
     {
         App.Logger.Information("Modpacks", $"整合包导入完成: {directory}.");
-        if (VersionSelectionPage.IsVisible) _ = VersionSelectionPage.ReloadAsync();
+        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) _ = VersionSelectionPage.ReloadAsync();
     }
 
     private void UpdateModpackDropTarget()

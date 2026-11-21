@@ -24,6 +24,7 @@ namespace ErhioLab.Craft.Launcher.Views.Launch;
 /// <summary>管理游戏文件夹并显示所选目录中的本地版本.</summary>
 public partial class VersionSelectionView
 {
+    internal FrameworkElement Sidebar => FolderSidebar;
     private readonly ObservableCollection<FolderRow> _folders = [];
     private int _scanVersion;
     private string _emptyVersionsKey = "versionSelector.readingVersions";
@@ -49,6 +50,8 @@ public partial class VersionSelectionView
     public VersionSelectionView()
     {
         InitializeComponent();
+        FolderList.ItemTemplate = (DataTemplate)Resources[new DataTemplateKey(typeof(FolderRow))];
+        ViewLayout.Children.Remove(FolderSidebar);
         FolderList.ItemsSource = _folders;
         LocalizationManager.Changed += (_, _) =>
         {
@@ -60,10 +63,7 @@ public partial class VersionSelectionView
         };
     }
 
-    private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-    {
-        if (!IsVisible) ++_scanVersion;
-    }
+    internal void CancelPendingScan() => ++_scanVersion;
 
     internal void PrepareForOpen()
     {
@@ -76,12 +76,12 @@ public partial class VersionSelectionView
         EmptyVersionsText.Visibility = Visibility.Visible;
     }
 
-    internal async Task LoadAfterEntranceAsync()
+    internal async Task LoadForRouteAsync()
     {
-        if (!IsVisible || !IsHitTestVisible) return;
+        int version = _scanVersion;
         ReloadFolders();
         await Dispatcher.InvokeAsync(() => MoveSelectedFolderHighlight(false), DispatcherPriority.Loaded);
-        if (!IsVisible || !IsHitTestVisible) return;
+        if (version != _scanVersion) return;
         await RefreshVersionsAsync();
     }
 

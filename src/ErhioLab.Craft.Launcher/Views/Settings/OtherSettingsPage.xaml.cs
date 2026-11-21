@@ -92,7 +92,7 @@ public partial class OtherSettingsPage
     private void RefreshPrivacyControls()
     {
         _initializingPrivacy = true;
-        AnonymousAnalyticsBox.IsChecked = App.Settings.AnonymousAnalyticsEnabled;
+        AnonymousAnalyticsBox.IsChecked = App.AnonymousAnalyticsEnabled;
         _initializingPrivacy = false;
     }
 
@@ -100,9 +100,9 @@ public partial class OtherSettingsPage
     {
         if (_initializingPrivacy) return;
         var enabled = AnonymousAnalyticsBox.IsChecked == true;
-        if (enabled == App.Settings.AnonymousAnalyticsEnabled) return;
+        if (enabled == App.AnonymousAnalyticsEnabled) return;
         App.Logger.Information("Privacy", $"开始保存匿名统计偏好: enabled={enabled}.");
-        if (!App.UpdateSettings(App.Settings with { AnonymousAnalyticsEnabled = enabled }))
+        if (!App.UpdateAnalyticsConsent(enabled))
         {
             RefreshPrivacyControls();
             return;

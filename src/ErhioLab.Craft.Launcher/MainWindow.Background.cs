@@ -122,12 +122,8 @@ public partial class MainWindow
     private void UpdateVisiblePageLayers()
     {
         var tasks = TaskManagerPage.Visibility == Visibility.Visible;
-        var settings = VersionSettingsPage.Visibility == Visibility.Visible;
         var accounts = AccountManagementPage.Visibility == Visibility.Visible;
-        var versions = VersionSelectionPage.Visibility == Visibility.Visible;
-        PrimaryPageLayer.Visibility = tasks || settings || accounts || versions ? Visibility.Hidden : Visibility.Visible;
-        VersionSelectionLayer.Visibility = tasks || settings || accounts ? Visibility.Hidden : Visibility.Visible;
-        AccountManagementLayer.Visibility = tasks || settings ? Visibility.Hidden : Visibility.Visible;
-        VersionSettingsLayer.Visibility = tasks ? Visibility.Hidden : Visibility.Visible;
+        PrimaryPageLayer.Visibility = tasks || accounts ? Visibility.Hidden : Visibility.Visible;
+        AccountManagementLayer.Visibility = tasks ? Visibility.Hidden : Visibility.Visible;
     }
 }

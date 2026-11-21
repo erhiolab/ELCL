@@ -4,7 +4,7 @@
 
 `DownloadManager` 按入队顺序处理任务。一个任务内可以并发下载多个文件，也可对支持 Range 的大文件分段。
 
-## 创建 `DownloadManager`
+## 创建 `DownloadManager` {#downloadmanager-constructor}
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Downloads;
@@ -15,6 +15,25 @@ CancellationToken cancellationToken = default;
 ```
 
 管理器不释放传入的 HTTP 客户端。应用退出时使用 `await using` 等待下载文件句柄关闭。
+
+需要记录 HTTP 诊断时，改用带回调的构造方法：
+
+```csharp
+await using var tracedManager = new DownloadManager(http, value =>
+{
+    string headers = string.Join(", ", value.ResponseHeaders.Select(header => $"{header.Key}={header.Value}"));
+    Console.WriteLine($"{value.Phase} {value.Method} {value.Origin} {value.StatusCode} {headers}");
+});
+```
+
+传入 `null` 的 HTTP 客户端会抛出 `ArgumentNullException`。诊断回调可能在后台并发调用，抛出异常不会中断传输。它报告失败的 HTTP 请求及影响分段的异常响应，不会给每个成功请求生成记录。
+
+| 诊断字段 | 含义 |
+| --- | --- |
+| `Origin` | 请求或重定向后响应的协议、主机与端口，不含用户信息、路径和查询参数。 |
+| `Phase`、`Method`、`Range` | 请求阶段、HTTP 方法及分段范围；普通下载没有 `Range`。 |
+| `StatusCode`、`Detail` | HTTP 状态码及可选的故障简述；未收到响应时可能没有状态码。 |
+| `ResponseHeaders` | 筛选过的响应头，如 `Content-Range`、`Retry-After` 和 CDN 请求编号；不包含 Cookie、授权或重定向地址。 |
 
 ## `DownloadManager.Enqueue` {#downloadmanager-enqueue}
 
@@ -48,9 +67,11 @@ DownloadResult result = await handle.Completion;
 | `SpeedLimitBytesPerSecond` | 整个任务的字节／秒速率上限，0 不限制。 |
 | `progress`、`cancellationToken` | 可选，状态回调和取消令牌。 |
 
-各文件共享连接预算；当前单任务最多并行 32 个文件，单个文件最多 4 段，每段至少约 2 MiB。不支持分段时使用普通下载。
+各文件共享连接预算；当前单任务最多并行 32 个文件，单个文件最多 4 段。单连接和已知不超过 2 MiB 的文件直接发送普通 GET。来源拒绝探测或不支持分段时，尝试用普通 GET 下载完整文件。
 
-每个来源有有限重试，全部失败再抛出包含来源错误的异常。文件先写临时文件，校验后替换目标；取消或失败不会撤销已完成的其他文件。不会自动跳过已有文件，需要时先用[完整性检查](vanilla-installation.md#minecraftvanilladownloadplanner-missingfilesasync)。
+普通 GET 返回 403、404 等不可重试状态时，直接尝试下一来源。连接错误、429 或部分 5xx 状态有限重试；429 和 503 会遵守有效的 `Retry-After`，若要求等待超过 30 秒，本次跳过该来源。所有来源失败时抛出包含各来源错误的 `AggregateException`。
+
+文件先写临时文件，校验后替换目标；取消或失败不会撤销已完成的其他文件。不会自动跳过已有文件，需要时先用[完整性检查](vanilla-installation.md#minecraftvanilladownloadplanner-missingfilesasync)。
 
 ## `DownloadTaskHandle.Cancel` {#downloadtaskhandle-cancel}
 

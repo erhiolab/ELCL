@@ -203,6 +203,68 @@
                 Style="{StaticResource PanelCardStyle}">
                 <StackPanel>
                     <ToggleButton
+                        x:Name="LegalToggle"
+                        Content="{DynamicResource I18n.legal.aboutTitle}"
+                        IsChecked="False"
+                        Style="{StaticResource CardExpanderHeaderStyle}" />
+                    <controls:AnimatedReveal
+                        IsExpanded="{Binding IsChecked, ElementName=LegalToggle}">
+                        <StackPanel
+                            Margin="20,0,20,20">
+                            <Border
+                                Height="1"
+                                Margin="0,0,0,12"
+                                Background="{DynamicResource LineSoftBrush}" />
+                            <TextBlock
+                                FontWeight="SemiBold"
+                                Text="{DynamicResource I18n.legal.aboutAnalytics}" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{DynamicResource I18n.legal.aboutAnalyticsDescription}"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="{StaticResource FormSectionSpacing}"
+                                FontWeight="SemiBold"
+                                Text="{DynamicResource I18n.legal.aboutNotice}" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{DynamicResource I18n.legal.aboutNoticeDescription}"
+                                TextWrapping="Wrap" />
+                            <WrapPanel
+                                Margin="{StaticResource FormSectionSpacing}">
+                                <Button
+                                    Click="LinkButton_Click"
+                                    Content="{DynamicResource I18n.legal.agreementTitle}"
+                                    Style="{StaticResource PageActionButtonStyle}"
+                                    Tag="https://elcl.erhio.cn/launcher/terms.html" />
+                                <Button
+                                    Click="LinkButton_Click"
+                                    Content="{DynamicResource I18n.legal.distributionLink}"
+                                    Style="{StaticResource PageActionButtonStyle}"
+                                    Tag="https://elcl.erhio.cn/launcher/distribution-license.html" />
+                                <Button
+                                    Click="LinkButton_Click"
+                                    Content="{DynamicResource I18n.legal.privacyLink}"
+                                    Style="{StaticResource PageActionButtonStyle}"
+                                    Tag="https://elcl.erhio.cn/launcher/privacy.html" />
+                                <Button
+                                    Click="LinkButton_Click"
+                                    Content="{DynamicResource I18n.legal.sourceLink}"
+                                    Style="{StaticResource PageActionButtonStyle}"
+                                    Tag="https://github.com/ErhioLab/ELCL" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </controls:AnimatedReveal>
+                </StackPanel>
+            </Border>
+            <Border
+                Margin="{StaticResource FormSectionSpacing}"
+                Padding="0"
+                Style="{StaticResource PanelCardStyle}">
+                <StackPanel>
+                    <ToggleButton
                         x:Name="LicensesToggle"
                         IsChecked="False"
                         Content="{DynamicResource I18n.about.licensesTitle}"

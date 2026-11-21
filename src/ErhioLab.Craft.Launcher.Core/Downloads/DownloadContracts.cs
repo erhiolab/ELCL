@@ -15,6 +15,11 @@ public sealed record DownloadTaskRequest(string Name, IReadOnlyList<DownloadFile
 /// <summary>单个任务的并发及总速度限制, 0 字节每秒表示不限速.</summary>
 public sealed record DownloadOptions(int MaxConnections = 8, long SpeedLimitBytesPerSecond = 0);
 
+/// <summary>失败或不支持分段的 HTTP 请求摘要, 不包含 URL 路径、查询或敏感标头.</summary>
+public sealed record DownloadHttpDiagnostic(
+    string Origin, string Phase, string Method, string? Range, int? StatusCode,
+    IReadOnlyDictionary<string, string> ResponseHeaders, string? Detail);
+
 /// <summary>下载任务在队列中的状态.</summary>
 public enum DownloadTaskStatus
 {

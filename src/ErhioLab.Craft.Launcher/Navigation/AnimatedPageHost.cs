@@ -31,7 +31,7 @@ internal sealed class AnimatedPageHost : Grid
     }
 
     /// <summary>切换到目标页面; 返回时位移方向相反.</summary>
-    internal void Navigate(UIElement page, bool back = false)
+    internal void Navigate(UIElement page, bool back = false, Action? onShown = null)
     {
         if (_transitioning)
         {
@@ -67,7 +67,12 @@ internal sealed class AnimatedPageHost : Grid
         outgoingOffset.BeginAnimation(TranslateTransform.XProperty, CreateAnimation(0, direction * -16));
         incomingOffset.BeginAnimation(TranslateTransform.XProperty, CreateAnimation(direction * 22, 0));
         DoubleAnimation entrance = CreateAnimation(0, 1);
-        entrance.Completed += (_, _) => CompleteTransition(version);
+        entrance.Completed += (_, _) =>
+        {
+            if (!_transitioning || version != _transitionVersion) return;
+            CompleteTransition(version);
+            onShown?.Invoke();
+        };
         incoming.BeginAnimation(OpacityProperty, entrance);
     }
 

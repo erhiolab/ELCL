@@ -66,6 +66,9 @@ export default defineConfig({
                         { text: "百宝箱", link: "/launcher/toolbox" },
                         { text: "性能", link: "/launcher/performance" },
                         { text: "关于与许可", link: "/launcher/about" },
+                        { text: "ELCL 法律声明", link: "/launcher/legal" },
+                        { text: "用户协议与免责声明", link: "/launcher/terms" },
+                        { text: "ELCL 分发有限许可", link: "/launcher/distribution-license" },
                         { text: "隐私与匿名统计", link: "/launcher/privacy" },
                         { text: "文件与故障排查", link: "/launcher/files" }
                     ]

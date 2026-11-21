@@ -31,7 +31,8 @@ internal sealed class LauncherTaskManager
         MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null)
     {
         var operation = CreateMinecraftInstall(version, installedName, gameDirectory, preferredSource, options, loaders);
-        LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), operation.Stages, operation.VersionFolder, operation.Cleanup);
+        LauncherTask task = Start(string.Format(LocalizationManager.Get("install.title"), installedName), operation.Stages,
+            operation.VersionFolder, cleanupOnFailure: operation.Cleanup);
         task.LocalizedTitle = () => string.Format(LocalizationManager.Get("install.title"), installedName);
         return task;
     }
@@ -47,9 +48,8 @@ internal sealed class LauncherTaskManager
         string versionFolder = Path.Combine(gameDirectory, "versions", installedName);
         string clientPath = Path.Combine(versionFolder, installedName + ".jar");
         string versionJsonPath = Path.Combine(versionFolder, installedName + ".json");
-        bool clientExisted = File.Exists(clientPath);
-        bool versionJsonExisted = File.Exists(versionJsonPath);
-        if (versionJsonExisted) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
+        ValidateInstallDirectory(versionFolder);
+        if (File.Exists(versionJsonPath)) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
         if (selections.Length > 0 && Directory.Exists(versionFolder) && Directory.EnumerateFileSystemEntries(versionFolder).Any())
             throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
         if (Tasks.Any(task => task != owner && task.IsActive && string.Equals(task.TargetPath, versionFolder, StringComparison.OrdinalIgnoreCase)))
@@ -59,7 +59,9 @@ internal sealed class LauncherTaskManager
         string metadataPath = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version-json", cacheName + ".json");
         MinecraftVanillaDownloadPlan? plan = null;
         MinecraftLoaderInstallPlan? loaderPlan = null;
-        bool loaderVersionWritten = false;
+        bool folderCreated = false;
+        bool clientAdded = false;
+        bool versionWritten = false;
         var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp);
         string workDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install", Guid.NewGuid().ToString("N"));
         DownloadOptions downloadOptions = options;
@@ -70,6 +72,7 @@ internal sealed class LauncherTaskManager
         [
             Stage("install.versionJson", async context =>
             {
+                App.Logger.Information("Installer", $"准备安装版本: {installedName}, 文件下载源优先: {preferredSource}.");
                 DownloadFileRequest metadata = MinecraftVanillaDownloadPlanner.VersionMetadata(version, metadataPath, preferredSource);
                 if (version.Sha1 is null || (await MinecraftVanillaDownloadPlanner.MissingFilesAsync([metadata], context.CancellationToken)).Count > 0)
                     await context.DownloadAsync(new DownloadTaskRequest(version.Id, [metadata]), downloadOptions);
@@ -96,10 +99,14 @@ internal sealed class LauncherTaskManager
             }),
             Stage("install.client", async context =>
             {
+                folderCreated = ReserveVersionFolder(versionFolder);
+                if (File.Exists(versionJsonPath)) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
+                bool clientExisted = File.Exists(clientPath);
                 DownloadFileRequest[] allFiles = [plan!.Client];
                 IReadOnlyList<DownloadFileRequest> files = await MinecraftVanillaDownloadPlanner.MissingFilesAsync(allFiles, context.CancellationToken);
                 context.ConfigureDownloadPlan(allFiles, files);
                 if (files.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions);
+                clientAdded = !clientExisted && files.Count > 0;
             }),
             Stage("install.assetIndex", async context =>
             {
@@ -117,10 +124,14 @@ internal sealed class LauncherTaskManager
                 if (files.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions);
                 context.CancellationToken.ThrowIfCancellationRequested();
                 if (selections.Length == 0)
+                {
+                    ValidateInstallDirectory(versionFolder);
+                    if (File.Exists(versionJsonPath)) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
                     await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, baseName, context.CancellationToken);
-                if (selections.Length == 0)
+                    versionWritten = true;
                     await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
                         installedName, cancellationToken: context.CancellationToken);
+                }
             }),
             .. (selections.Length == 0 ? Array.Empty<LauncherTaskStage>() : new[]
             {
@@ -162,7 +173,7 @@ internal sealed class LauncherTaskManager
                 Stage("install.finalize", async context =>
                 {
                     await MinecraftLoaderInstaller.WriteVersionAsync(loaderPlan!, context.CancellationToken);
-                    loaderVersionWritten = true;
+                    versionWritten = true;
                     await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName, installedName, cancellationToken: context.CancellationToken);
                     CleanupLoaderWorkDirectory(workDirectory);
                 })
@@ -172,33 +183,88 @@ internal sealed class LauncherTaskManager
         return new MinecraftInstallOperation(stages, versionFolder,
             async () =>
             {
-                if (selections.Length == 0)
-                    CleanupVanillaVersionDirectory(versionFolder, clientPath, versionJsonPath, clientExisted, versionJsonExisted);
-                else
+                try
                 {
-                    if (loaderVersionWritten) File.Delete(versionJsonPath);
-                    if (!clientExisted && File.Exists(clientPath)) File.Delete(clientPath);
+                    if (folderCreated || clientAdded || versionWritten || loaderPlan?.VersionFiles.Count > 0)
+                    {
+                        ValidateInstallDirectory(versionFolder);
+                        string mods = Path.Combine(versionFolder, "mods");
+                        if (versionWritten) DeleteInstallFile(versionJsonPath, versionFolder, mods);
+                        if (clientAdded) DeleteInstallFile(clientPath, versionFolder, mods);
+                        if (loaderPlan is not null)
+                            foreach (string file in loaderPlan.VersionFiles)
+                                DeleteInstallFile(file, versionFolder, mods);
+                        if (folderCreated)
+                        {
+                            if (loaderPlan is not null) DeleteEmptyInstallDirectory(mods);
+                            DeleteEmptyInstallDirectory(versionFolder);
+                        }
+                    }
+
+                    if (versionWritten)
+                        await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, versionFolder);
                 }
-                CleanupLoaderWorkDirectory(workDirectory);
-                if (loaderPlan is not null)
+                finally
                 {
-                    string mods = Path.Combine(versionFolder, "mods");
-                    foreach (string file in loaderPlan.VersionFiles)
-                        if (File.Exists(file)) File.Delete(file);
-                    if (Directory.Exists(mods) && !Directory.EnumerateFileSystemEntries(mods).Any()) Directory.Delete(mods);
-                    if (Directory.Exists(versionFolder) && !Directory.EnumerateFileSystemEntries(versionFolder).Any()) Directory.Delete(versionFolder);
+                    CleanupLoaderWorkDirectory(workDirectory);
                 }
-                if (Directory.Exists(versionFolder) && !Directory.EnumerateFileSystemEntries(versionFolder).Any()) Directory.Delete(versionFolder);
-                if (!versionJsonExisted)
-                    await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, versionFolder);
             });
+    }
+
+    private static void ValidateInstallDirectory(string versionFolder)
+    {
+        ValidatePlainDirectory(Path.GetDirectoryName(versionFolder)!);
+        ValidatePlainDirectory(versionFolder);
+    }
+
+    private static bool ReserveVersionFolder(string versionFolder)
+    {
+        ValidateInstallDirectory(versionFolder);
+        if (Directory.Exists(versionFolder)) return false;
+        string root = Path.GetDirectoryName(versionFolder)!;
+        Directory.CreateDirectory(root);
+        string reservation = Path.Combine(root, ".elcl-install-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(reservation);
+        try { Directory.Move(reservation, versionFolder); }
+        finally { if (Directory.Exists(reservation)) Directory.Delete(reservation); }
+        return true;
+    }
+
+    private static void ValidatePlainDirectory(string path)
+    {
+        try
+        {
+            var attributes = File.GetAttributes(path);
+            if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != FileAttributes.Directory)
+                throw new IOException(LocalizationManager.Get("install.unsafeDirectory"));
+        }
+        catch (FileNotFoundException) { }
+        catch (DirectoryNotFoundException) { }
+    }
+
+    private static void DeleteInstallFile(string file, string versionFolder, string mods)
+    {
+        string full = Path.GetFullPath(file);
+        string parent = Path.GetDirectoryName(full)!;
+        if (!string.Equals(parent, versionFolder, StringComparison.OrdinalIgnoreCase) && !string.Equals(parent, mods, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("安装文件超出预期范围.");
+        ValidatePlainDirectory(parent);
+        if (Directory.Exists(parent)) File.Delete(full);
+    }
+
+    private static void DeleteEmptyInstallDirectory(string path)
+    {
+        ValidatePlainDirectory(path);
+        if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any()) Directory.Delete(path);
     }
 
     private static void CleanupLoaderWorkDirectory(string path)
     {
-        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install")) + Path.DirectorySeparatorChar;
+        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install"));
         string full = Path.GetFullPath(path);
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new IOException("安装工作目录超出预期范围。");
+        if (!string.Equals(Path.GetDirectoryName(full), root, StringComparison.OrdinalIgnoreCase)) throw new IOException("安装工作目录超出预期范围.");
+        ValidatePlainDirectory(root);
+        ValidatePlainDirectory(full);
         if (Directory.Exists(full)) Directory.Delete(full, true);
     }
 
@@ -225,7 +291,7 @@ internal sealed class LauncherTaskManager
 
     /// <summary>创建由多个阶段组成的任务, 后续安装与 Mods 操作可复用.</summary>
     internal LauncherTask Start(string title, IReadOnlyList<LauncherTaskStage> stages, string? targetPath = null,
-        Func<Task>? cleanupOnRemove = null, Action? onCompleted = null, bool isGameLaunch = false)
+        Func<Task>? cleanupOnRemove = null, Action? onCompleted = null, bool isGameLaunch = false, Func<Task>? cleanupOnFailure = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         if (stages.Count == 0)
@@ -235,7 +301,7 @@ internal sealed class LauncherTaskManager
 
         LauncherTask task = new(title, stages, targetPath)
         {
-            CleanupOnRemove = cleanupOnRemove, OnCompleted = onCompleted, IsGameLaunch = isGameLaunch
+            CleanupOnRemove = cleanupOnRemove, CleanupOnFailure = cleanupOnFailure, OnCompleted = onCompleted, IsGameLaunch = isGameLaunch
         };
         Tasks.Insert(0, task);
         task.Completion = RunAsync(task);
@@ -312,12 +378,9 @@ internal sealed class LauncherTaskManager
         }
         if (task.IsActive)
         {
+            if (task.IsStopping) return;
+            task.IsStopping = true;
             task.Cancellation.Cancel();
-            foreach (LauncherTaskStage stage in task.Stages.Where(stage => stage.Status == LauncherTaskStatus.Running))
-            {
-                stage.Status = LauncherTaskStatus.Canceled;
-            }
-            task.Status = LauncherTaskStatus.Canceled;
             return;
         }
 
@@ -335,13 +398,21 @@ internal sealed class LauncherTaskManager
         }
     }
 
-    private static void CleanupVanillaVersionDirectory(string versionFolder, string clientPath, string versionJsonPath,
-        bool clientExisted, bool versionJsonExisted)
+    private static async Task CleanupFailedTaskAsync(LauncherTask task)
     {
-        if (!Directory.Exists(versionFolder)) return;
-        if (!clientExisted) File.Delete(clientPath);
-        if (!versionJsonExisted) File.Delete(versionJsonPath);
-        if (!Directory.EnumerateFileSystemEntries(versionFolder).Any()) Directory.Delete(versionFolder);
+        if (task.CleanupOnFailure is not { } cleanup) return;
+        try
+        {
+            await cleanup();
+            App.Logger.Information("Tasks", $"安装失败或取消后的清理已完成: {task.TargetPath}.");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            App.Logger.Error("Tasks", $"安装失败或取消后无法清理: {task.TargetPath}.", error);
+            string message = string.Format(LocalizationManager.Get("task.cleanupFailed"), error.Message);
+            task.Error = string.IsNullOrEmpty(task.Error) ? message : task.Error + Environment.NewLine + message;
+            LauncherToasts.Error(message);
+        }
     }
 
     private static async Task RunAsync(LauncherTask task)
@@ -376,6 +447,8 @@ internal sealed class LauncherTaskManager
             {
                 stage.Status = LauncherTaskStatus.Canceled;
             }
+            await CleanupFailedTaskAsync(task);
+            task.IsStopping = false;
             task.Status = LauncherTaskStatus.Canceled;
             LauncherToasts.Information(string.Format(LocalizationManager.Get("task.canceledToast"), task.Title));
             App.Logger.Information("Tasks", $"任务取消: {task.Title}.");
@@ -387,6 +460,8 @@ internal sealed class LauncherTaskManager
                 stage.Status = LauncherTaskStatus.Failed;
             }
             task.Error = error.GetBaseException().Message;
+            await CleanupFailedTaskAsync(task);
+            task.IsStopping = false;
             task.Status = LauncherTaskStatus.Failed;
             LauncherToasts.Error(string.Format(LocalizationManager.Get("task.failedToast"), task.Error));
             App.Logger.Error("Tasks", $"任务失败: {task.Title}.", error);

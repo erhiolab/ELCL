@@ -24,6 +24,19 @@ public partial class LauncherDialogView
     /// <summary>主窗口尚未创建时隐藏周围的遮罩.</summary>
     internal void UseStandalonePresentation() => Backdrop.Visibility = Visibility.Collapsed;
 
+    internal void ConfigureDecision(string declineText, bool longForm)
+    {
+        CancelButton.Content = declineText;
+        if (!longForm) return;
+        DialogCard.Width = double.NaN;
+        DialogCard.MaxHeight = double.PositiveInfinity;
+        DialogCard.Margin = new Thickness(10);
+        DialogCard.HorizontalAlignment = HorizontalAlignment.Stretch;
+        DialogCard.VerticalAlignment = VerticalAlignment.Stretch;
+        DialogScroll.MaxHeight = double.PositiveInfinity;
+        DialogMessage.SetResourceReference(ForegroundProperty, "TextBrush");
+    }
+
     /// <summary>填充本次提示的文字/按钮和等级颜色.</summary>
     internal void Configure(string title, string message, LauncherDialogLevel level,
         bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null)

@@ -420,11 +420,19 @@
                         VerticalContentAlignment="Stretch" />
                 </Border>
 
-                <ContentControl
-                    x:Name="PageHost"
+                <Grid
                     Grid.Column="1"
-                    HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch" />
+                    ClipToBounds="True">
+                    <ContentControl
+                        x:Name="PageHost"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch">
+                        <ContentControl.RenderTransform>
+                            <TranslateTransform
+                                x:Name="ShellPageOffset" />
+                        </ContentControl.RenderTransform>
+                    </ContentControl>
+                </Grid>
             </Grid>
 
             <!-- 任务管理覆盖当前页面, 返回后保留原页面与侧栏状态. -->
@@ -434,24 +442,10 @@
                 Grid.Row="1"
                 Visibility="Collapsed" />
             <Grid
-                x:Name="VersionSelectionLayer"
-                Grid.Row="1">
-                <launch:VersionSelectionView
-                    x:Name="VersionSelectionPage"
-                    Visibility="Collapsed" />
-            </Grid>
-            <Grid
                 x:Name="AccountManagementLayer"
                 Grid.Row="1">
                 <launch:AccountManagementView
                     x:Name="AccountManagementPage"
-                    Visibility="Collapsed" />
-            </Grid>
-            <Grid
-                x:Name="VersionSettingsLayer"
-                Grid.Row="1">
-                <launch:VersionSettingsView
-                    x:Name="VersionSettingsPage"
                     Visibility="Collapsed" />
             </Grid>
             <!-- 主题切换时短暂保留旧画面, 随后淡出到新配色. -->

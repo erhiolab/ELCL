@@ -13,7 +13,6 @@ namespace ErhioLab.Craft.Launcher;
 public partial class MainWindow
 {
     private bool _versionSettingsFromSelector;
-    private bool _versionSettingsClosing;
 
     private void InitializeVersionSettings()
     {
@@ -22,7 +21,9 @@ public partial class MainWindow
         LocalizationManager.Changed += (_, _) => RefreshVersionSettingsTitle();
         VersionManagementService.Changed += async (oldPath, replacement) =>
         {
-            if (VersionManagementService.SamePath(VersionSettingsPage.Version?.FolderPath, oldPath))
+            bool selecting = ReferenceEquals(_activeRoute, _versionSelectionRoute);
+            if (ReferenceEquals(_activeRoute, _versionSettingsRoute)
+                && VersionManagementService.SamePath(VersionSettingsPage.Version?.FolderPath, oldPath))
             {
                 if (replacement is null) CloseVersionSettings();
                 else
@@ -32,7 +33,7 @@ public partial class MainWindow
                 }
             }
 
-            if (VersionSelectionPage.Visibility == Visibility.Visible) await VersionSelectionPage.ReloadAsync();
+            if (selecting) await VersionSelectionPage.ReloadAsync();
             if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
             {
                 if (App.Settings.SelectedVersionId is { } id) sidebar.ShowSelectedVersion(id);
@@ -45,10 +46,13 @@ public partial class MainWindow
     {
         string? path = App.Settings.SelectedVersionPath;
         string? game = App.Settings.SelectedGameFolderPath;
-        if (path is null || game is null) return;
+        if (path is null || game is null || !ReferenceEquals(_activeRoute, _routes[ShellSection.Launch])) return;
+        int routeVersion = _routeVersion;
         try
         {
             var versions = await Task.Run(() => LocalMinecraftVersionScanner.Scan(game, includeInvalidVersions: true));
+            if (routeVersion != _routeVersion || !PrimaryPageLayer.IsVisible || DialogOverlay.IsVisible
+                || !VersionManagementService.SamePath(path, App.Settings.SelectedVersionPath)) return;
             var version = versions.FirstOrDefault(item => VersionManagementService.SamePath(item.FolderPath, path))
                           ?? throw new DirectoryNotFoundException(LocalizationManager.Get("versionSelector.directoryChanged"));
             OpenVersionSettings(version);
@@ -56,20 +60,18 @@ public partial class MainWindow
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             App.Logger.Error("Versions", $"打开版本设置失败: {path}.", error);
-            LauncherToasts.Error(LocalizationManager.Get("versionSelector.readVersionsFailed"));
+            if (routeVersion == _routeVersion) LauncherToasts.Error(LocalizationManager.Get("versionSelector.readVersionsFailed"));
         }
     }
 
     internal void OpenVersionSettings(LocalMinecraftVersion version)
     {
-        if (_versionSettingsClosing) return;
-        _versionSettingsFromSelector = VersionSelectionPage.Visibility == Visibility.Visible;
+        if (ReferenceEquals(_activeRoute, _versionSettingsRoute)) return;
+        _versionSettingsFromSelector = ReferenceEquals(_activeRoute, _versionSelectionRoute);
         VersionSettingsPage.SetVersion(GameDirectoryOf(version), version);
         RefreshVersionSettingsTitle();
-        VersionSelectionTitle.Visibility = Visibility.Collapsed;
-        if (_versionSettingsFromSelector) VersionSelectionPage.IsEnabled = false;
-        OpenSecondaryPage(VersionSettingsPage, VersionSettingsTitle, "版本设置");
-        UpdateTaskManagerButton();
+        ApplyShellRoute(_versionSettingsRoute);
+        App.Logger.Information("Navigation", "打开版本设置.");
     }
 
     private static string GameDirectoryOf(LocalMinecraftVersion version) => Path.GetDirectoryName(Path.GetDirectoryName(version.FolderPath))!;
@@ -87,17 +89,9 @@ public partial class MainWindow
 
     private void CloseVersionSettings()
     {
-        if (_versionSettingsClosing || VersionSettingsPage.Visibility != Visibility.Visible) return;
-        _versionSettingsClosing = true;
-        CloseSecondaryPage(VersionSettingsPage, VersionSettingsTitle, "版本设置", () =>
-        {
-            _versionSettingsClosing = false;
-            VersionSelectionPage.IsEnabled = true;
-            if (_versionSettingsFromSelector && VersionSelectionPage.Visibility == Visibility.Visible)
-            {
-                TitleBarLabel.Visibility = TopNavigationHost.Visibility = Visibility.Collapsed;
-                VersionSelectionTitle.Visibility = Visibility.Visible;
-            }
-        });
+        if (!ReferenceEquals(_activeRoute, _versionSettingsRoute)) return;
+        if (_versionSettingsFromSelector) ShowVersionSelection(back: true);
+        else ApplyShellRoute(_routes[ShellSection.Launch], back: true);
+        App.Logger.Information("Navigation", "关闭版本设置.");
     }
 }

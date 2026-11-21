@@ -7,7 +7,7 @@ using System.Threading.Channels;
 namespace ErhioLab.Craft.Launcher.Core.Downloads;
 
 /// <summary>按入队顺序执行下载任务, 并在单个任务内并发下载文件及分段.</summary>
-public sealed class DownloadManager : IAsyncDisposable
+public sealed partial class DownloadManager : IAsyncDisposable
 {
     private const long MinimumSegmentSize = 2 * 1024 * 1024;
     private const int MaximumSegmentsPerFile = 4;
@@ -24,9 +24,13 @@ public sealed class DownloadManager : IAsyncDisposable
     private bool _disposed;
 
     /// <summary>使用调用方提供的 HTTP 客户端, 不接管其生命周期.</summary>
-    public DownloadManager(HttpClient httpClient)
+    public DownloadManager(HttpClient httpClient) : this(httpClient, null) { }
+
+    /// <summary>使用调用方的 HTTP 客户端, 可同时接收网络失败和分段回退的诊断.</summary>
+    public DownloadManager(HttpClient httpClient, Action<DownloadHttpDiagnostic>? httpDiagnostic)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _httpDiagnostic = httpDiagnostic;
         _worker = Task.Run(ProcessQueueAsync);
     }
 
@@ -169,7 +173,7 @@ public sealed class DownloadManager : IAsyncDisposable
                 try
                 {
                     // 分段连接失败后改用普通 GET, 避免持续触发同一站点的连接限制.
-                    FileProbe probe = attempt == 0 && file.ExpectedSize is not <= MinimumSegmentSize
+                    FileProbe probe = attempt == 0 && options.MaxConnections > 1 && file.ExpectedSize is not <= MinimumSegmentSize
                         ? await ProbeWithConnectionAsync(source, connections, cancellationToken).ConfigureAwait(false)
                         : new FileProbe(file.ExpectedSize, false);
                     if (!lengthRegistered)
@@ -180,7 +184,7 @@ public sealed class DownloadManager : IAsyncDisposable
 
                     if (file.ExpectedSize is { } expected && probe.Length is { } actual && actual != expected)
                     {
-                        throw new InvalidDataException($"文件大小与预期不符: {source}");
+                        throw new InvalidDataException("文件大小与预期不符.");
                     }
 
                     try
@@ -200,7 +204,7 @@ public sealed class DownloadManager : IAsyncDisposable
 
                     if (file.ExpectedSize is { } requiredSize && new FileInfo(temporary).Length != requiredSize)
                     {
-                        throw new InvalidDataException($"文件大小与预期不符: {source}");
+                        throw new InvalidDataException("文件大小与预期不符.");
                     }
 
                     if (file.ExpectedSha1 is { } expectedSha1)
@@ -209,7 +213,7 @@ public sealed class DownloadManager : IAsyncDisposable
                         string actualSha1 = Convert.ToHexString(await SHA1.HashDataAsync(input, cancellationToken).ConfigureAwait(false));
                         if (!actualSha1.Equals(expectedSha1, StringComparison.OrdinalIgnoreCase))
                         {
-                            throw new InvalidDataException($"SHA-1 校验失败: {source}");
+                            throw new InvalidDataException("SHA-1 校验失败.");
                         }
                     }
 
@@ -223,13 +227,13 @@ public sealed class DownloadManager : IAsyncDisposable
                 catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or OperationCanceledException)
                 {
                     state.RevertBytes(attemptBytes.Take());
-                    if (attempt + 1 < MaximumAttemptsPerSource && IsTransient(error))
+                    if (attempt + 1 < MaximumAttemptsPerSource && RetryDelay(error, attempt) is { } delay)
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(600 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
-                    failures.Add(new IOException($"来源 {source} 下载失败.", error));
+                    failures.Add(new IOException($"来源 {Origin(source)} 下载失败: {error.Message}", error));
                     break;
                 }
                 finally
@@ -247,40 +251,28 @@ public sealed class DownloadManager : IAsyncDisposable
 
     private async Task<FileProbe> ProbeAsync(Uri source, CancellationToken token)
     {
-        try
+        using (HttpRequestMessage head = new(HttpMethod.Head, source))
+        using (HttpResponseMessage response = await SendAsync(head, "head", token).ConfigureAwait(false))
         {
-            using HttpRequestMessage head = new(HttpMethod.Head, source);
-            using HttpResponseMessage response = await _httpClient.SendAsync(head, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-            if (response.IsSuccessStatusCode && response.Content.Headers.ContentLength is > 0 and var length && response.Headers.AcceptRanges.Contains("bytes"))
-            {
+            if (IsBackoffStatus(response.StatusCode)) throw HttpFailure(head, response);
+            // 拒绝 HEAD 的来源可能允许普通 GET; 不再为同一文件尝试 Range 探测.
+            if (!response.IsSuccessStatusCode) return new FileProbe(null, false);
+            long? length = response.Content.Headers.ContentLength;
+            if (response.Headers.AcceptRanges.Contains("none", StringComparer.OrdinalIgnoreCase) || length is <= MinimumSegmentSize)
+                return new FileProbe(length, false);
+            if (length is > 0 && response.Headers.AcceptRanges.Contains("bytes", StringComparer.OrdinalIgnoreCase))
                 return new FileProbe(length, true);
-            }
-        }
-        catch (HttpRequestException)
-        {
-            // 某些站点不允许 HEAD, 继续尝试 GET 探测.
         }
 
-        try
-        {
-            using HttpRequestMessage probe = new(HttpMethod.Get, source);
-            probe.Headers.Range = new RangeHeaderValue(0, 0);
-            using HttpResponseMessage ranged = await _httpClient.SendAsync(probe, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-            if (!ranged.IsSuccessStatusCode)
-            {
-                return new FileProbe(null, false);
-            }
-
-            ContentRangeHeaderValue? range = ranged.Content.Headers.ContentRange;
-            return ranged.StatusCode == HttpStatusCode.PartialContent && range is { From: 0, To: 0, Length: > 0 }
-                ? new FileProbe(range.Length, true)
-                : new FileProbe(ranged.StatusCode == HttpStatusCode.OK ? ranged.Content.Headers.ContentLength : null, false);
-        }
-        catch (HttpRequestException)
-        {
-            // 探测请求可能被拒绝; 普通 GET 仍可能成功.
-            return new FileProbe(null, false);
-        }
+        using HttpRequestMessage probe = new(HttpMethod.Get, source);
+        probe.Headers.Range = new RangeHeaderValue(0, 0);
+        using HttpResponseMessage ranged = await SendAsync(probe, "range-probe", token).ConfigureAwait(false);
+        if (IsBackoffStatus(ranged.StatusCode)) throw HttpFailure(probe, ranged);
+        ContentRangeHeaderValue? range = ranged.Content.Headers.ContentRange;
+        if (ranged.StatusCode == HttpStatusCode.PartialContent && range is { From: 0, To: 0, Length: > 0 } && IsByteRange(range))
+            return new FileProbe(range.Length, range.Length > MinimumSegmentSize);
+        if (ranged.IsSuccessStatusCode) ReportHttp(probe, "range-probe", ranged, "Range unavailable; using full GET.");
+        return new FileProbe(ranged.StatusCode == HttpStatusCode.OK ? ranged.Content.Headers.ContentLength : null, false);
     }
 
     private async Task<FileProbe> ProbeWithConnectionAsync(Uri source, SemaphoreSlim connections, CancellationToken token)
@@ -319,7 +311,18 @@ public sealed class DownloadManager : IAsyncDisposable
                 Math.Min(length - 1, (index + 1L) * segmentSize - 1),
                 length, connections, limiter, state, filePath, recordBytes, token)
             ).ToArray();
-            await Task.WhenAll(segments).ConfigureAwait(false);
+            var transfer = Task.WhenAll(segments);
+            try { await transfer.ConfigureAwait(false); }
+            catch (Exception) when (!token.IsCancellationRequested && transfer.Exception is { } failure)
+            {
+                // 任何分段被限流时先遵守退避, 即使其他分段恰好返回不支持 Range.
+                var backoff = failure.InnerExceptions.OfType<DownloadHttpException>()
+                    .Where(error => error.StatusCode is { } status && IsBackoffStatus(status))
+                    .MaxBy(error => error.RetryAfter ?? TimeSpan.Zero);
+                if (backoff is not null) throw backoff;
+                if (failure.InnerExceptions.Any(error => error is RangeUnsupportedException)) throw new RangeUnsupportedException();
+                throw;
+            }
         }
         else
         {
@@ -327,10 +330,11 @@ public sealed class DownloadManager : IAsyncDisposable
             try
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, source);
-                using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
+                using HttpResponseMessage response = await SendAsync(request, "body", token).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode) throw HttpFailure(request, response);
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
+                    ReportHttp(request, "body", response, "Expected a complete file (HTTP 200).");
                     throw new InvalidDataException("服务器未返回完整文件.");
                 }
 
@@ -360,18 +364,20 @@ public sealed class DownloadManager : IAsyncDisposable
         {
             using HttpRequestMessage request = new(HttpMethod.Get, source);
             request.Headers.Range = new RangeHeaderValue(from, to);
-            using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.OK)
+            using HttpResponseMessage response = await SendAsync(request, "segment", token).ConfigureAwait(false);
+            if (response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Forbidden or HttpStatusCode.MethodNotAllowed or HttpStatusCode.RequestedRangeNotSatisfiable)
             {
+                if (response.IsSuccessStatusCode) ReportHttp(request, "segment", response, "Range ignored; using full GET.");
                 throw new RangeUnsupportedException();
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode) throw HttpFailure(request, response);
             ContentRangeHeaderValue? range = response.Content.Headers.ContentRange;
             if (response.StatusCode != HttpStatusCode.PartialContent
-                || range?.From != from || range.To != to || range.Length != total)
+                || !IsByteRange(range) || range?.From != from || range.To != to || range.Length != total)
             {
-                throw new InvalidDataException("服务器返回了不匹配的分段范围.");
+                ReportHttp(request, "segment", response, "Invalid Content-Range; using full GET.");
+                throw new RangeUnsupportedException();
             }
 
             await using Stream input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);

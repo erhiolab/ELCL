@@ -109,12 +109,14 @@ public static class MinecraftVersionDirectory
         return version with { Id = newName, FolderPath = destination, JsonPath = Path.Combine(destination, newJsonName) };
     }
 
-    /// <summary>删除单个版本目录; 拒绝越界/链接目录和被其他版本引用的目录.</summary>
+    /// <summary>删除单个版本目录; 已不存在时不做操作, 拒绝越界/链接目录和被其他版本引用的目录.</summary>
     public static void Delete(string gameDirectory, string versionDirectory)
     {
-        string folder = ValidateDirectory(gameDirectory, versionDirectory);
+        string folder = ValidateDirectory(gameDirectory, versionDirectory, allowMissing: true);
+        if (!Directory.Exists(folder)) return;
         RejectReferences(gameDirectory, folder);
-        Directory.Delete(folder, true);
+        try { Directory.Delete(folder, true); }
+        catch (DirectoryNotFoundException) when (!Directory.Exists(folder)) { }
     }
 
     private static void RejectReferences(string gameDirectory, string folder)
@@ -123,13 +125,21 @@ public static class MinecraftVersionDirectory
         if (references.Count > 0) throw new InvalidOperationException("Version is referenced by: " + string.Join(", ", references));
     }
 
-    private static string ValidateDirectory(string gameDirectory, string versionDirectory)
+    private static string ValidateDirectory(string gameDirectory, string versionDirectory, bool allowMissing = false)
     {
         string root = Path.GetFullPath(Path.Combine(gameDirectory, "versions"));
         string folder = Path.GetFullPath(versionDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        if (!string.Equals(Path.GetDirectoryName(folder), root, PathComparison) || !Directory.Exists(folder)
-                                                                                || File.GetAttributes(root).HasFlag(FileAttributes.ReparsePoint) || File.GetAttributes(folder).HasFlag(FileAttributes.ReparsePoint))
-            throw new IOException("Version directory is missing, outside the versions folder or a symbolic link.");
+        const string unsafeDirectory = "Version directory is outside the versions folder, not a directory or a symbolic link.";
+        if (!string.Equals(Path.GetDirectoryName(folder), root, PathComparison)) throw new IOException(unsafeDirectory);
+        try
+        {
+            const FileAttributes directoryMask = FileAttributes.Directory | FileAttributes.ReparsePoint;
+            if ((File.GetAttributes(root) & directoryMask) != FileAttributes.Directory
+                || (File.GetAttributes(folder) & directoryMask) != FileAttributes.Directory)
+                throw new IOException(unsafeDirectory);
+        }
+        catch (FileNotFoundException) when (allowMissing) { }
+        catch (DirectoryNotFoundException) when (allowMissing) { }
         return folder;
     }
 }

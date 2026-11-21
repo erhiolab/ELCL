@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Assets/ThirdParty/*.txt" />
     <EmbeddedResource Include="Assets/Launch/*.LICENSE" />
     <EmbeddedResource Include="../../LICENSE" Link="Licensing/ELCL-LICENSE.txt" />
+    <EmbeddedResource Include="../../web/docs/launcher/terms.md" LogicalName="ErhioLab.Craft.Launcher.Legal.Terms.zh_cn.md" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
     <Resource Include="Assets/Credits/Pcl.png" />

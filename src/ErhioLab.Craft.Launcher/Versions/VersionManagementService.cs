@@ -84,7 +84,7 @@ internal static class VersionManagementService
                 context.CancellationToken.ThrowIfCancellationRequested();
                 await Task.Run(() =>
                 {
-                    RequireUnreferenced(gameDirectory, version);
+                    if (Directory.Exists(version.FolderPath)) RequireUnreferenced(gameDirectory, version);
                     MinecraftVersionDirectory.Delete(gameDirectory, version.FolderPath);
                 }, context.CancellationToken);
                 UpdatePaths(version.FolderPath, null);

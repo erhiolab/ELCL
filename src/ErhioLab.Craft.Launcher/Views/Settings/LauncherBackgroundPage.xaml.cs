@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -18,12 +19,16 @@ namespace ErhioLab.Craft.Launcher.Views.Settings;
 
 public partial class LauncherBackgroundPage
 {
+    private const int GalleryBatchSize = 24;
     private static readonly int[] IntervalPresets = [10, 15, 30, 60, 120, 300, 600, 1800, 3600];
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private readonly DispatcherTimer _searchTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private MainWindow? _window;
     private bool _binding = true;
     private bool _refreshingWallpaper;
+    private bool _galleryReady;
+    private int _galleryVersion;
+    private int _openVersion;
     private bool ShowWallpaper => WallpaperSource?.IsChecked == true;
     private LauncherBackgroundTile[] _sourceTiles = [];
     private LauncherBackgroundTile[] _tiles = [];
@@ -79,8 +84,19 @@ public partial class LauncherBackgroundPage
         LocalizationManager.Changed += Language_Changed;
         RefreshOptions();
         if (App.Settings.BackgroundOptions.SelectedWallpaperId is not null) WallpaperSource.IsChecked = true;
-        RebuildGallery();
-        if (ShowWallpaper && _window is { WallpaperBackgroundLoaded: false }) _ = RefreshWallpaperAsync(notify: false);
+        AgeFilterReveal.IsExpanded = ShowWallpaper;
+        UpdateFileState();
+    }
+
+    internal void QueueGalleryLoad()
+    {
+        int version = _openVersion;
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            if (version != _openVersion || _galleryReady || _window is null) return;
+            _galleryReady = true;
+            LoadCurrentSource(animate: false);
+        }, DispatcherPriority.Background);
     }
 
     private void Card_Unloaded(object sender, RoutedEventArgs args)
@@ -94,6 +110,9 @@ public partial class LauncherBackgroundPage
         }
 
         _searchTimer.Stop();
+        _openVersion++;
+        _galleryVersion++;
+        _galleryReady = false;
         StopThumbnails();
         _sourceTiles = [];
         _tiles = [];
@@ -114,38 +133,44 @@ public partial class LauncherBackgroundPage
 
     private void LocalFilesChanged()
     {
-        if (!ShowWallpaper) RebuildGallery();
+        if (_galleryReady && !ShowWallpaper) RebuildGallery();
         else UpdateFileState();
     }
 
     private void WallpaperFilesChanged()
     {
-        if (ShowWallpaper) RebuildGallery();
+        if (_galleryReady && ShowWallpaper) RebuildGallery();
         else UpdateFileState();
     }
 
     private void Source_Checked(object sender, RoutedEventArgs args)
     {
         if (_window is null) return;
-        RebuildGallery(animate: true);
-        if (ShowWallpaper && !_window.WallpaperBackgroundLoaded) _ = RefreshWallpaperAsync(notify: false);
+        AgeFilterReveal.IsExpanded = ShowWallpaper;
+        if (_galleryReady) LoadCurrentSource(animate: true);
+        else UpdateFileState();
+    }
+
+    private void LoadCurrentSource(bool animate)
+    {
+        if (ShowWallpaper && _window is { WallpaperBackgroundLoaded: false }) _ = RefreshWallpaperAsync(notify: false);
+        RebuildGallery(animate);
     }
 
     private void GalleryFilter_Changed(object sender, SelectionChangedEventArgs args)
     {
-        if (_window is not null) ApplyGalleryFilters(animate: true);
+        if (_galleryReady) ApplyGalleryFilters(animate: true);
     }
 
     private void GallerySearch_Changed(object sender, TextChangedEventArgs args)
     {
-        if (_window is null) return;
+        if (!_galleryReady) return;
         _searchTimer.Stop();
         _searchTimer.Start();
     }
 
     private void RebuildGallery(bool animate = false)
     {
-        AgeFilterReveal.IsExpanded = ShowWallpaper;
         _sourceTiles = ((ShowWallpaper ? _window?.WallpaperBackgroundFiles : _window?.BackgroundFiles) ?? [])
             .Select(file => new LauncherBackgroundTile(file)).ToArray();
         ApplyGalleryFilters(animate);
@@ -169,7 +194,9 @@ public partial class LauncherBackgroundPage
             && (rating is null || tile.File.AgeRating == rating)
             && (search.Length == 0 || tile.Name.Contains(search, StringComparison.CurrentCultureIgnoreCase)
                 || tile.RelativePath.Contains(search, StringComparison.OrdinalIgnoreCase))).ToArray();
-        Gallery.ItemsSource = _tiles;
+        int version = ++_galleryVersion;
+        if (_tiles.Length <= GalleryBatchSize) Gallery.ItemsSource = _tiles;
+        else _ = PresentGalleryAsync(_tiles, version);
         UpdateFileState();
         if (animate)
         {
@@ -183,6 +210,20 @@ public partial class LauncherBackgroundPage
         if (_tiles.All(tile => tile.ThumbnailResolved)) return;
         _thumbnailCancellation = new CancellationTokenSource();
         _thumbnailLoading = LoadThumbnailsAsync(_thumbnailLoading, _tiles, _thumbnailCancellation.Token);
+    }
+
+    private async Task PresentGalleryAsync(LauncherBackgroundTile[] tiles, int version)
+    {
+        // WrapPanel 会立即创建卡片, 分批加入并给布局和输入留出调度机会.
+        var visible = new ObservableCollection<LauncherBackgroundTile>(tiles.Take(GalleryBatchSize));
+        Gallery.ItemsSource = visible;
+        for (int i = GalleryBatchSize; i < tiles.Length;)
+        {
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (version != _galleryVersion) return;
+            int end = Math.Min(i + GalleryBatchSize, tiles.Length);
+            for (; i < end; i++) visible.Add(tiles[i]);
+        }
     }
 
     private void StopThumbnails()
@@ -235,7 +276,7 @@ public partial class LauncherBackgroundPage
         ClearButton.Visibility = !ShowWallpaper && local.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Text = L(_sourceTiles.Length != 0 ? "noFilterMatches"
-            : !ShowWallpaper ? "emptyLibrary" : _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
+            : !ShowWallpaper ? "emptyLibrary" : !_galleryReady || _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
         NextButton.Visibility = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? Visibility.Collapsed : Visibility.Visible;
         NextButton.IsEnabled = options.Enabled && local.Length > 1;
         CurrentBackgroundDetail.Visibility = current is null ? Visibility.Collapsed : Visibility.Visible;

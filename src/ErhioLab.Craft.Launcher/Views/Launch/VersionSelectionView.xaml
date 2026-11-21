@@ -5,8 +5,7 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
-    Background="{DynamicResource PageSurfaceBrush}"
-    IsVisibleChanged="View_IsVisibleChanged">
+    Background="{DynamicResource PageSurfaceBrush}">
     <UserControl.Resources>
         <Style
             x:Key="FolderRowStyle"
@@ -332,73 +331,62 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition
-                Width="260" />
-            <ColumnDefinition
-                Width="*" />
-        </Grid.ColumnDefinitions>
-        <Border
-            Grid.Column="0"
-            Background="{DynamicResource ChromeSurfaceBrush}"
-            BorderBrush="{DynamicResource LineSoftBrush}"
-            BorderThickness="0,1,1,0">
-            <ScrollViewer
-                VerticalScrollBarVisibility="Auto">
-                <StackPanel
-                    Margin="18,18,18,24">
-                    <TextBlock
-                        Margin="0,0,0,8"
-                        FontSize="{DynamicResource CaptionFontSize}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.versionSelector.gameFolders}" />
-                    <Grid
-                        x:Name="FolderListContainer">
-                        <Border
-                            x:Name="SelectedFolderHighlight"
-                            Height="0"
-                            VerticalAlignment="Top"
-                            Background="{DynamicResource AccentMutedBrush}"
-                            CornerRadius="6"
-                            IsHitTestVisible="False"
-                            Opacity="0">
-                            <Border
-                                Width="3"
-                                Margin="11,7,0,7"
-                                HorizontalAlignment="Left"
-                                Background="{DynamicResource AccentBrush}"
-                                CornerRadius="2" />
-                            <Border.RenderTransform>
-                                <TranslateTransform />
-                            </Border.RenderTransform>
-                        </Border>
-                        <ItemsControl
-                            x:Name="FolderList" />
-                    </Grid>
-                    <TextBlock
-                        Margin="0,18,0,8"
-                        FontSize="{DynamicResource CaptionFontSize}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        Text="{DynamicResource I18n.versionSelector.addOrImport}" />
-                    <Button
-                        Height="34"
-                        HorizontalContentAlignment="Left"
-                        Click="AddFolder_Click"
-                        Content="{DynamicResource I18n.versionSelector.addExistingFolder}"
-                        Style="{StaticResource SecondaryActionStyle}" />
-                    <Button
-                        Height="34"
-                        Margin="0,5,0,0"
-                        HorizontalContentAlignment="Left"
-                        Content="{DynamicResource I18n.versionSelector.importModpack}"
-                        Click="ImportModpack_Click"
-                        Style="{StaticResource SecondaryActionStyle}" />
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
+    <Grid
+        x:Name="ViewLayout">
         <ScrollViewer
-            Grid.Column="1"
+            x:Name="FolderSidebar"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                Margin="18,18,18,24">
+                <TextBlock
+                    Margin="0,0,0,8"
+                    FontSize="{DynamicResource CaptionFontSize}"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    Text="{DynamicResource I18n.versionSelector.gameFolders}" />
+                <Grid
+                    x:Name="FolderListContainer">
+                    <Border
+                        x:Name="SelectedFolderHighlight"
+                        Height="0"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource AccentMutedBrush}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False"
+                        Opacity="0">
+                        <Border
+                            Width="3"
+                            Margin="11,7,0,7"
+                            HorizontalAlignment="Left"
+                            Background="{DynamicResource AccentBrush}"
+                            CornerRadius="2" />
+                        <Border.RenderTransform>
+                            <TranslateTransform />
+                        </Border.RenderTransform>
+                    </Border>
+                    <ItemsControl
+                        x:Name="FolderList" />
+                </Grid>
+                <TextBlock
+                    Margin="0,18,0,8"
+                    FontSize="{DynamicResource CaptionFontSize}"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    Text="{DynamicResource I18n.versionSelector.addOrImport}" />
+                <Button
+                    Height="34"
+                    HorizontalContentAlignment="Left"
+                    Click="AddFolder_Click"
+                    Content="{DynamicResource I18n.versionSelector.addExistingFolder}"
+                    Style="{StaticResource SecondaryActionStyle}" />
+                <Button
+                    Height="34"
+                    Margin="0,5,0,0"
+                    HorizontalContentAlignment="Left"
+                    Content="{DynamicResource I18n.versionSelector.importModpack}"
+                    Click="ImportModpack_Click"
+                    Style="{StaticResource SecondaryActionStyle}" />
+            </StackPanel>
+        </ScrollViewer>
+        <ScrollViewer
             VerticalScrollBarVisibility="Auto">
             <StackPanel
                 Margin="{StaticResource FormPageContentMargin}">
