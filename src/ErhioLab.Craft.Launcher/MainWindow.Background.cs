@@ -11,6 +11,7 @@ public partial class MainWindow
 {
     private bool _backgroundInitialized;
     private bool _backgroundClosed;
+    private bool _windowMoveSizeActive;
     private int _backgroundScanVersion;
     private Task? _wallpaperRefresh;
     private LauncherBackgroundSettings _backgroundPreview = new();
@@ -85,8 +86,15 @@ public partial class MainWindow
     private void UpdateBackgroundSurfaces() => LauncherThemeManager.ApplyBackgroundSurfaces(
         BackgroundPresenter.IsDisplayingBackground, _backgroundPreview.CardOpacity / 100.0);
 
+    private void SetWindowMoveSizeActive(bool active)
+    {
+        if (_windowMoveSizeActive == active || _backgroundClosed) return;
+        _windowMoveSizeActive = active;
+        UpdateBackgroundPlayback();
+    }
+
     private void UpdateBackgroundPlayback() => BackgroundPresenter.SetPlaybackActive(
-        _backgroundPreview.PlayInBackground || (IsActive && WindowState != WindowState.Minimized));
+        !_windowMoveSizeActive && (_backgroundPreview.PlayInBackground || (IsActive && WindowState != WindowState.Minimized)));
 
     private async Task LoadInitialBackgroundAsync()
     {

@@ -35,6 +35,8 @@ public partial class MainWindow
     private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
     private const int WmGetMinMaxInfo = 0x0024;
     private const int WmNcLeftButtonDown = 0x00A1;
+    private const int WmEnterSizeMove = 0x0231;
+    private const int WmExitSizeMove = 0x0232;
     private const int HitTestCaption = 2;
     private const uint MonitorDefaultToNearest = 2;
     private const double MinSidebarWidth = 135;
@@ -631,6 +633,12 @@ public partial class MainWindow
         IntPtr lParam,
         ref bool handled)
     {
+        if (message is WmEnterSizeMove or WmExitSizeMove)
+        {
+            SetWindowMoveSizeActive(message == WmEnterSizeMove);
+            return IntPtr.Zero;
+        }
+
         if (message != WmGetMinMaxInfo)
         {
             return IntPtr.Zero;
