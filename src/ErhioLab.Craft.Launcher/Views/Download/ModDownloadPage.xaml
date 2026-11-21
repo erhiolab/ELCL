@@ -186,34 +186,48 @@
                     IsHitTestVisible="False" />
             </Grid>
         </Border>
-        <DockPanel
+        <Border
+            x:Name="PaginationBar"
             Grid.Row="2"
-            Margin="0,12,0,0">
-            <TextBlock
-                x:Name="ResultStatus"
-                VerticalAlignment="Center"
-                Foreground="{DynamicResource TextMutedBrush}"
-                TextWrapping="Wrap" />
-            <StackPanel
-                Orientation="Horizontal"
-                HorizontalAlignment="Right">
-                <Button
-                    x:Name="PreviousButton"
-                    Content="{DynamicResource I18n.mods.previous}"
-                    Style="{StaticResource CompactActionButtonStyle}"
-                    Click="Previous_Click"
-                    IsEnabled="False" />
+            Margin="0,12,0,0"
+            Padding="12,8"
+            Style="{StaticResource PanelCardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <TextBlock
-                    x:Name="PageText"
-                    Margin="12,0"
-                    VerticalAlignment="Center" />
-                <Button
-                    x:Name="NextButton"
-                    Content="{DynamicResource I18n.mods.next}"
-                    Style="{StaticResource CompactActionButtonStyle}"
-                    Click="Next_Click"
-                    IsEnabled="False" />
-            </StackPanel>
-        </DockPanel>
+                    x:Name="ResultStatus"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextBrush}"
+                    TextWrapping="Wrap" />
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="PreviousButton"
+                        Content="{DynamicResource I18n.mods.previous}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Previous_Click"
+                        IsEnabled="False" />
+                    <TextBlock
+                        x:Name="PageText"
+                        Margin="12,0"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource TextBrush}" />
+                    <Button
+                        x:Name="NextButton"
+                        Content="{DynamicResource I18n.mods.next}"
+                        Style="{StaticResource CompactActionButtonStyle}"
+                        Click="Next_Click"
+                        IsEnabled="False" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
