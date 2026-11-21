@@ -165,8 +165,10 @@
                     <ColumnDefinition
                         Width="*" />
                     <ColumnDefinition
+                        x:Name="VersionManagementGap"
                         Width="10" />
                     <ColumnDefinition
+                        x:Name="VersionManagementColumn"
                         Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button

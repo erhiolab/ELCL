@@ -5,6 +5,7 @@ using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Navigation;
 using ErhioLab.Craft.Launcher.Notifications;
+using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Versions;
 using ErhioLab.Craft.Launcher.Views.Launch;
 
@@ -46,7 +47,8 @@ public partial class MainWindow
     {
         string? path = App.Settings.SelectedVersionPath;
         string? game = App.Settings.SelectedGameFolderPath;
-        if (path is null || game is null || !ReferenceEquals(_activeRoute, _routes[ShellSection.Launch])) return;
+        if (path is null || game is null || App.FeatureVisibility.IsHidden(LauncherHiddenFeatures.VersionManagement)
+            || !ReferenceEquals(_activeRoute, _routes[ShellSection.Launch])) return;
         int routeVersion = _routeVersion;
         try
         {
@@ -66,7 +68,7 @@ public partial class MainWindow
 
     internal void OpenVersionSettings(LocalMinecraftVersion version)
     {
-        if (ReferenceEquals(_activeRoute, _versionSettingsRoute)) return;
+        if (ReferenceEquals(_activeRoute, _versionSettingsRoute) || App.FeatureVisibility.IsHidden(LauncherHiddenFeatures.VersionManagement)) return;
         _versionSettingsFromSelector = ReferenceEquals(_activeRoute, _versionSelectionRoute);
         VersionSettingsPage.SetVersion(GameDirectoryOf(version), version);
         RefreshVersionSettingsTitle();

@@ -1,0 +1,164 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Settings.FeatureVisibilityCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:settings="clr-namespace:ErhioLab.Craft.Launcher.Settings"
+    Loaded="Card_Loaded"
+    Unloaded="Card_Unloaded">
+    <UserControl.Resources>
+        <Style
+            x:Key="VisibilityOptionStyle"
+            BasedOn="{StaticResource FormCheckBoxStyle}"
+            TargetType="CheckBox">
+            <Setter
+                Property="MinWidth"
+                Value="120" />
+            <Setter
+                Property="MinHeight"
+                Value="32" />
+            <Setter
+                Property="Margin"
+                Value="0,0,12,0" />
+            <EventSetter
+                Event="Click"
+                Handler="Option_Click" />
+        </Style>
+        <Style
+            x:Key="VisibilityGroupLabelStyle"
+            TargetType="TextBlock">
+            <Setter
+                Property="Margin"
+                Value="0,7,0,0" />
+            <Setter
+                Property="VerticalAlignment"
+                Value="Top" />
+            <Setter
+                Property="TextWrapping"
+                Value="Wrap" />
+        </Style>
+    </UserControl.Resources>
+    <controls:LauncherCard
+        x:Name="Card"
+        Header="{DynamicResource I18n.featureVisibility.title}">
+        <StackPanel
+            x:Name="OptionGroups">
+            <TextBlock
+                Foreground="{DynamicResource TextMutedBrush}"
+                Text="{DynamicResource I18n.featureVisibility.hint}"
+                TextWrapping="Wrap" />
+            <Grid
+                Style="{StaticResource FormFollowingSettingRowStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="155" />
+                    <ColumnDefinition
+                        Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Style="{StaticResource VisibilityGroupLabelStyle}"
+                    Text="{DynamicResource I18n.featureVisibility.mainPages}" />
+                <WrapPanel
+                    Grid.Column="1">
+                    <CheckBox
+                        Content="{DynamicResource I18n.mainWindow.download}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Download}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.mainWindow.settings}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Settings}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.mainWindow.more}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.More}" />
+                </WrapPanel>
+            </Grid>
+            <Grid
+                Style="{StaticResource FormFollowingSettingRowStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="155" />
+                    <ColumnDefinition
+                        Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Style="{StaticResource VisibilityGroupLabelStyle}"
+                    Text="{DynamicResource I18n.featureVisibility.settingsPages}" />
+                <WrapPanel
+                    Grid.Column="1">
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.launch}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.LaunchSettings}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.personalization}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Personalization}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.download}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.DownloadSettings}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.other}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.OtherSettings}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.debug}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Debug}" />
+                </WrapPanel>
+            </Grid>
+            <Grid
+                Style="{StaticResource FormFollowingSettingRowStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="155" />
+                    <ColumnDefinition
+                        Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Style="{StaticResource VisibilityGroupLabelStyle}"
+                    Text="{DynamicResource I18n.featureVisibility.morePages}" />
+                <WrapPanel
+                    Grid.Column="1">
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.about}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.About}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.toolbox}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Toolbox}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.sidebar.performance}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.Performance}" />
+                </WrapPanel>
+            </Grid>
+            <Grid
+                Style="{StaticResource FormFollowingSettingRowStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="155" />
+                    <ColumnDefinition
+                        Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Style="{StaticResource VisibilityGroupLabelStyle}"
+                    Text="{DynamicResource I18n.featureVisibility.features}" />
+                <WrapPanel
+                    Grid.Column="1">
+                    <CheckBox
+                        Content="{DynamicResource I18n.featureVisibility.versionManagement}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.VersionManagement}" />
+                    <CheckBox
+                        Content="{DynamicResource I18n.featureVisibility.title}"
+                        Style="{StaticResource VisibilityOptionStyle}"
+                        Tag="{x:Static settings:LauncherHiddenFeatures.FeatureVisibility}" />
+                </WrapPanel>
+            </Grid>
+        </StackPanel>
+    </controls:LauncherCard>
+</UserControl>

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Media;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Localization;
@@ -8,10 +9,13 @@ namespace ErhioLab.Craft.Launcher.Navigation;
 /// <summary>为侧栏模板提供可识别的导航项数据.</summary>
 internal sealed class SectionSidebarEntry : INotifyPropertyChanged
 {
-    public SectionSidebarEntry(SectionSidebarItem item, bool isFirst, string groupName)
+    private Visibility _visibility = Visibility.Visible;
+    private bool _isSelected;
+
+    public SectionSidebarEntry(SectionSidebarItem item, bool isSelected, string groupName)
     {
         Item = item;
-        IsFirst = isFirst;
+        _isSelected = isSelected;
         GroupName = groupName;
         LocalizationManager.Changed += (_, _) =>
         {
@@ -22,7 +26,27 @@ internal sealed class SectionSidebarEntry : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public SectionSidebarItem Item { get; }
-    public bool IsFirst { get; }
+    public Visibility Visibility
+    {
+        get => _visibility;
+        set
+        {
+            if (_visibility == value) return;
+            _visibility = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Visibility)));
+        }
+    }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value) return;
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
     public string GroupName { get; }
     /// <summary>侧栏显示的名称.</summary>
     public string Title => LocalizationManager.Get(Item.Title);

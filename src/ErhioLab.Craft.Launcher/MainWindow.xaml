@@ -279,6 +279,7 @@
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
+                            x:Name="SettingsNavigation"
                             GroupName="TopNavigation"
                             Tag="Settings"
                             Checked="PrimaryNavigation_Checked"
@@ -304,6 +305,7 @@
                             </StackPanel>
                         </RadioButton>
                         <RadioButton
+                            x:Name="MoreNavigation"
                             GroupName="TopNavigation"
                             Margin="0"
                             Tag="More"

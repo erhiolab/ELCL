@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
-
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Settings"
     Background="{DynamicResource PageSurfaceBrush}"
     Loaded="PersonalizationPage_Loaded"
     Unloaded="PersonalizationPage_Unloaded">
@@ -375,6 +375,8 @@
                     </Grid>
                 </StackPanel>
             </controls:LauncherCard>
+            <local:FeatureVisibilityCard
+                Margin="{StaticResource FormSectionSpacing}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

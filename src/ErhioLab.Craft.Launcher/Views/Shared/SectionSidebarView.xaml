@@ -28,13 +28,14 @@
                 <DataTemplate
                     DataType="{x:Type navigation:SectionSidebarEntry}">
                     <Grid
-                        x:Name="NavigationRow">
+                        x:Name="NavigationRow"
+                        Visibility="{Binding Visibility}">
                         <RadioButton
                             Checked="NavigationItem_Checked"
                             Content="{Binding Title}"
                             GroupName="{Binding GroupName}"
                             Tag="{Binding Item}"
-                            IsChecked="{Binding IsFirst, Mode=OneTime}"
+                            IsChecked="{Binding IsSelected, Mode=OneWay}"
                             Loaded="NavigationItem_Loaded"
                             Style="{StaticResource SectionNavigationStyle}" />
                         <Button

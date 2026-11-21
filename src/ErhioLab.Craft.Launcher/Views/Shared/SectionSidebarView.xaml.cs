@@ -2,15 +2,19 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Navigation;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Views.Shared;
 
 /// <summary>显示下载/设置和更多页面共用的侧栏结构.</summary>
 public partial class SectionSidebarView
 {
-    private RadioButton? _selectedItem;
+    private readonly SectionSidebarEntry[] _entries;
+    private SectionSidebarEntry? _selection;
+    private RadioButton? _selectedButton;
     private bool _indicatorReady;
 
     /// <summary>用户点击侧栏条目的悬浮操作按钮.</summary>
@@ -27,7 +31,28 @@ public partial class SectionSidebarView
 
         // 不同一级页面各自保留选中项, 不能共享 RadioButton 的组名.
         string groupName = $"SectionNavigation_{Guid.NewGuid():N}";
-        NavigationItems.ItemsSource = navigationItems.Select((item, index) => new SectionSidebarEntry(item, index == 0, groupName)).ToArray();
+        _entries = navigationItems.Select((item, index) => new SectionSidebarEntry(item, index == 0, groupName)).ToArray();
+        _selection = _entries.FirstOrDefault();
+        NavigationItems.ItemsSource = _entries;
+    }
+
+    internal bool ApplyFeatureVisibility(LauncherFeatureVisibility features)
+    {
+        bool changed = false;
+        foreach (SectionSidebarEntry entry in _entries)
+        {
+            Visibility visibility = features.IsHidden(entry.Item.HiddenFeature) ? Visibility.Collapsed : Visibility.Visible;
+            changed |= entry.Visibility != visibility;
+            entry.Visibility = visibility;
+        }
+
+        if (_selection?.Visibility != Visibility.Visible
+            && _entries.FirstOrDefault(entry => entry.Visibility == Visibility.Visible) is { } fallback)
+            SelectEntry(fallback);
+
+        if (changed && IsLoaded)
+            _ = Dispatcher.InvokeAsync(() => UpdateSelectionIndicator(animate: true), DispatcherPriority.Loaded);
+        return _selection?.Visibility == Visibility.Visible;
     }
 
     private void ActionButton_Click(object sender, RoutedEventArgs e)
@@ -41,39 +66,53 @@ public partial class SectionSidebarView
     private void Sidebar_Loaded(object sender, RoutedEventArgs e)
     {
         _indicatorReady = true;
-        if (_selectedItem is { IsLoaded: true })
-        {
-            MoveSelection(_selectedItem, false);
-        }
+        UpdateSelectionIndicator(animate: false);
     }
 
     private void NavigationItem_Loaded(object sender, RoutedEventArgs e)
     {
-        if (_indicatorReady && sender is RadioButton { IsChecked: true } button)
+        if (sender is RadioButton { DataContext: SectionSidebarEntry entry, IsChecked: true } button && ReferenceEquals(entry, _selection))
         {
-            _selectedItem = button;
-            MoveSelection(button, false);
+            _selectedButton = button;
+            UpdateSelectionIndicator(animate: false);
         }
     }
 
     private void NavigationItem_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is not RadioButton button)
+        if (sender is not RadioButton { DataContext: SectionSidebarEntry { Visibility: Visibility.Visible } entry } button) return;
+
+        SelectEntry(entry);
+        _selectedButton = button;
+        UpdateSelectionIndicator(animate: SidebarIndicator.Opacity > 0);
+    }
+
+    private void SelectEntry(SectionSidebarEntry? entry)
+    {
+        if (ReferenceEquals(entry, _selection)) return;
+        SectionSidebarEntry? previous = _selection;
+        _selection = entry;
+        _selectedButton = null;
+        previous?.IsSelected = false;
+        if (entry is not null)
         {
+            entry.IsSelected = true;
+            App.Logger.Information("Navigation", $"选择侧栏项目: {entry.Title}");
+            SelectionChanged?.Invoke(entry.Item);
+        }
+    }
+
+    private void UpdateSelectionIndicator(bool animate)
+    {
+        if (!_indicatorReady) return;
+        if (_selectedButton is { IsLoaded: true, IsVisible: true } button && NavigationItems.IsAncestorOf(button))
+        {
+            MoveSelection(button, animate && SidebarIndicator.Opacity > 0);
             return;
         }
 
-        _selectedItem = button;
-        App.Logger.Information("Navigation", $"选择侧栏项目: {button.Content}");
-        if (button.Tag is SectionSidebarItem item)
-        {
-            SelectionChanged?.Invoke(item);
-        }
-
-        if (_indicatorReady && button.IsLoaded)
-        {
-            MoveSelection(button, SidebarIndicator.Opacity > 0);
-        }
+        SelectionHighlight.BeginAnimation(OpacityProperty, null);
+        SelectionHighlight.Opacity = SidebarIndicator.Opacity = 0;
     }
 
     private void MoveSelection(RadioButton button, bool animate)

@@ -6,6 +6,8 @@ namespace ErhioLab.Craft.Launcher.Views.Launch;
 /// <summary>显示账户管理入口和游戏版本入口.</summary>
 public partial class LaunchSidebarView
 {
+    private bool _downloadVisible = true;
+
     /// <summary>初始化启动页侧栏.</summary>
     public LaunchSidebarView()
     {
@@ -48,8 +50,18 @@ public partial class LaunchSidebarView
     private void RefreshLaunchState()
     {
         VersionSettingsButton.IsEnabled = App.Settings.SelectedVersionPath is not null;
+        MainActionButton.Visibility = _downloadVisible || App.Settings.SelectedVersionId is not null ? Visibility.Visible : Visibility.Collapsed;
         MainActionDescription.Text = LocalizationManager.Get(App.Settings.SelectedVersionId is not null
             ? "gameLaunch.clickToLaunch" : "launch.noInstance");
+    }
+
+    internal void ApplyFeatureVisibility(bool downloadVisible, bool versionManagementVisible)
+    {
+        _downloadVisible = downloadVisible;
+        VersionSettingsButton.Visibility = versionManagementVisible ? Visibility.Visible : Visibility.Collapsed;
+        VersionManagementGap.Width = new GridLength(versionManagementVisible ? 10 : 0);
+        VersionManagementColumn.Width = versionManagementVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        RefreshLaunchState();
     }
 
     internal void ClearSelectedVersion()

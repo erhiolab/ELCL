@@ -56,6 +56,7 @@ public partial class PersonalizationPage
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
                 Background = new LauncherBackgroundSettings(),
+                HiddenFeatures = LauncherHiddenFeatures.Debug,
                 TitleBarMode = TitleBarMode.Default,
                 TitleBarText = "ELCL"
             })

@@ -551,7 +551,8 @@ public partial class VersionSelectionView
 
     private async void DeleteVersion_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { Tag: VersionRow row } || _folders.FirstOrDefault(item => item.IsSelected) is not { } folder)
+        if (App.FeatureVisibility.IsHidden(LauncherHiddenFeatures.VersionManagement)
+            || sender is not FrameworkElement { Tag: VersionRow row } || _folders.FirstOrDefault(item => item.IsSelected) is not { } folder)
         {
             return;
         }

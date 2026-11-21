@@ -14,7 +14,8 @@ public sealed record LauncherSettings
     /// <summary>界面语言代码, 对应 Languages 下的 JSON 文件名.</summary>
     public string Language { get; init; } = LocalizationManager.DefaultLanguage;
 
-    /// <summary>允许发送匿名启动事件, 使用随机安装 ID, 默认开启.</summary>
+    /// <summary>用户选择隐藏的导航和功能, 默认只隐藏调试页.</summary>
+    public LauncherHiddenFeatures HiddenFeatures { get; init; } = LauncherHiddenFeatures.Debug;
 
     /// <summary>六位 RGB 主题色, 默认值为 #80CEFF.</summary>
     public string AccentColor { get; init; } = "#80CEFF";
@@ -162,6 +163,7 @@ public sealed record LauncherSettings
             AccentColor = validAccent ? accent.ToUpperInvariant() : "#80CEFF",
             WindowOpacity = double.IsFinite(WindowOpacity) ? Math.Clamp(WindowOpacity, 0.40, 1.0) : 1.0,
             Background = BackgroundOptions.Normalize(),
+            HiddenFeatures = HiddenFeatures & LauncherHiddenFeatures.All,
             GameFolders = gameFolders,
             SelectedGameFolderPath = selectedFolderPath,
             SelectedVersionPath = selectedVersionPath,

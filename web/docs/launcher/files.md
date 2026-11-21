@@ -13,7 +13,7 @@
 | `ELCL/cache/` | 版本信息、安装和运行等缓存。 |
 | `ELCL/cache/skins/` | 皮肤、头像与披风图片缓存。 |
 | `ELCL/cache/game-logs/` | 查看压缩日志时解压的临时文件，关闭查看页后删除。 |
-| `ELCL/logs/Log1.txt` 至 `Log5.txt` | `Log1.txt` 是本次启动器日志，`Log2.txt` 至 `Log5.txt` 是历史日志。可在 **设置 → 调试** 查看。 |
+| `ELCL/logs/Log1.txt` 至 `Log5.txt` | `Log1.txt` 是本次启动器日志，`Log2.txt` 至 `Log5.txt` 是历史日志。按 **F12** 显示默认隐藏的 **设置 → 调试** 后可查看。 |
 | `ELCL/logs/game/` | 每次游戏进程的独立输出日志。 |
 | `ELCL/installation-id` | 匿名统计使用的随机安装 ID。 |
 | `ELCL/consent.json` | 本机的协议版本和匿名统计选择，不随配置导入或导出。 |

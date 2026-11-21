@@ -10,6 +10,7 @@ using ErhioLab.Craft.Launcher.Views.Tasks;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Navigation;
 
@@ -54,18 +55,18 @@ internal static class ShellRouteCatalog
 
         // 设置
         LaunchSettingsPage launchSettingsPage = new();
-        SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.Launch, CanReset: true);
+        SectionSidebarItem launchSettingsItem = new("sidebar.launch", LauncherIcons.Launch, CanReset: true, HiddenFeature: LauncherHiddenFeatures.LaunchSettings);
         PersonalizationPage personalizationPage = new();
-        SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true);
+        SectionSidebarItem personalizationItem = new("sidebar.personalization", LauncherIcons.Personalization, CanReset: true, HiddenFeature: LauncherHiddenFeatures.Personalization);
         var backgroundPage = new LauncherBackgroundPage();
         var personalizationHost = new AnimatedPageHost(personalizationPage, resetOnUnload: true);
         personalizationPage.BackgroundManagementRequested += () =>
             personalizationHost.Navigate(backgroundPage, onShown: backgroundPage.QueueGalleryLoad);
         backgroundPage.BackRequested += () => personalizationHost.Navigate(personalizationPage, back: true);
         DownloadSettingsPage downloadSettingsPage = new();
-        SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.Download, CanReset: true);
+        SectionSidebarItem downloadSettingsItem = new("sidebar.download", LauncherIcons.Download, CanReset: true, HiddenFeature: LauncherHiddenFeatures.DownloadSettings);
         OtherSettingsPage otherSettingsPage = new();
-        SectionSidebarItem otherItem = new("sidebar.other", LauncherIcons.More);
+        SectionSidebarItem otherItem = new("sidebar.other", LauncherIcons.More, HiddenFeature: LauncherHiddenFeatures.OtherSettings);
         DebugSettingsPage debugSettingsPage = new();
         var debugHost = new AnimatedPageHost(debugSettingsPage, resetOnUnload: true);
         GameLogView? launcherLogView = null;
@@ -81,7 +82,7 @@ internal static class ShellRouteCatalog
             launcherLogView.ShowLauncherFile(path, isCurrent);
             debugHost.Navigate(launcherLogView);
         };
-        SectionSidebarItem debugItem = new("sidebar.debug", LauncherIcons.Debug);
+        SectionSidebarItem debugItem = new("sidebar.debug", LauncherIcons.Debug, HiddenFeature: LauncherHiddenFeatures.Debug);
         SectionSidebarView settingsSidebar = new(
             launchSettingsItem,
             personalizationItem,
@@ -136,9 +137,9 @@ internal static class ShellRouteCatalog
         };
 
         // 更多
-        SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.Info);
-        SectionSidebarItem toolboxItem = new("sidebar.toolbox", LauncherIcons.Toolbox);
-        SectionSidebarItem performanceItem = new("sidebar.performance", LauncherIcons.Performance);
+        SectionSidebarItem aboutItem = new("sidebar.about", LauncherIcons.Info, HiddenFeature: LauncherHiddenFeatures.About);
+        SectionSidebarItem toolboxItem = new("sidebar.toolbox", LauncherIcons.Toolbox, HiddenFeature: LauncherHiddenFeatures.Toolbox);
+        SectionSidebarItem performanceItem = new("sidebar.performance", LauncherIcons.Performance, HiddenFeature: LauncherHiddenFeatures.Performance);
         SectionSidebarView moreSidebar = new(aboutItem, toolboxItem, performanceItem);
         AboutPage aboutPage = new();
         ContentControl moreContent = new()

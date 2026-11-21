@@ -92,6 +92,7 @@ public partial class MainWindow
         App.Tasks.Tasks.CollectionChanged += (_, _) => OnTasksChanged();
         LaunchNavigation.IsChecked = true;
         InitializeModpackImport();
+        InitializeFeatureVisibility();
     }
 
     /// <summary>在透明窗口的内容层应用不透明度, 使桌面真正透出.</summary>
@@ -192,7 +193,10 @@ public partial class MainWindow
     internal void ShowToast(ToastNotification notification) => ToastHost.Show(notification);
 
     /// <summary>从启动页的无版本入口打开原版游戏下载页面.</summary>
-    internal void OpenDownloadPage() => DownloadNavigation.IsChecked = true;
+    internal void OpenDownloadPage()
+    {
+        if (DownloadNavigation.Visibility == Visibility.Visible) DownloadNavigation.IsChecked = true;
+    }
 
     /// <summary>从启动页打开本地游戏版本选择.</summary>
     internal void OpenVersionSelection()
@@ -299,10 +303,10 @@ public partial class MainWindow
             page.Opacity = 1;
             title.BeginAnimation(OpacityProperty, null);
             title.Visibility = Visibility.Collapsed;
-            TitleBarLabel.Visibility = Visibility.Visible;
-            TopNavigationHost.Visibility = Visibility.Visible;
+            UpdateShellRouteTitle();
             TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
-            TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
+            if (TopNavigationHost.Visibility == Visibility.Visible)
+                TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             UpdateTaskManagerButton();
         };
         page.BeginAnimation(OpacityProperty, fade);
@@ -435,7 +439,7 @@ public partial class MainWindow
     private void PrimaryNavigation_Checked(object sender, RoutedEventArgs e)
     {
         if (
-            sender is not RadioButton { Tag: string sectionName } button ||
+            sender is not RadioButton { Tag: string sectionName, Visibility: Visibility.Visible } button ||
             !Enum.TryParse(sectionName, out ShellSection section) ||
             !_routes.TryGetValue(section, out ShellRoute? route)
         )
@@ -447,7 +451,7 @@ public partial class MainWindow
         ApplyShellRoute(route);
         App.Logger.Information("Navigation", $"打开主页面: {section}");
 
-        if (_navigationIndicatorReady)
+        if (_navigationIndicatorReady && TopNavigationHost.IsVisible)
         {
             MoveNavigationIndicator(_selectedNavigationButton, true);
         }
@@ -460,8 +464,9 @@ public partial class MainWindow
         bool settings = ReferenceEquals(_activeRoute, _versionSettingsRoute);
         VersionSelectionTitle.Visibility = showRoute && selecting ? Visibility.Visible : Visibility.Collapsed;
         VersionSettingsTitle.Visibility = showRoute && settings ? Visibility.Visible : Visibility.Collapsed;
-        TitleBarLabel.Visibility = TopNavigationHost.Visibility = showRoute && !selecting && !settings
-            ? Visibility.Visible : Visibility.Collapsed;
+        bool showPrimaryTitle = showRoute && !selecting && !settings;
+        TitleBarLabel.Visibility = ToVisibility(showPrimaryTitle);
+        TopNavigationHost.Visibility = ToVisibility(showPrimaryTitle && HasExtraPrimaryPages);
     }
 
     private void ApplyShellRoute(ShellRoute route, bool back = false)
@@ -494,7 +499,7 @@ public partial class MainWindow
         UpdateWindowClip();
         InitializeLauncherBackground();
         _navigationIndicatorReady = true;
-        MoveNavigationIndicator(_selectedNavigationButton ?? LaunchNavigation, false);
+        if (TopNavigationHost.IsVisible) MoveNavigationIndicator(_selectedNavigationButton ?? LaunchNavigation, false);
     }
 
     private void WindowRoot_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateWindowClip();
@@ -514,7 +519,7 @@ public partial class MainWindow
 
     private void TopNavigationHost_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_navigationIndicatorReady && _selectedNavigationButton is not null)
+        if (_navigationIndicatorReady && TopNavigationHost.IsVisible && _selectedNavigationButton is not null)
         {
             MoveNavigationIndicator(_selectedNavigationButton, false);
         }

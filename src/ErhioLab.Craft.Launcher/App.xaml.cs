@@ -67,6 +67,7 @@ public partial class App
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
+    internal static LauncherFeatureVisibility FeatureVisibility { get; } = new();
 
     /// <summary>供启动器界面记录操作的本次日志会话.</summary>
     internal static SessionFileLogger Logger => _logger ?? throw new InvalidOperationException("日志系统尚未初始化.");
@@ -241,6 +242,7 @@ public partial class App
         bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
         bool backgroundChanged = Settings.BackgroundOptions != normalized.BackgroundOptions;
+        bool hiddenFeaturesChanged = Settings.HiddenFeatures != normalized.HiddenFeatures;
         MainWindow? window = Current.MainWindow as MainWindow;
         if (themeChanged)
         {
@@ -270,6 +272,12 @@ public partial class App
             {
                 window.FadeThemeTransition();
             }
+        }
+
+        if (hiddenFeaturesChanged)
+        {
+            Logger.Information("Settings", $"已保存功能隐藏选项: {Settings.HiddenFeatures}.");
+            FeatureVisibility.NotifyChanged();
         }
 
         Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
