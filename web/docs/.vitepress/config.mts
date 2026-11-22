@@ -92,6 +92,7 @@ export default defineConfig({
                         { text: "安装原版", link: "/core/vanilla-installation" },
                         { text: "安装加载器", link: "/core/loader-installation" },
                         { text: "社区资源与 Mods", link: "/core/mods" },
+                        { text: "本地资源包与光影包", link: "/core/local-packs" },
                         { text: "整合包导入", link: "/core/modpacks" },
                         { text: "整合包导出", link: "/core/modpack-export" }
                     ]

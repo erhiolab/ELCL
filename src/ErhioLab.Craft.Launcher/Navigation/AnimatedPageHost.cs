@@ -51,13 +51,13 @@ internal sealed class AnimatedPageHost : Grid
         int version = ++_transitionVersion;
         double direction = back ? -1 : 1;
 
+        outgoing.IsHitTestVisible = false;
+        incoming.IsHitTestVisible = false;
         incoming.Content = page;
         incoming.Opacity = 1;
         incomingOffset.X = 0;
         outgoing.Opacity = 0;
         outgoingOffset.X = direction * -16;
-        outgoing.IsHitTestVisible = false;
-        incoming.IsHitTestVisible = false;
         Panel.SetZIndex(incoming, 1);
         Panel.SetZIndex(outgoing, 0);
         _activeIndex = nextIndex;

@@ -160,8 +160,7 @@ public partial class AccountManagementView
             AppearanceView.Measure(new Size(width, double.PositiveInfinity));
         }
 
-        // The second grid row stays at the bottom of the window. Growing its height
-        // moves the drawer's top edge upward and gives the account list less room.
+        // 第二行贴在窗口底部. 增加行高会把抽屉的上边缘向上推, 同时缩小账户列表的空间.
         double currentHeight = AppearanceHost.ActualHeight;
         AppearanceHost.BeginAnimation(HeightProperty, null);
         AppearanceHost.Height = currentHeight;

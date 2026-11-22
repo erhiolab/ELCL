@@ -85,7 +85,7 @@ public sealed class MinecraftLauncherProfilesStore
         return UpdateAsync(root =>
         {
             var target = Profiles(root);
-            // 使用非短路或，保证前面的条目有变化时仍会处理其余条目。
+            // 使用非短路或, 保证前面的条目有变化时仍会处理其余条目.
             return entries.Aggregate(false, (changed, entry) => changed | SetProfile(target, entry.Key, entry.Value, markUsed));
         }, cancellationToken);
     }

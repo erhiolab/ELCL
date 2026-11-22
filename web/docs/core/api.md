@@ -185,6 +185,7 @@
 - [`ModRepositoryClient.GetFilesAsync`](mods.md#modrepositoryclient-getfilesasync)
 - [`ModRepositoryClient.GetAllFilesAsync`](mods.md#modrepositoryclient-getallfilesasync)
 - [`ModRepositoryClient.IdentifyAsync`](mods.md#modrepositoryclient-identifyasync)
+- [`ModRepositoryClient.IdentifyFileAsync`](mods.md#modrepositoryclient-identifyfileasync)
 - [`ModRepositoryClient.GetDependenciesAsync`](mods.md#modrepositoryclient-getdependenciesasync)
 - [`ModRepositoryClient.CreateDownloadPlanAsync`](mods.md#modrepositoryclient-createdownloadplanasync)
 - [`ModRepositoryClient.DownloadSources`](mods.md#modrepositoryclient-downloadsources)
@@ -195,6 +196,13 @@
 - [`LocalModManager.InstallAsync`](mods.md#localmodmanager-installasync)
 - [`LocalModManager.SetEnabled`](mods.md#localmodmanager-setenabled)
 - [`LocalModManager.Delete`](mods.md#localmodmanager-delete)
+
+## 本地资源包与光影包
+
+- [`LocalMinecraftPackScanner.Enumerate`](local-packs.md#localminecraftpackscanner-enumerate)
+- [`LocalMinecraftPackScanner.ReadAsync`](local-packs.md#localminecraftpackscanner-readasync)
+- [`LocalMinecraftPackScanner.ReadClientResourceFormatAsync`](local-packs.md#localminecraftpackscanner-readclientresourceformatasync)
+- [`LocalMinecraftPackScanner.ImportAsync`](local-packs.md#localminecraftpackscanner-importasync)
 
 ## 整合包
 

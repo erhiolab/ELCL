@@ -437,7 +437,7 @@ internal sealed class LauncherTaskManager
             }
 
             task.Status = LauncherTaskStatus.Completed;
-            // 先移交到常驻任务，再移除准备任务，避免任务页在交接时因空队列而关闭。
+            // 先移交到常驻任务, 再移除准备任务, 避免任务页在交接时因空队列而关闭.
             task.OnCompleted?.Invoke();
             LauncherToasts.Success(string.Format(LocalizationManager.Get("task.completedToast"), task.Title));
             App.Logger.Information("Tasks", $"任务完成: {task.Title}.");

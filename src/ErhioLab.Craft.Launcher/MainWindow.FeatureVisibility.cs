@@ -26,7 +26,7 @@ public partial class MainWindow
 
     private static void FeatureVisibility_PreProcessInput(object sender, PreProcessInputEventArgs e)
     {
-        // 同一 WPF 调度器的页面、弹窗和弹出控件均可接收此快捷键, 不注册系统全局热键.
+        // 同一 WPF 调度器中的页面, 弹窗和弹出控件均可接收此快捷键, 不注册系统全局热键.
         if (e.StagingItem.Input is not KeyEventArgs { RoutedEvent: var routedEvent, Key: Key.F12 } key
             || routedEvent != Keyboard.PreviewKeyDownEvent) return;
 

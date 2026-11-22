@@ -247,7 +247,7 @@ public static class LocalModManager
         return match.Success ? match.Groups[1].Value : fallback;
     }
 
-    private static uint Fingerprint(Stream input, CancellationToken token)
+    internal static uint Fingerprint(Stream input, CancellationToken token)
     {
         byte[] buffer = new byte[65536];
         uint length = 0;

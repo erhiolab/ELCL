@@ -465,6 +465,14 @@
         </Setter>
     </Style>
     <Style
+        x:Key="VersionListActionButtonStyle"
+        TargetType="controls:IconButton"
+        BasedOn="{StaticResource {x:Type controls:IconButton}}">
+        <Setter
+            Property="Margin"
+            Value="6,0,0,0" />
+    </Style>
+    <Style
         x:Key="DetailsBackButtonStyle"
         TargetType="Button">
         <Setter

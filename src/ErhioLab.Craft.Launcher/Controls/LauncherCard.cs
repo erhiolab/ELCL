@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace ErhioLab.Craft.Launcher.Controls;
 
-/// <summary>Shared settings and toolbox card with a header, divider, and content.</summary>
+/// <summary>设置页和百宝箱共用的卡片, 包含标题, 分隔线和内容区.</summary>
 public class LauncherCard : HeaderedContentControl
 {
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(

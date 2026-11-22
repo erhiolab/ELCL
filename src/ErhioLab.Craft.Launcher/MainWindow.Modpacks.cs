@@ -21,16 +21,19 @@ public partial class MainWindow
     private bool _modpackImportInitialized;
     private WindowsFileDropTarget? _modpackDrop;
 
-    private bool IsModpackDropPage => !AccountManagementPage.IsVisible && !TaskManagerPage.IsVisible && !DialogOverlay.IsVisible
+    private bool IsFileDropSurfaceActive => PrimaryPageLayer.IsVisible
+        && !AccountManagementPage.IsVisible && !TaskManagerPage.IsVisible && !DialogOverlay.IsVisible;
+
+    private bool IsModpackDropPage => IsFileDropSurfaceActive
         && (ReferenceEquals(_activeRoute, _versionSelectionRoute) || _activeRoute?.Page is LaunchPage);
+
+    internal static bool IsVersionFileDropAllowed(Window window) => window is MainWindow main && main.IsFileDropSurfaceActive
+        && ReferenceEquals(main._activeRoute, main._versionSettingsRoute);
 
     private void InitializeModpackImport()
     {
         _modpackImportInitialized = true;
         AllowDrop = true;
-        AddHandler(DragDrop.PreviewDragEnterEvent, new DragEventHandler(Modpack_DragOver));
-        AddHandler(DragDrop.PreviewDragOverEvent, new DragEventHandler(Modpack_DragOver));
-        AddHandler(DragDrop.PreviewDropEvent, new DragEventHandler(Modpack_Drop));
         foreach (var page in new FrameworkElement[] { AccountManagementPage, TaskManagerPage, DialogOverlay })
             page.IsVisibleChanged += (_, _) => UpdateModpackDropTarget();
         Loaded += (_, _) =>
@@ -64,53 +67,23 @@ public partial class MainWindow
             return;
         }
 
-        // 等待离开的子页面释放其原生拖放目标, 再接管窗口.
+        // 等待导航更新可见区域, 再订阅窗口的共用拖放接收器.
         Dispatcher.BeginInvoke(() =>
         {
             if (!IsLoaded || !IsModpackDropPage) return;
-            _modpackDrop ??= WindowsFileDropTarget.TryAttach(this, ModpackFilesDropped, ModpackDropFailed);
+            _modpackDrop ??= WindowsFileDropTarget.Attach(this, AcceptModpack, ModpackFilesDropped, ModpackDropFailed, _ => IsModpackDropPage);
             _modpackDrop?.SetEnabled(!_modpackImportBusy);
         }, DispatcherPriority.ContextIdle);
     }
 
     private static bool IsPackFile(string path) => File.Exists(path) && Path.GetExtension(path).ToLowerInvariant() is ".zip" or ".mrpack";
 
-    private void Modpack_DragOver(object sender, DragEventArgs e)
-    {
-        if (!IsModpackDropPage || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-        e.Handled = true;
-        e.Effects = DragDropEffects.None;
-        try
-        {
-            if (!_modpackImportBusy && (e.AllowedEffects & DragDropEffects.Copy) != 0
-                                    && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: 1 } files && IsPackFile(files[0]))
-                e.Effects = DragDropEffects.Copy;
-        }
-        catch (Exception error) when (error is System.Runtime.InteropServices.COMException or InvalidOperationException or ArgumentException)
-        {
-            // 拖动中的数据暂不可读时保持禁止状态, 不按高频事件反复通知.
-        }
-    }
-
-    private void Modpack_Drop(object sender, DragEventArgs e)
-    {
-        if (!IsModpackDropPage || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-        e.Handled = true;
-        try
-        {
-            if (!_modpackImportBusy && (e.AllowedEffects & DragDropEffects.Copy) != 0 && e.Data.GetData(DataFormats.FileDrop) is string[] files)
-                ModpackFilesDropped(files);
-        }
-        catch (Exception error) when (error is System.Runtime.InteropServices.COMException or InvalidOperationException or ArgumentException)
-        {
-            ModpackDropFailed(error);
-        }
-    }
+    private static bool AcceptModpack(string[] files) => files.Length == 1 && IsPackFile(files[0]);
 
     private void ModpackFilesDropped(string[] files)
     {
         if (!IsModpackDropPage || _modpackImportBusy) return;
-        if (files.Length != 1 || !IsPackFile(files[0]))
+        if (!AcceptModpack(files))
         {
             LauncherToasts.Error(LocalizationManager.Get("modpack.dropOne"));
             App.Logger.Information("Modpacks", "忽略整合包拖入, 需要单个 ZIP 或 MRPACK 文件.");

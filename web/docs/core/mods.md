@@ -191,6 +191,22 @@ Console.WriteLine(project?.Website.ToString() ?? "没有找到来源");
 
 两个平台都没有匹配时返回 `null`；网络故障会抛异常，应与“未找到”分别处理。本方法不改变本地文件。
 
+## ModRepositoryClient.IdentifyFileAsync
+
+传入本地归档路径、预期的 `ModProjectKind` 和可选取消令牌。方法通过 SHA-1 查询 Modrinth；未匹配且配置了 CurseForge API Key 时，再查询 CurseForge 指纹，并复核文件大小和 SHA-1。不上传文件内容，也不要求项目允许第三方下载。
+
+找到时返回匹配类别的 `ModProject`，未匹配时返回 `null`。文件夹或链接不适用，超过 512 MiB 的文件不查询 CurseForge。方法不写入磁盘；本地读取失败、网络或响应格式错误、取消都会抛出相应异常。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Mods;
+
+using var http = new HttpClient();
+var repository = new ModRepositoryClient(http);
+string archive = Path.Combine(Environment.CurrentDirectory, "shaderpacks", "Example.zip");
+var project = await repository.IdentifyFileAsync(archive, ModProjectKind.ShaderPack);
+if (project is not null) Console.WriteLine(project.Name);
+```
+
 ## ModRepositoryClient.FindFileAsync
 
 读取本地 JAR／ZIP 的 SHA-1，查找完全匹配的上游文件，适合为整合包生成下载引用。返回 `ModFile?`，未匹配或没有可用的下载地址时返回 `null`。不会上传文件内容或下载远端资源。

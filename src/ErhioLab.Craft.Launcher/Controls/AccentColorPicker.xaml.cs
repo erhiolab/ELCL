@@ -71,7 +71,7 @@ public partial class AccentColorPicker
             return;
         }
 
-        // Popup uses a separate native window. Close it if its anchor leaves the viewport.
+        // Popup 使用独立的原生窗口. 锚点滚出可视区域时关闭弹出层.
         for (DependencyObject? ancestor = PickerButton; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
         {
             if (ancestor is not ScrollContentPresenter viewport) continue;
@@ -84,7 +84,7 @@ public partial class AccentColorPicker
         var position = PickerButton.PointToScreen(new Point(0, PickerButton.ActualHeight));
         if (_lastAnchorPosition == position) return;
         _lastAnchorPosition = position;
-        // Invalidate placement without changing the configured offset or its binding.
+        // 重新计算弹出位置, 不改变已设置的偏移量或其绑定.
         var offset = PickerPopup.HorizontalOffset;
         PickerPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset + 0.01);
         PickerPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset);

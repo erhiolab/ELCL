@@ -5,22 +5,22 @@ namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 /// <summary>当前支持查询版本列表的附加加载器.</summary>
 public enum MinecraftLoaderKind
 {
-    /// <summary>Minecraft Forge.</summary>
+    /// <summary>Minecraft Forge 加载器.</summary>
     Forge,
 
-    /// <summary>NeoForge.</summary>
+    /// <summary>NeoForge 加载器.</summary>
     NeoForge,
 
-    /// <summary>Fabric Loader.</summary>
+    /// <summary>Fabric 模组加载器.</summary>
     Fabric,
 
-    /// <summary>OptiFine.</summary>
+    /// <summary>OptiFine 优化组件.</summary>
     OptiFine,
 
-    /// <summary>Quilt Loader.</summary>
+    /// <summary>Quilt 模组加载器.</summary>
     Quilt,
 
-    /// <summary>LiteLoader.</summary>
+    /// <summary>LiteLoader 加载器.</summary>
     LiteLoader
 }
 

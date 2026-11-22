@@ -7,11 +7,8 @@
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
     Foreground="{DynamicResource TextBrush}"
     Background="{DynamicResource PageSurfaceBrush}"
-    AllowDrop="True"
-    PreviewDragEnter="Page_DragOver"
-    PreviewDragOver="Page_DragOver"
-    PreviewDrop="Page_Drop"
     IsVisibleChanged="Page_IsVisibleChanged"
+    IsHitTestVisibleChanged="Page_IsVisibleChanged"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <Grid
@@ -68,9 +65,24 @@
             </StackPanel>
         </controls:LauncherCard>
         <Border
+            x:Name="ListCard"
             Grid.Row="1"
-            Padding="12"
-            Style="{StaticResource PanelCardStyle}">
+            Padding="12">
+            <Border.Style>
+                <Style
+                    TargetType="Border"
+                    BasedOn="{StaticResource PanelCardStyle}">
+                    <Style.Triggers>
+                        <DataTrigger
+                            Binding="{Binding IsExpanded, ElementName=DetailsReveal}"
+                            Value="True">
+                            <Setter
+                                Property="Visibility"
+                                Value="Hidden" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <ListBox
                     x:Name="ModsList"
@@ -151,22 +163,26 @@
                                         VerticalAlignment="Center"
                                         Style="{StaticResource VersionListActionsStyle}">
                                         <controls:IconButton
+                                            Style="{StaticResource VersionListActionButtonStyle}"
                                             Icon="{x:Static icons:LauncherIcons.Info}"
                                             IsEnabled="{Binding CanViewDetails}"
                                             ToolTip="{DynamicResource I18n.mods.details}"
                                             Tag="{Binding}"
                                             Click="Details_Click" />
                                         <controls:IconButton
+                                            Style="{StaticResource VersionListActionButtonStyle}"
                                             Icon="{x:Static icons:LauncherIcons.Folder}"
                                             ToolTip="{DynamicResource I18n.mods.reveal}"
                                             Tag="{Binding}"
                                             Click="Reveal_Click" />
                                         <controls:IconButton
+                                            Style="{StaticResource VersionListActionButtonStyle}"
                                             Icon="{Binding ToggleIcon}"
                                             ToolTip="{Binding ToggleLabel}"
                                             Tag="{Binding}"
                                             Click="Toggle_Click" />
                                         <controls:IconButton
+                                            Style="{StaticResource VersionListActionButtonStyle}"
                                             Icon="{x:Static icons:LauncherIcons.Delete}"
                                             ToolTip="{DynamicResource I18n.mods.delete}"
                                             Tag="{Binding}"
@@ -187,43 +203,32 @@
                     IsHitTestVisible="False" />
             </Grid>
         </Border>
+        <controls:LocalItemSelectionBar
+            x:Name="SelectionBar"
+            Grid.Row="2" />
         <controls:AnimatedReveal
-            x:Name="SelectionReveal"
-            Grid.Row="2">
-            <Border
-                Padding="16,12"
-                Margin="0,12,0,0"
-                Style="{StaticResource PanelCardStyle}">
-                <DockPanel>
+            x:Name="DetailsReveal"
+            Grid.Row="1"
+            VerticalAlignment="Top">
+            <controls:LocalItemInfoCard
+                Height="{Binding ActualHeight, ElementName=ListCard}"
+                Heading="{Binding LocalName}"
+                CloseRequested="CloseDetails_Click">
+                <StackPanel>
                     <TextBlock
-                        x:Name="SelectionText"
-                        VerticalAlignment="Center"
-                        Foreground="{DynamicResource AccentBrush}" />
-                    <WrapPanel
-                        HorizontalAlignment="Right">
-                        <Button
-                            Content="{DynamicResource I18n.mods.enable}"
-                            Click="EnableSelected_Click"
-                            Style="{StaticResource CompactActionButtonStyle}"
-                            Margin="8,0,0,0" />
-                        <Button
-                            Content="{DynamicResource I18n.mods.disable}"
-                            Click="DisableSelected_Click"
-                            Style="{StaticResource CompactActionButtonStyle}"
-                            Margin="8,0,0,0" />
-                        <Button
-                            Content="{DynamicResource I18n.mods.delete}"
-                            Click="DeleteSelected_Click"
-                            Style="{StaticResource CompactActionButtonStyle}"
-                            Margin="8,0,0,0" />
-                        <Button
-                            Content="{DynamicResource I18n.mods.deselect}"
-                            Click="Deselect_Click"
-                            Style="{StaticResource CompactActionButtonStyle}"
-                            Margin="8,0,0,0" />
-                    </WrapPanel>
-                </DockPanel>
-            </Border>
+                        Text="{Binding LocalDescription}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="{Binding LocalDetails}"
+                        Margin="0,8,0,0"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="{Binding LocalError}"
+                        Foreground="{DynamicResource DangerTextBrush}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:LocalItemInfoCard>
         </controls:AnimatedReveal>
     </Grid>
 </UserControl>

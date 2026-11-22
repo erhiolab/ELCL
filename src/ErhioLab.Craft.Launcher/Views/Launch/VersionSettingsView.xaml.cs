@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Core.Mods;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Views.Download;
@@ -29,6 +30,8 @@ public partial class VersionSettingsView
     private readonly LaunchSettingsPage _launchSettingsPage;
     private readonly VersionLogsPage _logsPage;
     private readonly VersionModsPage _modsPage;
+    private readonly VersionPacksPage _resourcePacksPage;
+    private readonly VersionPacksPage _shaderPacksPage;
     private readonly VersionExportPage _exportPage;
     private readonly AnimatedPageHost _pageHost;
     private readonly Stack<FrameworkElement> _modHistory = new();
@@ -44,18 +47,30 @@ public partial class VersionSettingsView
         _pageHost = new AnimatedPageHost(OverviewPage);
         PageHost.Content = _pageHost;
         _modsPage = new VersionModsPage();
+        _resourcePacksPage = new VersionPacksPage(MinecraftPackKind.ResourcePack);
+        _shaderPacksPage = new VersionPacksPage(MinecraftPackKind.ShaderPack);
         _exportPage = new VersionExportPage();
-        _modsPage.BrowseRequested += context =>
-        {
-            var browser = new ModDownloadPage();
-            browser.SetContext(context);
-            browser.ProjectSelected += (row, selectedContext) => OpenModDetails(row, selectedContext, browser);
-            _modHistory.Push(_modsPage);
-            _pageHost.Navigate(browser);
-        };
+        _modsPage.BrowseRequested += context => OpenCommunityBrowser(ModProjectKind.Mod, context, _modsPage);
         _modsPage.DetailsRequested += (row, context) => OpenModDetails(row, context, _modsPage);
+        ConnectPacksPage(_resourcePacksPage);
+        ConnectPacksPage(_shaderPacksPage);
         Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
         LocalizationManager.Changed += (_, _) => RefreshSummary();
+    }
+
+    private void ConnectPacksPage(VersionPacksPage page)
+    {
+        page.BrowseRequested += (kind, context) => OpenCommunityBrowser(kind, context, page);
+        page.DetailsRequested += (row, context) => OpenModDetails(row, context, page);
+    }
+
+    private void OpenCommunityBrowser(ModProjectKind kind, ModBrowserContext context, FrameworkElement parent)
+    {
+        var browser = new ModDownloadPage(kind);
+        browser.SetContext(context);
+        browser.ProjectSelected += (row, selectedContext) => OpenModDetails(row, selectedContext, browser);
+        _modHistory.Push(parent);
+        _pageHost.Navigate(browser);
     }
 
     private void OpenModDetails(ModProjectRow row, ModBrowserContext context, FrameworkElement parent)
@@ -72,9 +87,13 @@ public partial class VersionSettingsView
         var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.VersionRelease);
         var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
         var mods = new SectionSidebarItem("mods.manage", LauncherIcons.ModsAndResources);
+        var resourcePacks = new SectionSidebarItem("community.resourcePacks", LauncherIcons.Image);
+        var shaderPacks = new SectionSidebarItem("community.shaderPacks", LauncherIcons.DayTheme);
         var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);
         var export = new SectionSidebarItem("packExport.title", LauncherIcons.Toolbox, CanRefresh: true, ActionToolTipKey: "packExport.rescan");
-        var sidebar = Version is { } current && CommunityMods.HasLoader(current) ? new SectionSidebarView(overview, settings, mods, logs, export) : new SectionSidebarView(overview, settings, logs, export);
+        var sidebar = Version is { } current && CommunityMods.HasLoader(current)
+            ? new SectionSidebarView(overview, settings, mods, resourcePacks, shaderPacks, logs, export)
+            : new SectionSidebarView(overview, settings, resourcePacks, shaderPacks, logs, export);
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
@@ -87,6 +106,8 @@ public partial class VersionSettingsView
             }
             else if (ReferenceEquals(item, logs)) _pageHost.Navigate(_logsPage);
             else if (ReferenceEquals(item, mods)) _pageHost.Navigate(_modsPage);
+            else if (ReferenceEquals(item, resourcePacks)) _pageHost.Navigate(_resourcePacksPage);
+            else if (ReferenceEquals(item, shaderPacks)) _pageHost.Navigate(_shaderPacksPage);
             else if (ReferenceEquals(item, export)) _pageHost.Navigate(_exportPage);
             else _pageHost.Navigate(OverviewPage, back: true);
         };
@@ -105,6 +126,8 @@ public partial class VersionSettingsView
         Version = version;
         _exportPage.SetContext(_gameDirectory, version);
         _modsPage.SetContext(new ModBrowserContext(version.GameVersion, CommunityMods.Loader(version.Loader), version.FolderPath));
+        _resourcePacksPage.SetContext(_gameDirectory, version);
+        _shaderPacksPage.SetContext(_gameDirectory, version);
         _modHistory.Clear();
         RefreshSidebar();
         _logsPage.SetVersionDirectory(version.FolderPath);

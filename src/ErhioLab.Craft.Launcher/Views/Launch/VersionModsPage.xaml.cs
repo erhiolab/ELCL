@@ -27,6 +27,7 @@ public partial class VersionModsPage
     private string _directory = "";
     private ModBrowserContext _context = new(null, null, null);
     private CancellationTokenSource? _scan;
+    private CancellationTokenSource? _lookup;
     private Task _scanWork = Task.CompletedTask;
     private IReadOnlyList<LocalModRow> _rows = [];
     private bool _busy;
@@ -35,7 +36,20 @@ public partial class VersionModsPage
     internal event Action<ModBrowserContext>? BrowseRequested;
     internal event Action<ModProjectRow, ModBrowserContext>? DetailsRequested;
 
-    public VersionModsPage() => InitializeComponent();
+    public VersionModsPage()
+    {
+        InitializeComponent();
+        SelectionBar.EnableRequested += () => _ = ChangeAsync(SelectedRows(), true);
+        SelectionBar.DisableRequested += () => _ = ChangeAsync(SelectedRows(), false);
+        SelectionBar.DeleteRequested += () => _ = DeleteAsync(SelectedRows());
+        SelectionBar.DeselectRequested += ModsList.UnselectAll;
+        SelectionBar.LocalInfoRequested += () =>
+        {
+            if (ModsList.SelectedItem is not LocalModRow row) return;
+            _lookup?.Cancel();
+            OpenLocalInfo(row);
+        };
+    }
 
     internal void SetContext(ModBrowserContext context)
     {
@@ -43,6 +57,9 @@ public partial class VersionModsPage
         _directory = Path.Combine(context.VersionDirectory!, "mods");
         _generation++;
         _scan?.Cancel();
+        _lookup?.Cancel();
+        DetailsReveal.IsExpanded = false;
+        DetailsReveal.DataContext = null;
         _rows = [];
         ModsList.ItemsSource = null;
         if (IsLoaded) _ = RefreshAsync();
@@ -59,14 +76,14 @@ public partial class VersionModsPage
 
     private void UpdateWindowsDropTarget()
     {
-        if (!IsLoaded || !IsVisible)
+        if (!IsLoaded || !IsVisible || !IsHitTestVisible)
         {
             _windowsDrop?.Dispose();
             _windowsDrop = null;
             return;
         }
 
-        _windowsDrop ??= WindowsFileDropTarget.TryAttach(this, WindowsFilesDropped, WindowsDropFailed);
+        _windowsDrop ??= WindowsFileDropTarget.Attach(this, AcceptMods, FilesDropped, DropFailed, MainWindow.IsVersionFileDropAllowed);
         _windowsDrop?.SetEnabled(!_busy);
     }
 
@@ -74,6 +91,7 @@ public partial class VersionModsPage
     {
         CommunityMods.Installed -= Installed;
         _scan?.Cancel();
+        _lookup?.Cancel();
         _windowsDrop?.Dispose();
         _windowsDrop = null;
     }
@@ -101,9 +119,11 @@ public partial class VersionModsPage
             var paths = await Task.Run(() => LocalModManager.EnumerateFiles(directory, request.Token), request.Token);
             if (!ReferenceEquals(_scan, request)) return;
             var rows = paths.Select(path => new LocalModRow(path)).ToArray();
+            string? previousDetails = DetailsReveal.IsExpanded ? (DetailsReveal.DataContext as LocalModRow)?.Mod.Path : null;
             _rows = rows;
             ModsList.ItemsSource = rows;
             ApplyFilter();
+            if (previousDetails is not null && FindVisibleRow(previousDetails) is { } selected) OpenLocalInfo(selected);
             App.Logger.Information("Mods", $"本地 Mods 文件已列出: {paths.Count} 项, 开始后台读取详情.");
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background, request.Token);
             var pending = Channel.CreateUnbounded<LocalModRow>();
@@ -210,13 +230,13 @@ public partial class VersionModsPage
     }
 
     private void SelectAll_Click(object sender, RoutedEventArgs e) => ModsList.SelectAll();
-    private void Deselect_Click(object sender, RoutedEventArgs e) => ModsList.UnselectAll();
 
     private void Selection_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (SelectionReveal is null) return;
-        SelectionReveal.IsExpanded = ModsList.SelectedItems.Count > 0;
-        SelectionText.Text = string.Format(CommunityMods.L("selected"), ModsList.SelectedItems.Count);
+        int count = ModsList.SelectedItems.Count;
+        SelectionBar?.UpdateSelection(count, string.Format(CommunityMods.L("selected"), count));
+        if (DetailsReveal is not null && (count != 1 || !ReferenceEquals(DetailsReveal.DataContext, ModsList.SelectedItem)))
+            DetailsReveal.IsExpanded = false;
     }
 
     private async void Import_Click(object sender, RoutedEventArgs e)
@@ -225,21 +245,15 @@ public partial class VersionModsPage
         if (picker.ShowDialog(Window.GetWindow(this)) == true) await ImportAsync(picker.FileNames);
     }
 
-    private static string[]? GetDroppedModFiles(IDataObject data)
+    private static bool AcceptMods(string[] files) => files.Length > 0 && files.All(path =>
     {
-        if (!data.GetDataPresent(DataFormats.FileDrop, false) || data.GetData(DataFormats.FileDrop, false) is not string[] { Length: > 0 } files) return null;
-        return files.All(path =>
-        {
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
-            string name = path;
-            if (name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".disable", StringComparison.OrdinalIgnoreCase)) name = Path.GetFileNameWithoutExtension(name);
-            return name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".litemod", StringComparison.OrdinalIgnoreCase);
-        })
-            ? files
-            : null;
-    }
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
+        string name = path;
+        if (name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".disable", StringComparison.OrdinalIgnoreCase)) name = Path.GetFileNameWithoutExtension(name);
+        return name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".litemod", StringComparison.OrdinalIgnoreCase);
+    });
 
-    private void WindowsFilesDropped(string[] files)
+    private void FilesDropped(string[] files)
     {
         if (_busy || string.IsNullOrEmpty(_directory))
         {
@@ -247,42 +261,21 @@ public partial class VersionModsPage
             return;
         }
 
-        if (GetDroppedModFiles(new DataObject(DataFormats.FileDrop, files)) is not { } accepted)
+        if (!AcceptMods(files))
         {
             App.Logger.Warning("Mods", $"拖入的文件不是支持的 Mods 文件: 文件数={files.Length}.");
             LauncherToasts.Error(CommunityMods.L("dropUnsupported"));
             return;
         }
 
-        App.Logger.Information("Mods", $"开始导入拖入的 Mods: 文件数={accepted.Length}, 目录={_directory}.");
-        _ = ImportAsync(accepted);
+        App.Logger.Information("Mods", $"开始导入拖入的 Mods: 文件数={files.Length}, 目录={_directory}.");
+        _ = ImportAsync(files);
     }
 
-    private void WindowsDropFailed(Exception error)
+    private static void DropFailed(Exception error)
     {
         App.Logger.Error("Mods", "Mods 拖入失败.", error);
         LauncherToasts.Error(CommunityMods.L("dropFailed"));
-    }
-
-    private void Page_DragOver(object sender, DragEventArgs e)
-    {
-        e.Effects = !_busy && !string.IsNullOrEmpty(_directory) && (e.AllowedEffects & DragDropEffects.Copy) != 0 && GetDroppedModFiles(e.Data) is not null
-            ? DragDropEffects.Copy
-            : DragDropEffects.None;
-        e.Handled = true;
-    }
-
-    private async void Page_Drop(object sender, DragEventArgs e)
-    {
-        e.Handled = true;
-        if (_busy || string.IsNullOrEmpty(_directory) || (e.AllowedEffects & DragDropEffects.Copy) == 0 || GetDroppedModFiles(e.Data) is not { } files)
-        {
-            e.Effects = DragDropEffects.None;
-            return;
-        }
-
-        e.Effects = DragDropEffects.Copy;
-        await ImportAsync(files);
     }
 
     private Task ImportAsync(string[] files)
@@ -324,32 +317,60 @@ public partial class VersionModsPage
 
     private async Task DetailsAsync(LocalModRow row)
     {
-        if (_busy || row.IsParsing) return;
-        _busy = true;
-        _windowsDrop?.SetEnabled(false);
-        int generation = _generation;
+        if (_busy || _lookup is not null || row.IsParsing) return;
+        using var request = new CancellationTokenSource();
+        _lookup = request;
         var context = _context;
         LauncherToasts.Information(CommunityMods.L("identifying"));
         App.Logger.Information("Mods", $"查询本地 Mods 来源: {row.Mod.FileName}.");
         try
         {
-            var project = row.Project ?? await CommunityMods.IdentifyAsync(row.Mod);
-            if (generation != _generation || !IsLoaded) return;
-            if (project is not null) DetailsRequested?.Invoke(new ModProjectRow(project), context);
-            else await LauncherDialogs.WarningAsync(row.Title, string.Format(CommunityMods.L("localDetails"), row.Mod.Version ?? CommunityMods.L("unknown"), row.Mod.Description, row.Mod.FileName, row.Mod.Error ?? ""));
-            App.Logger.Information("Mods", $"本地 Mods 详情已打开: {row.Mod.FileName}, 来源={project?.Platform}.");
+            var project = row.Project ?? await CommunityMods.IdentifyAsync(row.Mod).WaitAsync(request.Token);
+            if (!CanPresentLookup(request.Token)) return;
+            if (project is not null)
+            {
+                DetailsRequested?.Invoke(new ModProjectRow(project), context);
+                App.Logger.Information("Mods", $"已打开 Mods 在线详情: {row.Mod.FileName}, 来源={project.Platform}.");
+            }
+            else
+            {
+                App.Logger.Information("Mods", $"未找到 Mods 来源: {row.Mod.FileName}.");
+                OpenLocalFallback(row);
+            }
         }
-        catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or TaskCanceledException)
+        catch (OperationCanceledException) when (request.IsCancellationRequested) { }
+        catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException
+            or InvalidOperationException or KeyNotFoundException or FormatException or OperationCanceledException or UnauthorizedAccessException)
         {
             App.Logger.Error("Mods", "识别本地 Mods 失败.", error);
-            LauncherToasts.Error(CommunityMods.L("identifyFailed"));
+            if (CanPresentLookup(request.Token)) OpenLocalFallback(row);
         }
         finally
         {
-            _busy = false;
-            _windowsDrop?.SetEnabled(true);
+            _lookup = null;
         }
     }
+
+    private bool CanPresentLookup(CancellationToken token) => !token.IsCancellationRequested && !_busy && IsLoaded && IsVisible && IsHitTestVisible;
+
+    private LocalModRow? FindVisibleRow(string path) => ModsList.Items.OfType<LocalModRow>().FirstOrDefault(row =>
+        string.Equals(row.Mod.Path, path, StringComparison.OrdinalIgnoreCase));
+
+    private void OpenLocalFallback(LocalModRow requested)
+    {
+        if (FindVisibleRow(requested.Mod.Path) is not { } current) return;
+        OpenLocalInfo(current);
+        LauncherToasts.Error(CommunityMods.L("identifyFailed"));
+    }
+
+    private void OpenLocalInfo(LocalModRow row)
+    {
+        ModsList.SelectedItem = row;
+        DetailsReveal.DataContext = row;
+        DetailsReveal.IsExpanded = true;
+    }
+
+    private void CloseDetails_Click(object sender, RoutedEventArgs e) => DetailsReveal.IsExpanded = false;
 
     private async void Toggle_Click(object sender, RoutedEventArgs e)
     {
@@ -361,9 +382,7 @@ public partial class VersionModsPage
         if (sender is Button { Tag: LocalModRow row }) await DeleteAsync([row]);
     }
 
-    private async void EnableSelected_Click(object sender, RoutedEventArgs e) => await ChangeAsync(ModsList.SelectedItems.Cast<LocalModRow>().ToArray(), true);
-    private async void DisableSelected_Click(object sender, RoutedEventArgs e) => await ChangeAsync(ModsList.SelectedItems.Cast<LocalModRow>().ToArray(), false);
-    private async void DeleteSelected_Click(object sender, RoutedEventArgs e) => await DeleteAsync(ModsList.SelectedItems.Cast<LocalModRow>().ToArray());
+    private LocalModRow[] SelectedRows() => ModsList.SelectedItems.Cast<LocalModRow>().ToArray();
 
     private Task ChangeAsync(LocalModRow[] rows, bool enabled) => OperateAsync(enabled ? "enable" : "disable", (directory, errors) =>
     {
@@ -406,6 +425,7 @@ public partial class VersionModsPage
         _busy = true;
         _windowsDrop?.SetEnabled(false);
         IsEnabled = false;
+        _lookup?.Cancel();
         string directory = _directory;
         int generation = _generation;
         App.Logger.Information("Mods", $"开始 Mods 操作: {action}, 目录={directory}.");
@@ -450,6 +470,13 @@ public sealed class LocalModRow : INotifyPropertyChanged
     private string Description => (string.IsNullOrWhiteSpace(Mod.Description) ? Project?.Summary ?? "" : Mod.Description).ReplaceLineEndings(" ");
     public string Title => FileNameFirst ? Mod.FileName : DisplayName;
     public string Name => Title;
+    public string LocalName => Mod.Name;
+    public string LocalDescription => IsParsing ? CommunityMods.L("readingDetails")
+        : string.IsNullOrWhiteSpace(Mod.Description) ? CommunityMods.L("localDescriptionMissing") : Mod.Description;
+    public string LocalDetails => string.Format(CommunityMods.L("localDetails"), Mod.Version ?? CommunityMods.L("unknown"), Mod.FileName,
+        Mod.ModIds.Count == 0 ? CommunityMods.L("unknown") : string.Join(", ", Mod.ModIds),
+        Mod.Loaders.Count == 0 ? CommunityMods.L("unknown") : string.Join(", ", Mod.Loaders.Select(ModPresentation.LoaderName)));
+    public string LocalError => Mod.Error ?? "";
     public string OriginalNameLabel => FileNameFirst || OriginalName == DisplayName ? "" : "  |  " + OriginalName;
     public string VersionLabel => string.IsNullOrWhiteSpace(Mod.Version) ? "" : "  |  " + Mod.Version;
     public string HeadingToolTip => string.Join(" | ", new[] { Title, FileNameFirst || OriginalName == DisplayName ? "" : OriginalName, Mod.Version }.Where(value => !string.IsNullOrWhiteSpace(value)));
@@ -482,7 +509,7 @@ public sealed class LocalModRow : INotifyPropertyChanged
         Icon = icon;
         IsParsing = false;
         NotifyNames();
-        foreach (string property in new[] { nameof(Icon), nameof(IsParsing), nameof(CanViewDetails), nameof(StatusIcon), nameof(ToggleIcon), nameof(ToggleLabel), nameof(IconOpacity) }) PropertyChanged?.Invoke(this, new(property));
+        foreach (string property in new[] { nameof(Icon), nameof(IsParsing), nameof(CanViewDetails), nameof(StatusIcon), nameof(ToggleIcon), nameof(ToggleLabel), nameof(IconOpacity), nameof(LocalName), nameof(LocalDescription), nameof(LocalDetails), nameof(LocalError) }) PropertyChanged?.Invoke(this, new(property));
     }
 
     internal async Task EnrichAsync()
