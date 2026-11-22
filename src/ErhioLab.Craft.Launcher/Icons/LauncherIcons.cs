@@ -73,6 +73,9 @@ public static class LauncherIcons
     /// <summary>白昼模式.</summary>
     public static readonly Geometry DayTheme = Parse("M 9,1 L 9,3 M 9,15 L 9,17 M 1,9 L 3,9 M 15,9 L 17,9 M 3,3 L 4.5,4.5 M 13.5,13.5 L 15,15 M 15,3 L 13.5,4.5 M 4.5,13.5 L 3,15 M 13,9 A 4,4 0 1 1 5,9 A 4,4 0 1 1 13,9");
 
+    /// <summary> 四叶草图标.</summary>
+    public static readonly Geometry Clover = Parse("M 9,9 C 4,9 2,8 2,5 A 3,3 0 0 1 5,2 C 8,2 9,4 9,9 M 9,9 C 9,4 10,2 13,2 A 3,3 0 0 1 16,5 C 16,8 14,9 9,9 M 9,9 C 14,9 16,10 16,13 A 3,3 0 0 1 13,16 C 10,16 9,14 9,9 M 9,9 C 9,14 8,16 5,16 A 3,3 0 0 1 2,13 C 2,10 4,9 9,9");
+
     /// <summary>深夜模式.</summary>
     public static readonly Geometry NightTheme = Parse("M 13,2 A 7,7 0 1 0 16,13 A 7,7 0 0 1 13,2 Z");
 

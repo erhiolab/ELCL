@@ -183,7 +183,11 @@ public partial class LauncherDialogView
     {
         if (_closing || sender is not Button { DataContext: LauncherDialogAction action } button) return;
         button.IsEnabled = false;
-        try { await action.ExecuteAsync(); }
+        try
+        {
+            await action.ExecuteAsync();
+            if (action.CloseAfterExecution) Close(false);
+        }
         catch (Exception error)
         {
             App.Logger.Error("Dialog", $"弹窗操作失败: {action.Label}.", error);

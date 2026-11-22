@@ -13,6 +13,7 @@ namespace ErhioLab.Craft.Launcher.Views.Download;
 
 public partial class ModDownloadPage
 {
+    private readonly ModProjectKind _kind;
     private bool _ready;
     private bool _initialized;
     private bool _loading;
@@ -28,14 +29,18 @@ public partial class ModDownloadPage
     private ModSearchResult? _lastResult;
     internal event Action<ModProjectRow, ModBrowserContext>? ProjectSelected;
 
-    public ModDownloadPage()
+    public ModDownloadPage() : this(ModProjectKind.Mod) { }
+
+    internal ModDownloadPage(ModProjectKind kind)
     {
+        _kind = kind;
         InitializeComponent();
+        if (_kind != ModProjectKind.Mod) QueryLabel.SetResourceReference(TextBlock.TextProperty, "I18n.community.name");
         SourcesBox.SelectedIndex = 0;
         GameVersionBox.SetVersions(new[] { "26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.8", "1.21.5", "1.21.4", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.1", "1.19.4", "1.19.2", "1.18.2", "1.16.5", "1.12.2", "1.8.9", "1.7.10" });
-        LoaderBox.ItemsSource = new[] { new FilterOption("", CommunityMods.L("all")), new("forge", "Forge"), new("neoforge", "NeoForge"), new("fabric", "Fabric"), new("quilt", "Quilt"), new("liteloader", "LiteLoader") };
+        LoaderBox.ItemsSource = CommunityResourceCatalog.LoaderOptions(_kind);
         LoaderBox.SelectedIndex = 0;
-        CategoryBox.ItemsSource = Categories();
+        CategoryBox.ItemsSource = _kind == ModProjectKind.Mod ? Categories() : CommunityResourceCatalog.Categories(_kind);
         CategoryBox.SelectedIndex = 0;
         SortBox.SelectedIndex = 0;
         _ready = true;
@@ -51,7 +56,8 @@ public partial class ModDownloadPage
         GameVersionBox.Version = context.GameVersion;
         LoaderBox.SelectedIndex = Array.FindIndex((FilterOption[])LoaderBox.ItemsSource, option => option.Value == context.Loader);
         if (LoaderBox.SelectedIndex < 0) LoaderBox.SelectedIndex = 0;
-        LoaderPair.IsExpanded = !string.IsNullOrWhiteSpace(context.GameVersion);
+        UpdateLoaderVisibility();
+        _lastVersion = GameVersionBox.Version ?? "";
         _ready = true;
         _initialized = false;
         _page = 0;
@@ -96,7 +102,7 @@ public partial class ModDownloadPage
     internal void Refresh()
     {
         ResetPageCache();
-        LoaderPair.IsExpanded = GameVersionBox.Version is not null;
+        UpdateLoaderVisibility();
         _page = 0;
         _ = SearchAsync();
     }
@@ -122,7 +128,7 @@ public partial class ModDownloadPage
             _ready = true;
         }
 
-        App.Logger.Information("Mods", "重置 Mods 搜索条件.");
+        App.Logger.Information("Mods", $"重置社区资源搜索条件: {_kind}.");
         Refresh();
     }
 
@@ -150,11 +156,13 @@ public partial class ModDownloadPage
     private void Version_LostFocus(object sender, KeyboardFocusChangedEventArgs e) => UpdateVersion();
     private string _lastVersion = "";
 
+    private void UpdateLoaderVisibility() => LoaderPair.IsExpanded = CommunityResourceCatalog.HasLoaderFilter(_kind) && GameVersionBox.Version is not null;
+
     private void UpdateVersion()
     {
         if (!_ready) return;
         string version = GameVersionBox.Version ?? "";
-        LoaderPair.IsExpanded = version.Length > 0;
+        UpdateLoaderVisibility();
         if (version != _lastVersion)
         {
             _lastVersion = version;
@@ -193,12 +201,12 @@ public partial class ModDownloadPage
         ResultStatus.Text = "";
         PageText.Text = string.Format(CommunityMods.L("page"), _page + 1);
         string? version = GameVersionBox.Version;
-        string? loader = version is null || LoaderBox.SelectedItem is not FilterOption { Value.Length: > 0 } selected ? null : selected.Value;
+        string? loader = !CommunityResourceCatalog.HasLoaderFilter(_kind) || version is null || LoaderBox.SelectedItem is not FilterOption { Value.Length: > 0 } selected ? null : selected.Value;
         var category = (CategoryBox.SelectedItem as CategoryOption)?.Category;
         string query = QueryBox.Text.Trim();
         ModPlatform platform = (ModPlatform)Math.Max(0, SourcesBox.SelectedIndex);
         ModSortOrder sort = SortBox.SelectedIndex == 1 ? ModSortOrder.Downloads : ModSortOrder.Relevance;
-        var queryRequest = new ModSearchRequest(query, platform, version, loader, category, SortOrder: sort);
+        var queryRequest = new ModSearchRequest(query, platform, version, loader, category, SortOrder: sort) { Kind = _kind };
         if (_pageCache is null || _cachedQuery != queryRequest || _cachedSource != CommunityMods.Source)
         {
             ResetPageCache();
@@ -208,10 +216,10 @@ public partial class ModDownloadPage
             _cachedSource = CommunityMods.Source;
         }
         var cache = _pageCache;
-        App.Logger.Information("Mods", $"查询 Mods: 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
+        App.Logger.Information("Mods", $"查询社区资源: 类型={_kind}, 来源={platform}, 排序={sort}, 游戏={version}, 加载器={loader}, 类别={category?.Id}, 页={_page + 1}.");
         try
         {
-            if (CommunityMods.IsTranslationEnabled && query.Any(character => character is >= '\u4e00' and <= '\u9fff'))
+            if (_kind == ModProjectKind.Mod && CommunityMods.IsTranslationEnabled && query.Any(character => character is >= '\u4e00' and <= '\u9fff'))
             {
                 var translation = await CommunityMods.TranslationAsync(query);
                 cancellation.Token.ThrowIfCancellationRequested();
@@ -226,7 +234,7 @@ public partial class ModDownloadPage
             ResultsList.ItemsSource = rows;
             if (rows.Length > 0) ResultsList.ScrollIntoView(rows[0]);
             EmptyText.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-            EmptyText.Text = CommunityMods.L("empty");
+            EmptyText.Text = _kind == ModProjectKind.Mod ? CommunityMods.L("empty") : CommunityResourceCatalog.L("empty");
             ResultStatus.Text = result.FailedPlatforms.Count > 0
                 ? string.Format(CommunityMods.L("partialFailure"), string.Join("、", result.FailedPlatforms))
                 : string.Format(CommunityMods.L("results"), result.Total);
@@ -244,9 +252,9 @@ public partial class ModDownloadPage
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or AggregateException or InvalidOperationException or KeyNotFoundException or FormatException or TaskCanceledException)
         {
             if (!ReferenceEquals(_search, cancellation)) return;
-            EmptyText.Text = CommunityMods.L("searchFailed");
+            EmptyText.Text = _kind == ModProjectKind.Mod ? CommunityMods.L("searchFailed") : CommunityResourceCatalog.L("searchFailed");
             App.Logger.Error("Mods", "Mods 查询失败.", error);
-            LauncherToasts.Error(CommunityMods.L("searchFailed"));
+            LauncherToasts.Error(EmptyText.Text);
         }
         finally
         {
@@ -337,7 +345,7 @@ public partial class ModDownloadPage
     private void Open(ModProjectRow row)
     {
         string? version = GameVersionBox.Version;
-        string? loader = version is null ? null : (LoaderBox.SelectedItem as FilterOption)?.Value;
+        string? loader = version is null || !CommunityResourceCatalog.HasLoaderFilter(_kind) ? null : (LoaderBox.SelectedItem as FilterOption)?.Value;
         ProjectSelected?.Invoke(row, new ModBrowserContext(version, string.IsNullOrEmpty(loader) ? null : loader, _context?.VersionDirectory));
     }
 

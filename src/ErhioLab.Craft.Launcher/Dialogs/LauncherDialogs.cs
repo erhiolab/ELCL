@@ -6,6 +6,26 @@ namespace ErhioLab.Craft.Launcher.Dialogs;
 /// <summary>集中提供启动器的提示/警告/错误和二次确认弹窗.</summary>
 internal static class LauncherDialogs
 {
+    internal static async Task<int?> ChooseAsync(string title, string message, params string[] options)
+    {
+        int? choice = null;
+        var actions = options.Select((label, index) => new LauncherDialogAction(label, () =>
+        {
+            choice = index;
+            return Task.CompletedTask;
+        }, CloseAfterExecution: true)).ToArray();
+        string cancel = LocalizationManager.Get("common.cancel");
+        if (Application.Current.MainWindow is MainWindow { IsVisible: true } main)
+            await main.ShowDialogAsync(title, message, LauncherDialogLevel.Information, false, cancel, actions: actions);
+        else
+        {
+            var dialog = new LauncherDialogWindow(title, message, LauncherDialogLevel.Information, false, cancel);
+            dialog.SetActions(actions);
+            dialog.ShowDialog();
+        }
+        return choice;
+    }
+
     internal static async Task<string?> InputAsync(string title, string message, string initialValue, Func<string, string?> validate)
     {
         string? value = null;

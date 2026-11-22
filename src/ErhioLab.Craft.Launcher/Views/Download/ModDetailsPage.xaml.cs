@@ -10,6 +10,7 @@ using System.Windows.Media;
 
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Core.Mods;
+using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
@@ -41,14 +42,15 @@ public partial class ModDetailsPage
         _row = row;
         _context = context;
         InitializeComponent();
+        BackButton.SetResourceReference(ContentControl.ContentProperty, "I18n." + CommunityResourceCatalog.BackToListKey(row.Project.Kind));
         ProjectCard.DataContext = row;
         WikiButton.DataContext = row;
         ProjectCard.ShowSummary = false;
         DescriptionText.Text = row.Summary;
         GameVersionBox.SetVersions((context.GameVersion is null ? [] : new[] { context.GameVersion }).Concat(row.Project.GameVersions.OrderDescending(ModPresentation.VersionOrder)), context.GameVersion);
         _lastVersion = GameVersionBox.Version ?? "";
-        LoaderPair.IsExpanded = GameVersionBox.Version is not null;
-        LoaderBox.ItemsSource = new[] { new FilterOption("", CommunityMods.L("all")), new("forge", "Forge"), new("neoforge", "NeoForge"), new("fabric", "Fabric"), new("quilt", "Quilt"), new("liteloader", "LiteLoader") };
+        LoaderPair.IsExpanded = CommunityResourceCatalog.HasLoaderFilter(_row.Project.Kind) && GameVersionBox.Version is not null;
+        LoaderBox.ItemsSource = CommunityResourceCatalog.LoaderOptions(_row.Project.Kind);
         LoaderBox.SelectedIndex = Math.Max(0, Array.FindIndex((FilterOption[])LoaderBox.ItemsSource, option => option.Value == context.Loader));
         _ready = true;
     }
@@ -152,8 +154,8 @@ public partial class ModDetailsPage
         EmptyText.Text = CommunityMods.L("loading");
         string? version = GameVersionBox.Version;
         string? loader = (LoaderBox.SelectedItem as FilterOption)?.Value;
-        if (version is null || string.IsNullOrEmpty(loader)) loader = null;
-        LoaderPair.IsExpanded = version is not null;
+        LoaderPair.IsExpanded = CommunityResourceCatalog.HasLoaderFilter(_row.Project.Kind) && version is not null;
+        if (!LoaderPair.IsExpanded || string.IsNullOrEmpty(loader)) loader = null;
         string cacheKey = (version ?? "") + ":" + (loader ?? "");
         App.Logger.Information("Mods", $"读取完整 Mods 文件列表: {_row.Project.Platform}/{_row.Project.Id}, 游戏={version}, 加载器={loader}.");
         try
@@ -183,7 +185,7 @@ public partial class ModDetailsPage
             _files.AddRange(all);
             _filesReady = true;
             RefreshGroups();
-            EmptyText.Text = CommunityMods.L("noFiles");
+            EmptyText.Text = CommunityResourceCatalog.HasLoaderFilter(_row.Project.Kind) ? CommunityMods.L("noFiles") : CommunityResourceCatalog.L("noFiles");
             EmptyText.Visibility = FilesTimeline.HasItems ? Visibility.Collapsed : Visibility.Visible;
             App.Logger.Information("Mods", $"完整 Mods 文件列表已读取: {_files.Count} 项.");
         }
@@ -193,9 +195,9 @@ public partial class ModDetailsPage
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or TaskCanceledException)
         {
             if (!ReferenceEquals(_request, request)) return;
-            EmptyText.Text = CommunityMods.L("filesFailed");
+            EmptyText.Text = _row.Project.Kind == ModProjectKind.Mod ? CommunityMods.L("filesFailed") : CommunityResourceCatalog.L("filesFailed");
             App.Logger.Error("Mods", "读取完整 Mods 文件列表失败.", error);
-            LauncherToasts.Error(CommunityMods.L("filesFailed"));
+            LauncherToasts.Error(EmptyText.Text);
         }
         finally
         {
@@ -210,7 +212,7 @@ public partial class ModDetailsPage
         foreach (var old in _groups) old.PropertyChanged -= Group_Changed;
         string? version = GameVersionBox.Version;
         string? loader = version is null ? null : (LoaderBox.SelectedItem as FilterOption)?.Value;
-        _groups = ModFileGroup.Create(_files, version, string.IsNullOrEmpty(loader) ? null : loader);
+        _groups = ModFileGroup.Create(_files, version, string.IsNullOrEmpty(loader) ? null : loader, _row.Project.Kind);
         foreach (var group in _groups)
         {
             group.IsExpanded = expanded.Contains(group.Key);
@@ -356,11 +358,17 @@ public partial class ModDetailsPage
         if (sender is FrameworkElement { DataContext: ModDependencyRow row }) ProjectRequested?.Invoke(row.Project, row.Context);
     }
 
-    private void Download_Click(object sender, RoutedEventArgs e)
+    private async void Download_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: ModFileRow row }) return;
+        if (sender is not Button { Tag: ModFileRow row } || !CommunityArchiveTasks.CanDownload(row.File, _row.Project.Kind)) return;
         try
         {
+            if (_row.Project.Kind != ModProjectKind.Mod)
+            {
+                await DownloadArchiveAsync(row.File);
+                return;
+            }
+
             string? initial = CommunityMods.DefaultModDirectory(_context);
             OpenFolderDialog picker = new() { Title = CommunityMods.L("downloadFolder"), Multiselect = false };
             if (initial is not null && Directory.Exists(initial)) picker.InitialDirectory = initial;
@@ -381,19 +389,80 @@ public partial class ModDetailsPage
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
-            App.Logger.Error("Mods", "创建 Mods 下载任务失败.", error);
+            App.Logger.Error("Mods", $"创建下载任务失败: {_row.Project.Kind}/{_row.Project.Id}.", error);
             LauncherToasts.Error(string.Format(CommunityMods.L("operationFailed"), error.Message));
         }
     }
+
+    private async Task DownloadArchiveAsync(ModFile file)
+    {
+        ModProject project = _row.Project;
+        string archiveName = CommunityArchiveTasks.ArchiveName(file, project.Kind);
+        var owner = Window.GetWindow(this);
+        if (project.Kind == ModProjectKind.Modpack)
+        {
+            string gameDirectory = ModpackInstallTasks.CurrentGameDirectory;
+            string folderName = ModpackInstallDialog.GetGameFolderDisplayName(gameDirectory);
+            int? choice = await LauncherDialogs.ChooseAsync(CommunityResourceCatalog.L("modpackChoice"),
+                string.Format(CommunityResourceCatalog.L("modpackChoiceHint"), project.Name, folderName),
+                CommunityResourceCatalog.L("downloadOnly"), CommunityResourceCatalog.L("installModpack"));
+            if (choice == 0)
+            {
+                string extension = Path.GetExtension(archiveName);
+                var picker = new SaveFileDialog { Title = CommunityResourceCatalog.L("downloadOnly"), FileName = archiveName,
+                    DefaultExt = extension, Filter = string.Format(CommunityResourceCatalog.L("archiveFilter"), extension), OverwritePrompt = false };
+                if (picker.ShowDialog(owner) != true) return;
+                if (!Path.GetExtension(picker.FileName).Equals(extension, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException(CommunityResourceCatalog.L("invalidArchive"));
+                CommunityArchiveTasks.Start(project, file, picker.FileName);
+            }
+            else if (choice == 1)
+            {
+                string? name = await ModpackInstallDialog.PromptVersionNameAsync(project.Name, gameDirectory);
+                if (name is null) return;
+                ModpackInstallTasks.StartOnline(file, name, gameDirectory);
+            }
+            else return;
+        }
+        else
+        {
+            string? root = _context.VersionDirectory;
+            string subdirectory = project.Kind switch
+            {
+                ModProjectKind.DataPack => "saves",
+                ModProjectKind.ResourcePack => "resourcepacks",
+                _ => "shaderpacks"
+            };
+            string? initial = root is null ? null : Path.Combine(root, subdirectory);
+            var picker = new OpenFolderDialog { Title = CommunityResourceCatalog.L(project.Kind == ModProjectKind.DataPack ? "dataPackFolder" : "downloadFolder") };
+            if (initial is not null && Directory.Exists(initial)) picker.InitialDirectory = initial;
+            else if (root is not null && Directory.Exists(root)) picker.InitialDirectory = root;
+            if (picker.ShowDialog(owner) != true) return;
+            string directory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(picker.FolderName));
+            if (project.Kind == ModProjectKind.DataPack)
+            {
+                if (File.Exists(Path.Combine(directory, "level.dat"))) directory = Path.Combine(directory, "datapacks");
+                else if (root is not null && (string.Equals(directory, Path.TrimEndingDirectorySeparator(root), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(directory, initial, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(CommunityResourceCatalog.L("dataPackFolder"));
+            }
+            else if (root is not null && string.Equals(directory, Path.TrimEndingDirectorySeparator(root), StringComparison.OrdinalIgnoreCase))
+                directory = Path.Combine(directory, subdirectory);
+
+            CommunityArchiveTasks.Start(project, file, Path.Combine(directory, archiveName));
+        }
+
+        LauncherToasts.Information(CommunityResourceCatalog.L("queued"));
+    }
 }
 
-public sealed class ModFileRow(ModFile file, string? gameVersion = null, string? loader = null)
+public sealed class ModFileRow(ModFile file, string? gameVersion = null, string? loader = null, ModProjectKind kind = ModProjectKind.Mod)
 {
     internal ModFile File { get; } = file;
     internal string? TargetGameVersion { get; } = gameVersion;
     internal string? TargetLoader { get; } = loader;
     public string Name => File.Name;
-    public bool CanDownload => File.DownloadUri is not null;
+    public bool CanDownload => CommunityArchiveTasks.CanDownload(File, kind);
 
     public Geometry ReleaseIcon => File.ReleaseType switch
     {

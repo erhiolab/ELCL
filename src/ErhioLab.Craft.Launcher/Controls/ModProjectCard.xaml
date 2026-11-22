@@ -80,7 +80,7 @@
                     <Path
                         Width="11"
                         Height="11"
-                        Data="{x:Static icons:LauncherIcons.ModsAndResources}"
+                        Data="{Binding KindIcon}"
                         Stroke="{DynamicResource TextMutedBrush}"
                         StrokeThickness="1.4"
                         Stretch="Uniform"

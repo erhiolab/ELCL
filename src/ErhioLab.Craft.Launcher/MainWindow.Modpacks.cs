@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 
-using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Modpacks;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Localization;
@@ -143,29 +142,8 @@ public partial class MainWindow
 
             App.Logger.Information("Modpacks", $"读取整合包: {path}.");
             var pack = await ModpackArchive.ReadAsync(path);
-            string gameDirectory = App.Settings.SelectedGameFolderPath ?? Path.Combine(AppContext.BaseDirectory, ".minecraft");
-            string initial = string.Concat(pack.Name.Select(character => Path.GetInvalidFileNameChars().Contains(character) ? '_' : character)).Trim().TrimEnd('.');
-            initial = initial[..Math.Min(initial.Length, 128)];
-
-            string? Validate(string value)
-            {
-                try
-                {
-                    MinecraftVanillaDownloadPlanner.ValidateVersionName(value);
-                }
-                catch (ArgumentException)
-                {
-                    return LocalizationManager.Get("versionSelector.invalidName");
-                }
-
-                string target = Path.Combine(gameDirectory, "versions", value);
-                return Directory.Exists(target) || File.Exists(target) || App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, target, StringComparison.OrdinalIgnoreCase))
-                    ? LocalizationManager.Get("install.versionExists")
-                    : null;
-            }
-
-            string? name = await LauncherDialogs.InputAsync(LocalizationManager.Get("modpack.inputTitle"),
-                string.Format(LocalizationManager.Get("modpack.inputMessage"), pack.Name, pack.GameVersion, gameDirectory), initial, Validate);
+            string gameDirectory = ModpackInstallTasks.CurrentGameDirectory;
+            string? name = await ModpackInstallDialog.PromptVersionNameAsync(pack.Name, gameDirectory, pack.GameVersion);
             if (name is null)
             {
                 App.Logger.Information("Modpacks", "用户取消整合包导入.");

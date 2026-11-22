@@ -20,6 +20,7 @@ internal sealed class SectionSidebarEntry : INotifyPropertyChanged
         LocalizationManager.Changed += (_, _) =>
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Title)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GroupTitle)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ActionToolTip)));
         };
     }
@@ -50,6 +51,8 @@ internal sealed class SectionSidebarEntry : INotifyPropertyChanged
     public string GroupName { get; }
     /// <summary>侧栏显示的名称.</summary>
     public string Title => LocalizationManager.Get(Item.Title);
+    public string GroupTitle => Item.GroupTitleKey is { } key ? LocalizationManager.Get(key) : "";
+    public bool HasGroupTitle => Item.GroupTitleKey is not null;
 
     /// <summary>侧栏显示的图标.</summary>
     public Geometry Icon => Item.Icon;

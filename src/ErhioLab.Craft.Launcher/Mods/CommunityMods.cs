@@ -121,7 +121,7 @@ internal static class CommunityMods
 
     internal static Task<McModTranslation?> TranslationAsync(string name, ModProject? project = null)
     {
-        if (!IsTranslationEnabled) return Task.FromResult<McModTranslation?>(null);
+        if (!IsTranslationEnabled || project is { Kind: not ModProjectKind.Mod }) return Task.FromResult<McModTranslation?>(null);
         string key = project is null ? "query:" + name : project.Platform + ":" + project.Id;
         if (Translations.TryGetValue(key, out var previous) && previous.IsCompletedSuccessfully && previous.Result is null) Translations.TryRemove(key, out _);
         return Translations.GetOrAdd(key, _ => TranslateAsync(name, project));
@@ -282,10 +282,13 @@ public sealed class ModProjectRow : INotifyPropertyChanged
     public string Summary => Project.Summary;
     public Uri WikiUri => Translation?.Website ?? new Uri("https://search.mcmod.cn/s?filter=1&key=" + Uri.EscapeDataString(Project.Name));
     public string WikiHint => CommunityMods.L(Translation is null ? "searchWiki" : "openWiki");
-    public System.Windows.Visibility WikiVisibility => ModLocalization.SupportsLanguage(App.Settings.Language)
+    public System.Windows.Visibility WikiVisibility => Project.Kind == ModProjectKind.Mod && ModLocalization.SupportsLanguage(App.Settings.Language)
         ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public IReadOnlyList<string> CategoryLabels => Project.Categories.Select(ModPresentation.CategoryName).Distinct().Take(3).ToArray();
-    public string LoadersText => Project.Loaders.Count == 0 ? CommunityMods.L("anyLoader") : string.Join(" / ", Project.Loaders.OrderBy(ModPresentation.LoaderOrder).Select(ModPresentation.LoaderName));
+    public System.Windows.Media.Geometry KindIcon => CommunityResourceCatalog.Icon(Project.Kind);
+    public string LoadersText => !CommunityResourceCatalog.HasLoaderFilter(Project.Kind)
+        ? Localization.LocalizationManager.Get(CommunityResourceCatalog.TitleKey(Project.Kind)) : Project.Loaders.Count == 0
+        ? CommunityMods.L("anyLoader") : string.Join(" / ", Project.Loaders.OrderBy(ModPresentation.LoaderOrder).Select(ModPresentation.LoaderName));
     public string PlatformText => Project.Platform.ToString();
 
     public string DownloadCountText => Project.Downloads >= 100000000 ? string.Format(CommunityMods.L("downloadsHundredMillion"), Project.Downloads / 100000000.0)

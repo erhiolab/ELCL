@@ -173,12 +173,13 @@
 - [`MinecraftWikiClient.GetPageUrlAsync`](wiki.md#minecraftwikiclient-getpageurlasync)
 - [`MinecraftWikiClient.GetPageUrl`](wiki.md#minecraftwikiclient-getpageurl)
 
-## 社区 Mods
+## 社区资源与 Mods
 
 [阅读本篇](mods.md)
 
 - [`ModRepositoryClient.SearchAsync`](mods.md#modrepositoryclient-searchasync)
 - [`ModSearchRequest.SortOrder` 与 `ModSortOrder`](mods.md#modrepositoryclient-searchasync)
+- [`ModSearchRequest.Kind`、`ModProject.Kind` 与 `ModProjectKind`](mods.md#modrepositoryclient-searchasync)
 - [`ModRepositoryClient.GetProjectAsync`](mods.md#modrepositoryclient-getprojectasync)
 - [`ModRepositoryClient.GetFileAsync`](mods.md#modrepositoryclient-getfileasync)
 - [`ModRepositoryClient.GetFilesAsync`](mods.md#modrepositoryclient-getfilesasync)

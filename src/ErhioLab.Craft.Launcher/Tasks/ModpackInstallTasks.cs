@@ -6,6 +6,7 @@ using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Modpacks;
 using ErhioLab.Craft.Launcher.Core.Mods;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
@@ -15,7 +16,17 @@ internal static class ModpackInstallTasks
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(35) };
     internal static event Action<string>? Imported;
 
-    internal static LauncherTask Start(ModpackDefinition pack, string name, string gameDirectory)
+    internal static string CurrentGameDirectory => Path.GetFullPath(App.Settings.SelectedGameFolderPath ?? Path.Combine(AppContext.BaseDirectory, ".minecraft"));
+
+    internal static LauncherTask Start(ModpackDefinition pack, string name, string gameDirectory) => StartCore(pack, null, name, gameDirectory);
+
+    internal static LauncherTask StartOnline(ModFile file, string name, string gameDirectory)
+    {
+        CommunityArchiveTasks.ArchiveName(file, ModProjectKind.Modpack);
+        return StartCore(null, file, name, gameDirectory);
+    }
+
+    private static LauncherTask StartCore(ModpackDefinition? localPack, ModFile? onlineFile, string name, string gameDirectory)
     {
         MinecraftVanillaDownloadPlanner.ValidateVersionName(name);
         gameDirectory = Path.GetFullPath(gameDirectory);
@@ -34,13 +45,28 @@ internal static class ModpackInstallTasks
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> action, long bytes = 1) => new(LocalizationManager.Get(key), action)
             { LocalizedName = () => LocalizationManager.Get(key), PlannedBytes = Math.Max(1, bytes) };
 
-        var initial = Stage("modpack.prepare", async context =>
+        ModpackDefinition? pack = localPack;
+        string? workingDirectory = onlineFile is null ? null : Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "modpack-download", Guid.NewGuid().ToString("N"));
+        List<LauncherTaskStage> stages = [];
+        if (onlineFile is not null)
         {
+            string archive = Path.Combine(workingDirectory!, onlineFile.FileName);
+            stages.Add(Stage("community.downloadArchive", async context =>
+            {
+                await CommunityArchiveTasks.DownloadAsync(onlineFile, archive, context, options, community);
+                pack = await ModpackArchive.ReadAsync(archive, context.CancellationToken);
+            }, onlineFile.Size));
+        }
+
+        stages.Add(Stage("modpack.prepare", async context =>
+        {
+            var definition = pack ?? throw new InvalidDataException(CommunityResourceCatalog.L("invalidArchive"));
+            App.Logger.Information("Modpacks", $"准备整合包: 格式={definition.Format}, 游戏={definition.GameVersion}, 名称={name}.");
             var catalog = await new MinecraftVersionCatalogClient(Http).GetCatalogAsync(
                 settings.VersionListSource == VersionListSource.MirrorFirst ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official, context.CancellationToken);
-            var version = catalog.Versions.FirstOrDefault(item => item.Id == pack.GameVersion) ?? throw new InvalidDataException(string.Format(LocalizationManager.Get("modpack.gameUnavailable"), pack.GameVersion));
+            var version = catalog.Versions.FirstOrDefault(item => item.Id == definition.GameVersion) ?? throw new InvalidDataException(string.Format(LocalizationManager.Get("modpack.gameUnavailable"), definition.GameVersion));
             if (Directory.Exists(directory) || File.Exists(directory)) throw new IOException(LocalizationManager.Get("install.versionExists"));
-            operation = App.Tasks.CreateMinecraftInstall(version, name, gameDirectory, source, options, pack.Loaders, context.Owner);
+            operation = App.Tasks.CreateMinecraftInstall(version, name, gameDirectory, source, options, definition.Loaders, context.Owner);
             string reservation = Path.Combine(gameDirectory, "versions", ".elcl-import-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(reservation);
             try
@@ -56,7 +82,7 @@ internal static class ModpackInstallTasks
 
             context.AppendStages([
                 .. operation.Stages,
-                Stage("modpack.resolve", async stage => { downloads = await ModpackArchive.ResolveDownloadsAsync(pack, directory, Http, ServiceConfiguration.CurseForgeApiKey, community, stage.CancellationToken); }),
+                Stage("modpack.resolve", async stage => { downloads = await ModpackArchive.ResolveDownloadsAsync(definition, directory, Http, ServiceConfiguration.CurseForgeApiKey, community, stage.CancellationToken); }),
                 Stage("modpack.download", async stage =>
                 {
                     var files = downloads.Select(item => item.Request).ToArray();
@@ -64,12 +90,21 @@ internal static class ModpackInstallTasks
                     stage.ConfigureDownloadPlan(files, missing);
                     if (missing.Count > 0) await stage.DownloadAsync(new DownloadTaskRequest(name, missing), options);
                     await ModpackArchive.VerifyDownloadsAsync(downloads, stage.CancellationToken);
-                }, pack.Files.Sum(file => file.Size ?? 1024 * 1024)),
-                Stage("modpack.overrides", async stage => { await ModpackArchive.ExtractOverridesAsync(pack, directory, new Progress<double>(stage.ReportProgress), stage.CancellationToken); }, pack.Overrides.Sum(file => file.Size))
+                }, definition.Files.Sum(file => file.Size ?? 1024 * 1024)),
+                Stage("modpack.overrides", async stage => { await ModpackArchive.ExtractOverridesAsync(definition, directory, new Progress<double>(stage.ReportProgress), stage.CancellationToken); }, definition.Overrides.Sum(file => file.Size))
             ]);
-        });
-        LauncherTask task = App.Tasks.Start(string.Format(LocalizationManager.Get("modpack.task"), name), [initial], directory,
-            async () =>
+        }));
+
+        void CleanupWorkingArchive()
+        {
+            if (workingDirectory is null || !Directory.Exists(workingDirectory)) return;
+            File.Delete(Path.Combine(workingDirectory, onlineFile!.FileName));
+            Directory.Delete(workingDirectory);
+        }
+
+        async Task CleanupAsync()
+        {
+            try
             {
                 if (!ownsDirectory) return;
                 if (operation is not null) await operation.Cleanup();
@@ -77,9 +112,23 @@ internal static class ModpackInstallTasks
                 if (!Path.GetFullPath(directory).StartsWith(expected, StringComparison.OrdinalIgnoreCase)) throw new IOException("整合包清理目录超出版本目录.");
                 if (Directory.Exists(directory)) await Task.Run(() => Directory.Delete(directory, true));
                 await LauncherProfileCompatibility.RemoveVersionAsync(gameDirectory, directory);
-            }, onCompleted: () => Imported?.Invoke(directory));
+                ownsDirectory = false;
+            }
+            finally { CleanupWorkingArchive(); }
+        }
+
+        LauncherTask task = App.Tasks.Start(string.Format(LocalizationManager.Get("modpack.task"), name), stages, directory,
+            cleanupOnRemove: CleanupAsync, cleanupOnFailure: CleanupAsync, onCompleted: () =>
+            {
+                try { CleanupWorkingArchive(); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    App.Logger.Error("Modpacks", "整合包已安装, 无法移除下载缓存.", error);
+                }
+                Imported?.Invoke(directory);
+            });
         task.LocalizedTitle = () => string.Format(LocalizationManager.Get("modpack.task"), name);
-        App.Logger.Information("Modpacks", $"创建整合包导入任务: 格式={pack.Format}, 游戏={pack.GameVersion}, 名称={name}, 文件={pack.ArchivePath}, 目录={directory}.");
+        App.Logger.Information("Modpacks", $"创建整合包安装任务: 名称={name}, 文件={localPack?.ArchivePath ?? onlineFile?.FileName}, 目录={directory}.");
         return task;
     }
 }

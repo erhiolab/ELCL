@@ -8,8 +8,10 @@ using ErhioLab.Craft.Launcher.Views.Settings;
 using ErhioLab.Craft.Launcher.Views.Shared;
 using ErhioLab.Craft.Launcher.Views.Tasks;
 using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Core.Mods;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Navigation;
@@ -24,11 +26,22 @@ internal static class ShellRouteCatalog
         // 游戏与 Java 下载共用侧栏和缓动页面容器.
         SectionSidebarItem vanillaItem = new("sidebar.vanilla", LauncherIcons.VersionRelease, CanRefresh: true, ActionToolTipKey: "sidebar.refreshVanilla");
         SectionSidebarItem javaItem = new("javaDownload.title", LauncherIcons.Java, CanRefresh: true, ActionToolTipKey: "sidebar.refreshJava");
-        SectionSidebarItem modsItem = new("mods.title", LauncherIcons.ModsAndResources, CanRefresh: true, ActionToolTipKey: "sidebar.refreshMods");
-        SectionSidebarView downloadSidebar = new(vanillaItem, modsItem, javaItem);
+        SectionSidebarItem modsItem = new("mods.title", LauncherIcons.ModsAndResources, CanRefresh: true,
+            ActionToolTipKey: "sidebar.refreshMods", GroupTitleKey: "mods.communitySettings");
+        SectionSidebarItem Entry(ModProjectKind kind) =>
+            new(CommunityResourceCatalog.TitleKey(kind), CommunityResourceCatalog.Icon(kind), CanRefresh: true, ActionToolTipKey: "community.refresh");
+        var resourceKinds = new Dictionary<SectionSidebarItem, ModProjectKind>
+        {
+            [modsItem] = ModProjectKind.Mod,
+            [Entry(ModProjectKind.Modpack)] = ModProjectKind.Modpack,
+            [Entry(ModProjectKind.DataPack)] = ModProjectKind.DataPack,
+            [Entry(ModProjectKind.ResourcePack)] = ModProjectKind.ResourcePack,
+            [Entry(ModProjectKind.ShaderPack)] = ModProjectKind.ShaderPack
+        };
+        var resourcePages = new Dictionary<SectionSidebarItem, ModDownloadPage>();
+        SectionSidebarView downloadSidebar = new([vanillaItem, javaItem, ..resourceKinds.Keys]);
         VanillaVersionsPage versionList = new();
         JavaDownloadPage javaDownloads = new();
-        ModDownloadPage modDownloads = new();
         AnimatedPageHost downloadContent = new(versionList);
         versionList.VersionSelected += version =>
         {
@@ -43,14 +56,21 @@ internal static class ShellRouteCatalog
             details.ProjectRequested += (dependency, selectedContext) => OpenModDetails(dependency, selectedContext, details);
             downloadContent.Navigate(details);
         }
-        modDownloads.ProjectSelected += (row, context) => OpenModDetails(row, context, modDownloads);
+        ModDownloadPage ResourcePage(SectionSidebarItem item, ModProjectKind kind)
+        {
+            if (resourcePages.TryGetValue(item, out var page)) return page;
+            page = new ModDownloadPage(kind);
+            page.ProjectSelected += (row, context) => OpenModDetails(row, context, page);
+            resourcePages[item] = page;
+            return page;
+        }
         downloadSidebar.SelectionChanged += item => downloadContent.Navigate(ReferenceEquals(item, javaItem) ? javaDownloads
-            : ReferenceEquals(item, modsItem) ? modDownloads : versionList, back: ReferenceEquals(item, vanillaItem));
+            : resourceKinds.TryGetValue(item, out var kind) ? ResourcePage(item, kind) : versionList, back: ReferenceEquals(item, vanillaItem));
         downloadSidebar.ActionRequested += item =>
         {
             if (ReferenceEquals(item, javaItem)) javaDownloads.RefreshCatalogs();
-            else if (ReferenceEquals(item, modsItem)) modDownloads.Refresh();
-            else versionList.RefreshVersions();
+            else if (resourcePages.TryGetValue(item, out var page)) page.Refresh();
+            else if (ReferenceEquals(item, vanillaItem)) versionList.RefreshVersions();
         };
 
         // 设置

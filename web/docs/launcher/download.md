@@ -4,6 +4,8 @@
 
 缺少 Java 时可以打开侧栏 **Java**，从发行平台选择适用的版本并安装，详见[下载 Java](java-downloads.md)。
 
+要找 Mods、整合包、数据包、资源包或光影包，在 **下载 → 社区资源** 选择对应类别，详见[获取社区资源](mods.md)。
+
 已有整合包时，可以从版本选择页导入，或将 ZIP／MRPACK 拖到启动页、版本选择页。ELCL 会按清单安装游戏、加载器和整合包文件，详见[导入整合包](modpacks.md)。
 
 ## 查找 Minecraft 版本
@@ -20,7 +22,7 @@
 
 加载器通常不能混装。选择冲突项时会调整已有选择；目前仅允许元数据明确兼容的 Forge 与 OptiFine 组合。
 
-安装加载器不等于安装 Mods。Fabric API、Quilt 的 Mods API 和其他 Mods 可以在[Mods 下载页](mods.md)另行安装，或自行放入版本的 `mods` 文件夹。
+安装加载器不等于安装 Mods。Fabric API、Quilt 的 Mods API 和其他 Mods 可以[另行下载](mods.md#下载安装)，或自行放入版本的 `mods` 文件夹。
 
 ## 安装名称与目录
 

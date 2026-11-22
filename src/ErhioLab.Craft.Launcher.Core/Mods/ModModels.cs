@@ -21,6 +21,15 @@ public enum ModSortOrder
     Downloads
 }
 
+public enum ModProjectKind
+{
+    Mod,
+    Modpack,
+    DataPack,
+    ResourcePack,
+    ShaderPack
+}
+
 public sealed record ModCategory(string Id, string ModrinthTag, int? CurseForgeId = null);
 
 public sealed record ModSearchRequest(
@@ -32,7 +41,10 @@ public sealed record ModSearchRequest(
     int Page = 0,
     int PageSize = 20,
     ModSortOrder SortOrder = ModSortOrder.Relevance
-);
+)
+{
+    public ModProjectKind Kind { get; init; }
+}
 
 public sealed record ModProject(
     ModPlatform Platform,
@@ -48,7 +60,10 @@ public sealed record ModProject(
     IReadOnlyList<string> Loaders,
     IReadOnlyList<string> Categories,
     bool CanDownload = true
-);
+)
+{
+    public ModProjectKind Kind { get; init; }
+}
 
 public sealed record ModSearchResult(IReadOnlyList<ModProject> Projects, long Total, bool HasMore, IReadOnlyList<ModPlatform> FailedPlatforms)
 {

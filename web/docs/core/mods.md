@@ -1,8 +1,8 @@
-# 社区 Mods
+# 社区资源与 Mods
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Mods`。
 
-`ModRepositoryClient` 查询 CurseForge 与 Modrinth，返回项目、文件和必需依赖计划。`LocalModManager` 读取本地 Mods 并处理文件操作；`McModTranslationClient` 查询 MC 百科译名。
+`ModRepositoryClient` 查询 CurseForge 与 Modrinth 的 Mods、整合包、数据包、资源包和光影包元数据。`LocalModManager` 读取本地 Mods 并处理文件操作；`McModTranslationClient` 查询 MC 百科译名。
 
 核心不保存 API Key，不选择安装目录，也不创建启动器任务。你提供 `HttpClient`、密钥与路径，再决定怎样展示和下载。
 
@@ -22,7 +22,7 @@ var client = new ModRepositoryClient(http, key, CommunitySource.OfficialFirst);
 
 ## ModRepositoryClient.SearchAsync
 
-按名称、游戏版本、加载器和类型搜索，可选择相关性或下载量排序。返回 `ModSearchResult`；这个方法只请求元数据，不下载 Mods 文件。
+按名称、游戏版本、加载器和类型搜索，可选择相关性或下载量排序。返回 `ModSearchResult`；这个方法只请求元数据，不下载文件。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -52,6 +52,28 @@ foreach (var project in result.Projects)
 | `Page` | 从 0 开始，支持 0～499。 |
 | `PageSize` | 每页 1～50 项，默认 20。 |
 | `SortOrder` | `ModSortOrder.Relevance` 为相关性排序，也是默认值；`ModSortOrder.Downloads` 为下载量降序。 |
+| `Kind` | 初始化属性，默认为 `ModProjectKind.Mod`。还可以传入 `Modpack`、`DataPack`、`ResourcePack` 或 `ShaderPack`。 |
+
+要搜索其他资源，设置 `Kind`，并使用该资源类别对应的分类标签和 ID。例如，搜索 Modrinth 上的资源包并读取匹配版本的 ZIP 元数据：
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Mods;
+
+using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+var client = new ModRepositoryClient(http);
+var request = new ModSearchRequest(Query: "fresh animations", Platform: ModPlatform.Modrinth, GameVersion: "1.21.1")
+{
+    Kind = ModProjectKind.ResourcePack
+};
+var result = await client.SearchAsync(request);
+if (result.Projects.FirstOrDefault() is { } project)
+{
+    var files = await client.GetAllFilesAsync(project, request.GameVersion);
+    Console.WriteLine($"{project.Kind}：{files.Count} 个文件版本");
+}
+```
+
+其中 `Kind` 与关键词等筛选条件一样，翻页时必须保持一致。数据包、资源包与光影包通常不设置 `Loader`；整合包可以像 Mods 一样按加载器筛选。
 
 相关性排序会请求 Modrinth 的 `relevance` 和 CurseForge 的相关性排序。选择单一平台时保留上游顺序；选择“全部”时，按各平台的结果名次交替合并，先显示两个来源的第一项，再显示第二项，以此类推。同名次固定先显示 Modrinth；不会使用下载量覆盖上游相关性顺序，也不比较两平台各自的相关性分数。
 
@@ -61,7 +83,7 @@ foreach (var project in result.Projects)
 
 `Total` 是成功来源报告的结果数之和；它不是跨平台去重后的作品数。是否继续翻页以 `HasMore` 为准。CurseForge 最多访问前 10000 个结果。
 
-单个平台失败时返回其他平台结果，在 `FailedPlatforms` 中标明失败来源，并通过 `SourceErrors` 保留对应异常，方便调用方记录日志；全部失败抛出 `AggregateException`。页码、每页数量越界或 `SortOrder` 不属于支持的枚举值时抛出 `ArgumentOutOfRangeException`。请求、解析与取消异常见[错误处理](#错误处理)。
+单个平台失败时返回其他平台结果，在 `FailedPlatforms` 中标明失败来源，并通过 `SourceErrors` 保留对应异常，方便调用方记录日志；全部失败抛出 `AggregateException`。页码、每页数量越界，或 `SortOrder`、`Kind` 无效时，抛出 `ArgumentOutOfRangeException`。请求、解析与取消异常见[错误处理](#错误处理)。
 
 分类例子：`new ModCategory("optimization", "optimization", 6814)`。任一平台的分类缺失时，该平台不返回这个分类的结果；不要把不同语义的分类 ID 混用。
 
@@ -78,7 +100,7 @@ ModProject project = await client.GetProjectAsync(ModPlatform.Modrinth, "sodium"
 Console.WriteLine(project.Website);
 ```
 
-返回 `ModProject`，包含名称、简介、图标地址、下载量、更新时间、已知游戏版本和加载器。CurseForge 的已知版本来自上游最新文件索引，不代表全部历史版本。
+返回 `ModProject`，包含名称、简介、图标地址、下载量、更新时间、已知游戏版本和加载器。`Kind` 表示资源类别，`Website` 指向对应类别的项目页。Modrinth 项目可同时发布 JAR 与数据包；要查这类项目的数据包文件，使用数据包搜索返回的项目，或把 `Kind` 设为 `DataPack`。CurseForge 的已知版本来自上游最新文件索引，不代表全部历史版本。
 
 项目不存在时抛出状态为 404 的 `HttpRequestException`；不会创建本地文件。
 
@@ -98,11 +120,13 @@ Console.WriteLine(file.FileName);
 
 `platform` 必须是 `CurseForge` 或 `Modrinth`，不能使用 `All`；`projectId`、`fileId` 均必填，使用平台提供的准确 ID，`cancellationToken` 可取消请求。返回 `ModFile`，包含文件名、下载地址、校验信息、适用版本与声明的前置。
 
-此方法检查返回文件的项目与文件 ID 是否匹配，不匹配时抛出 `InvalidDataException`；空 ID 或不支持的平台值会抛出参数异常。CurseForge 官方查询需要调用方提供 API Key。网络、解析与取消异常保持原义。没有下载地址时，调用方应保留不可下载状态，不能假设能从其他地址取得文件。
+Modrinth 优先选取声明为主文件的 JAR、ZIP 或 MRPACK。文件与项目或文件 ID 不匹配，或者 Modrinth 版本没有这些文件时，抛出 `InvalidDataException`；空 ID 或不支持的平台值会抛出参数异常。CurseForge 官方查询需要调用方提供 API Key。没有下载地址时，调用方应保留不可下载状态，不能猜测下载地址。
 
 ## ModRepositoryClient.GetFilesAsync
 
 读取项目的可下载版本。可以按游戏版本与加载器筛选，返回 `ModFilePage`。
+
+Modrinth 按 `project.Kind` 选择文件：Mods 用 JAR，整合包用 MRPACK 或 ZIP，其他资源用 ZIP；没有对应文件的版本会跳过。数据包查询只读取数据包版本，不混入同项目的 Mods 发布。CurseForge 文件仍以平台返回的文件信息为准，服务器整合包不提供客户端安装用的下载地址。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Mods;
@@ -141,6 +165,8 @@ foreach (var file in files) Console.WriteLine(file.Name);
 ```
 
 返回值按发布时间从新到旧排列。Modrinth 一次取得匹配的版本，省略更新日志正文，不反复请求整份列表；CurseForge 优先在一次请求中获取最多 10000 个文件的元数据；来源只返回部分结果或不支持大页时，再自动翻页补齐，每批最多四个并行请求，并去除重复文件 ID。受上游限制，最多取得前 10000 个文件。没有匹配项时返回空列表。
+
+文件类型和下载地址的处理与 [GetFilesAsync](#modrepositoryclient-getfilesasync) 相同。此方法只读取元数据，不会创建本地文件。
 
 方法不下载 Mods、不修改磁盘。主动取消抛出 `OperationCanceledException`；任一请求失败会抛出对应异常，调用方不能把这次读取当成完整结果。参数为空或平台无效时抛出参数异常，其余网络及解析异常与 `GetFilesAsync` 一致。
 

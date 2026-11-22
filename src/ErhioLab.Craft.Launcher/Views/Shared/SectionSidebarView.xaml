@@ -27,44 +27,61 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate
                     DataType="{x:Type navigation:SectionSidebarEntry}">
-                    <Grid
-                        x:Name="NavigationRow"
+                    <StackPanel
                         Visibility="{Binding Visibility}">
-                        <RadioButton
-                            Checked="NavigationItem_Checked"
-                            Content="{Binding Title}"
-                            GroupName="{Binding GroupName}"
-                            Tag="{Binding Item}"
-                            IsChecked="{Binding IsSelected, Mode=OneWay}"
-                            Loaded="NavigationItem_Loaded"
-                            Style="{StaticResource SectionNavigationStyle}" />
-                        <Button
-                            x:Name="ActionButton"
-                            Width="26"
-                            Height="26"
-                            Margin="0,0,10,4"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Click="ActionButton_Click"
-                            Cursor="Hand"
-                            FocusVisualStyle="{x:Null}"
-                            Style="{StaticResource SidebarResetButtonStyle}"
-                            Tag="{Binding Item}"
-                            ToolTip="{Binding ActionToolTip}"
-                            Visibility="Collapsed">
-                            <Path
-                                Width="14"
-                                Height="14"
-                                Data="{Binding ActionIcon}"
-                                Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
-                                StrokeThickness="1.5"
-                                StrokeStartLineCap="Round"
-                                StrokeEndLineCap="Round"
-                                StrokeLineJoin="Round"
-                                Stretch="Uniform" />
-                        </Button>
-                    </Grid>
+                        <TextBlock
+                            x:Name="GroupTitle"
+                            Margin="12,10,0,6"
+                            FontSize="{DynamicResource CaptionFontSize}"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            Text="{Binding GroupTitle}"
+                            Visibility="Collapsed" />
+                        <Grid
+                            x:Name="NavigationRow">
+                            <RadioButton
+                                Checked="NavigationItem_Checked"
+                                Content="{Binding Title}"
+                                GroupName="{Binding GroupName}"
+                                Tag="{Binding Item}"
+                                IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                Loaded="NavigationItem_Loaded"
+                                Style="{StaticResource SectionNavigationStyle}" />
+                            <Button
+                                x:Name="ActionButton"
+                                Width="26"
+                                Height="26"
+                                Margin="0,0,10,4"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Click="ActionButton_Click"
+                                Cursor="Hand"
+                                FocusVisualStyle="{x:Null}"
+                                Style="{StaticResource SidebarResetButtonStyle}"
+                                Tag="{Binding Item}"
+                                ToolTip="{Binding ActionToolTip}"
+                                Visibility="Collapsed">
+                                <Path
+                                    Width="14"
+                                    Height="14"
+                                    Data="{Binding ActionIcon}"
+                                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                                    StrokeThickness="1.5"
+                                    StrokeStartLineCap="Round"
+                                    StrokeEndLineCap="Round"
+                                    StrokeLineJoin="Round"
+                                    Stretch="Uniform" />
+                            </Button>
+                        </Grid>
+                    </StackPanel>
                     <DataTemplate.Triggers>
+                        <DataTrigger
+                            Binding="{Binding HasGroupTitle}"
+                            Value="True">
+                            <Setter
+                                TargetName="GroupTitle"
+                                Property="Visibility"
+                                Value="Visible" />
+                        </DataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
                                 <Condition

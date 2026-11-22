@@ -28,4 +28,6 @@ public partial class LauncherDialogWindow
         }
         DialogView.ConfigureDecision(declineText, longForm);
     }
+
+    internal void SetActions(IReadOnlyList<LauncherDialogAction> actions) => DialogView.SetActions(actions);
 }

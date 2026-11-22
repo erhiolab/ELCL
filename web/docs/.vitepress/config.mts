@@ -47,7 +47,7 @@ export default defineConfig({
                         { text: "导出整合包", link: "/launcher/modpack-export" },
                         { text: "下载与安装", link: "/launcher/download" },
                         { text: "下载 Java", link: "/launcher/java-downloads" },
-                        { text: "下载与管理 Mods", link: "/launcher/mods" },
+                        { text: "获取社区资源", link: "/launcher/mods" },
                         { text: "启动游戏", link: "/launcher/launch" }
                     ]
                 },
@@ -91,7 +91,7 @@ export default defineConfig({
                         { text: "加载器版本", link: "/core/loaders" },
                         { text: "安装原版", link: "/core/vanilla-installation" },
                         { text: "安装加载器", link: "/core/loader-installation" },
-                        { text: "社区 Mods", link: "/core/mods" },
+                        { text: "社区资源与 Mods", link: "/core/mods" },
                         { text: "整合包导入", link: "/core/modpacks" },
                         { text: "整合包导出", link: "/core/modpack-export" }
                     ]

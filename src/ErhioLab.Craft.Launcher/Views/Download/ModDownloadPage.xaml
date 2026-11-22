@@ -36,6 +36,7 @@
                     <StackPanel
                         Margin="0,0,12,0">
                         <TextBlock
+                            x:Name="QueryLabel"
                             Text="{DynamicResource I18n.mods.name}"
                             Foreground="{DynamicResource TextMutedBrush}"
                             FontSize="{DynamicResource CaptionFontSize}"
@@ -144,7 +145,7 @@
                         <ComboBox
                             x:Name="SortBox"
                             Style="{StaticResource FormComboBoxStyle}"
-                            ToolTip="{DynamicResource I18n.mods.sortHint}"
+                            ToolTip="{DynamicResource I18n.community.sortHint}"
                             SelectionChanged="Filter_Changed">
                             <ComboBoxItem
                                 Content="{DynamicResource I18n.mods.sortDefault}" />

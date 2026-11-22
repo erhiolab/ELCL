@@ -10,4 +10,5 @@ namespace ErhioLab.Craft.Launcher.Navigation;
 /// <param name="CanRefresh">是否显示悬浮刷新按钮.</param>
 /// <param name="ActionToolTipKey">操作按钮的可选语言键, 未指定时使用通用提示.</param>
 /// <param name="HiddenFeature">可用于隐藏条目的设置项.</param>
-internal sealed record SectionSidebarItem(string Title, Geometry Icon, bool CanReset = false, bool CanRefresh = false, string? ActionToolTipKey = null, LauncherHiddenFeatures HiddenFeature = LauncherHiddenFeatures.None);
+/// <param name="GroupTitleKey">显示在此条目上方的可选组标题.</param>
+internal sealed record SectionSidebarItem(string Title, Geometry Icon, bool CanReset = false, bool CanRefresh = false, string? ActionToolTipKey = null, LauncherHiddenFeatures HiddenFeature = LauncherHiddenFeatures.None, string? GroupTitleKey = null);

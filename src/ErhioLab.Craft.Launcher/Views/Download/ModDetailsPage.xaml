@@ -178,7 +178,7 @@
         </Grid.RowDefinitions>
         <StackPanel>
             <Button
-                Content="{DynamicResource I18n.mods.back}"
+                x:Name="BackButton"
                 HorizontalAlignment="Left"
                 Style="{StaticResource CompactActionButtonStyle}"
                 Click="Back_Click"

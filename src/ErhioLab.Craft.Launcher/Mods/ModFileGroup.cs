@@ -9,12 +9,13 @@ public sealed class ModFileGroup : INotifyPropertyChanged
 {
     private bool _isExpanded;
     private readonly ModFile[] _source;
+    private readonly ModProjectKind _kind;
     private IReadOnlyList<ModFileRow> _rows = [];
     private bool _rowsCreated;
     public string Loader { get; }
     public string GameVersion { get; }
     public string Key => Loader + ":" + GameVersion;
-    public string Title => ModPresentation.LoaderName(Loader) + " " + GameVersion;
+    public string Title => Loader.Length == 0 ? GameVersion : ModPresentation.LoaderName(Loader) + " " + GameVersion;
     public string CountText => string.Format(CommunityMods.L("fileCount"), _source.Length);
     public IReadOnlyList<ModFileRow> Files => _rows;
     internal IReadOnlyList<ModDependency> RequiredDependencies { get; }
@@ -33,7 +34,7 @@ public sealed class ModFileGroup : INotifyPropertyChanged
             if (value && !_rowsCreated)
             {
                 _rows = _source.Select(file => new ModFileRow(file, file.GameVersions.Contains(GameVersion) ? GameVersion : null,
-                    file.Loaders.Contains(Loader, StringComparer.OrdinalIgnoreCase) ? Loader : null)).ToArray();
+                    file.Loaders.Contains(Loader, StringComparer.OrdinalIgnoreCase) ? Loader : null, _kind)).ToArray();
                 _rowsCreated = true;
                 PropertyChanged?.Invoke(this, new(nameof(Files)));
             }
@@ -47,26 +48,28 @@ public sealed class ModFileGroup : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private ModFileGroup(string loader, string version, IEnumerable<ModFile> files)
+    private ModFileGroup(string loader, string version, IEnumerable<ModFile> files, ModProjectKind kind)
     {
         Loader = loader;
         GameVersion = version;
+        _kind = kind;
         _source = files.DistinctBy(file => file.Id).OrderByDescending(file => file.Published).ToArray();
-        RequiredDependencies = _source.SelectMany(file => file.RequiredDependencies)
-            .DistinctBy(dependency => dependency.ProjectId is { Length: > 0 } id ? "project:" + id : "version:" + dependency.VersionId).ToArray();
+        RequiredDependencies = kind == ModProjectKind.Mod ? _source.SelectMany(file => file.RequiredDependencies)
+            .DistinctBy(dependency => dependency.ProjectId is { Length: > 0 } id ? "project:" + id : "version:" + dependency.VersionId).ToArray() : [];
     }
 
-    internal static IReadOnlyList<ModFileGroup> Create(IEnumerable<ModFile> files, string? gameVersion, string? loader)
+    internal static IReadOnlyList<ModFileGroup> Create(IEnumerable<ModFile> files, string? gameVersion, string? loader, ModProjectKind kind)
     {
         var entries = files.SelectMany(file =>
             (file.GameVersions.Count == 0 ? new[] { CommunityMods.L("unknown") } : file.GameVersions)
             .Where(version => gameVersion is null || version == gameVersion)
-            .SelectMany(version => (file.Loaders.Count == 0 ? new[] { CommunityMods.L("unknown") } : file.Loaders)
+            .SelectMany(version => (!CommunityResourceCatalog.HasLoaderFilter(kind) ? new[] { "" }
+                    : file.Loaders.Count == 0 ? [CommunityMods.L("unknown")] : file.Loaders)
                 .Where(candidate => loader is null || candidate.Equals(loader, StringComparison.OrdinalIgnoreCase))
                 .Select(candidate => (Loader: candidate, Version: version, File: file))));
         return entries.GroupBy(entry => (entry.Loader, entry.Version))
             .OrderByDescending(group => group.Key.Version, ModPresentation.VersionOrder)
             .ThenBy(group => ModPresentation.LoaderOrder(group.Key.Loader))
-            .Select(group => new ModFileGroup(group.Key.Loader, group.Key.Version, group.Select(entry => entry.File))).ToArray();
+            .Select(group => new ModFileGroup(group.Key.Loader, group.Key.Version, group.Select(entry => entry.File), kind)).ToArray();
     }
 }

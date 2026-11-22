@@ -90,7 +90,7 @@ public partial class VersionSelectionView
         _folders.Clear();
         foreach (GameFolderSetting folder in App.Settings.GameFolders)
         {
-            _folders.Add(new FolderRow(folder.Path, folder.NameKey is { } key ? LocalizationManager.Get(key) : folder.Name)
+            _folders.Add(new FolderRow(folder.Path, folder.DisplayName)
             {
                 IsSelected = SamePath(folder.Path, App.Settings.SelectedGameFolderPath)
             });

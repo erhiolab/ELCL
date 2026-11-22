@@ -23,6 +23,7 @@ public sealed partial class ModRepositoryClient
         ArgumentNullException.ThrowIfNull(request);
         if (request.Page is < 0 or > 499 || request.PageSize is < 1 or > 50) throw new ArgumentOutOfRangeException(nameof(request));
         if (!Enum.IsDefined(request.SortOrder)) throw new ArgumentOutOfRangeException(nameof(request));
+        if (!Enum.IsDefined(request.Kind)) throw new ArgumentOutOfRangeException(nameof(request));
         var platforms = request.Platform == ModPlatform.All ? new[] { ModPlatform.Modrinth, ModPlatform.CurseForge } : [request.Platform];
         int required = checked((request.Page + 1) * request.PageSize + 1);
         var results = await Task.WhenAll(platforms.Select(QuerySource)).ConfigureAwait(false);
@@ -68,7 +69,7 @@ public sealed partial class ModRepositoryClient
             if (platform == ModPlatform.Modrinth)
             {
                 if (search.Category is { ModrinthTag.Length: 0 }) return ([], 0);
-                List<string[]> facets = [["project_type:mod"]];
+                List<string[]> facets = [["project_type:" + ModrinthKind(search.Kind)]];
                 if (!string.IsNullOrWhiteSpace(search.GameVersion)) facets.Add(["versions:" + search.GameVersion]);
                 if (!string.IsNullOrWhiteSpace(search.Loader)) facets.Add(["categories:" + search.Loader.ToLowerInvariant()]);
                 if (search.Category is { ModrinthTag.Length: > 0 } category) facets.Add(["categories:" + category.ModrinthTag]);
@@ -79,7 +80,7 @@ public sealed partial class ModRepositoryClient
             {
                 if (search.Category is { CurseForgeId: null }) return ([], 0);
                 int order = search.SortOrder == ModSortOrder.Downloads ? 6 : 1;
-                path = $"/v1/mods/search?gameId=432&classId=6&sortField={order}&sortOrder=desc&pageSize={count}&index={offset}&searchFilter={Escape(search.Query)}";
+                path = $"/v1/mods/search?gameId=432&classId={CurseForgeType(search.Kind).Id}&sortField={order}&sortOrder=desc&pageSize={count}&index={offset}&searchFilter={Escape(search.Query)}";
                 if (!string.IsNullOrWhiteSpace(search.GameVersion)) path += "&gameVersion=" + Escape(search.GameVersion);
                 if (LoaderId(search.Loader) is { } loader) path += "&modLoaderType=" + loader;
                 if (search.Category?.CurseForgeId is { } category) path += "&categoryId=" + category;
@@ -89,7 +90,7 @@ public sealed partial class ModRepositoryClient
             var root = doc.RootElement;
             var rows = root.GetProperty(platform == ModPlatform.Modrinth ? "hits" : "data").EnumerateArray().ToArray();
             total = platform == ModPlatform.Modrinth ? root.GetProperty("total_hits").GetInt64() : root.GetProperty("pagination").GetProperty("totalCount").GetInt64();
-            projects.AddRange(rows.Select(row => platform == ModPlatform.Modrinth ? ReadModrinthProject(row, true) : ReadCurseForgeProject(row)));
+            projects.AddRange(rows.Select(row => platform == ModPlatform.Modrinth ? ReadModrinthProject(row, true, search.Kind) : ReadCurseForgeProject(row, search.Kind)));
             offset += rows.Length;
             if (rows.Length == 0) break;
         }
@@ -111,7 +112,7 @@ public sealed partial class ModRepositoryClient
         ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
         using var document = await RequestAsync(platform, platform == ModPlatform.Modrinth ? "/v2/version/" + Escape(fileId)
             : "/v1/mods/" + Escape(projectId) + "/files/" + Escape(fileId), null, cancellationToken).ConfigureAwait(false);
-        var file = platform == ModPlatform.Modrinth ? ReadModrinthFile(document.RootElement) : ReadCurseForgeFile(document.RootElement.GetProperty("data"), true);
+        var file = platform == ModPlatform.Modrinth ? ReadModrinthFile(document.RootElement, FindModrinthArchive(document.RootElement, null)) : ReadCurseForgeFile(document.RootElement.GetProperty("data"), true);
         if (file.ProjectId != projectId || file.Id != fileId) throw new InvalidDataException("Mods 文件与请求的项目或文件标识不匹配.");
         return file;
     }
@@ -133,7 +134,7 @@ public sealed partial class ModRepositoryClient
         if (gameVersion is not null) path += "&gameVersion=" + Escape(gameVersion);
         if (LoaderId(loader) is { } id) path += "&modLoaderType=" + id;
         using var response = await RequestAsync(project.Platform, path, null, cancellationToken).ConfigureAwait(false);
-        var files = response.RootElement.GetProperty("data").EnumerateArray().Select(row => ReadCurseForgeFile(row, project.CanDownload)).OrderByDescending(file => file.Published).ToArray();
+        var files = response.RootElement.GetProperty("data").EnumerateArray().Select(row => ReadCurseForgeProjectFile(row, project)).OrderByDescending(file => file.Published).ToArray();
         return new ModFilePage(files, response.RootElement.TryGetProperty("pagination", out var pagination)
             ? Math.Min(10000, pagination.GetProperty("totalCount").GetInt64()) > (long)(page + 1) * pageSize
             : files.Length == pageSize && (page + 1) * pageSize < 10000);
@@ -162,7 +163,7 @@ public sealed partial class ModRepositoryClient
             if (gameVersion is not null) path += "&gameVersion=" + Escape(gameVersion);
             if (LoaderId(loader) is { } id) path += "&modLoaderType=" + id;
             using var response = await RequestAsync(project.Platform, path, null, cancellationToken).ConfigureAwait(false);
-            var files = response.RootElement.GetProperty("data").EnumerateArray().Select(row => ReadCurseForgeFile(row, project.CanDownload)).ToArray();
+            var files = response.RootElement.GetProperty("data").EnumerateArray().Select(row => ReadCurseForgeProjectFile(row, project)).ToArray();
             bool hasMore = response.RootElement.TryGetProperty("pagination", out var pagination)
                 ? Math.Min(10000, pagination.GetProperty("totalCount").GetInt64()) > files.Length
                 : files.Length == 50;
@@ -202,10 +203,15 @@ public sealed partial class ModRepositoryClient
     private async Task<ModFile[]> GetModrinthFilesAsync(ModProject project, string? gameVersion, string? loader, CancellationToken token)
     {
         string query = "?include_changelog=false";
+        if (project.Kind == ModProjectKind.DataPack) loader = "datapack";
         if (gameVersion is not null) query += "&game_versions=" + Escape(JsonSerializer.Serialize(new[] { gameVersion }));
         if (loader is not null) query += "&loaders=" + Escape(JsonSerializer.Serialize(new[] { loader.ToLowerInvariant() }));
         using var doc = await RequestAsync(project.Platform, "/v2/project/" + Escape(project.Id) + "/version" + query, null, token).ConfigureAwait(false);
-        return doc.RootElement.EnumerateArray().Select(ReadModrinthFile).OrderByDescending(file => file.Published).ToArray();
+        return doc.RootElement.EnumerateArray()
+            .Select(row => (Row: row, Archive: FindModrinthArchive(row, project.Kind)))
+            .Where(item => item.Archive.ValueKind == JsonValueKind.Object)
+            .Select(item => ReadModrinthFile(item.Row, item.Archive))
+            .OrderByDescending(file => file.Published).ToArray();
     }
 
     /// <summary>按本地文件的上游指纹识别项目, 不上传文件内容.</summary>
@@ -295,7 +301,7 @@ public sealed partial class ModRepositoryClient
                 if (current.Platform == ModPlatform.Modrinth && dependency.VersionId is { } versionId)
                 {
                     using var exact = await RequestAsync(current.Platform, "/v2/version/" + Escape(versionId), null, cancellationToken).ConfigureAwait(false);
-                    dependent = ReadModrinthFile(exact.RootElement);
+                    dependent = ReadModrinthFile(exact.RootElement, FindModrinthArchive(exact.RootElement, ModProjectKind.Mod));
                     projectId = dependent.ProjectId;
                 }
 
@@ -398,32 +404,70 @@ public sealed partial class ModRepositoryClient
     private static Uri? Url(string? value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == "https" ? uri : null;
     private static readonly string[] KnownLoaders = ["forge", "neoforge", "fabric", "quilt", "liteloader"];
 
-    private static ModProject ReadModrinthProject(JsonElement row, bool search)
+    private static string ModrinthKind(ModProjectKind kind) => kind switch
+    {
+        ModProjectKind.Modpack => "modpack", ModProjectKind.DataPack => "datapack", ModProjectKind.ResourcePack => "resourcepack",
+        ModProjectKind.ShaderPack => "shader", _ => "mod"
+    };
+
+    private static (int Id, string Slug) CurseForgeType(ModProjectKind kind) => kind switch
+    {
+        ModProjectKind.Modpack => (4471, "modpacks"), ModProjectKind.DataPack => (6945, "data-packs"),
+        ModProjectKind.ResourcePack => (12, "texture-packs"), ModProjectKind.ShaderPack => (6552, "shaders"), _ => (6, "mc-mods")
+    };
+
+    private static ModProject ReadModrinthProject(JsonElement row, bool search, ModProjectKind? requestedKind = null)
     {
         string id = Text(row, search ? "project_id" : "id"), slug = Text(row, "slug", id);
         var categories = Strings(row, "categories");
-        return new ModProject(ModPlatform.Modrinth, id, slug, Text(row, "title"), Text(row, "description"), new Uri("https://modrinth.com/mod/" + Escape(slug)),
+        var loaders = search ? categories.Intersect(KnownLoaders).ToArray() : Strings(row, "loaders");
+        ModProjectKind kind = requestedKind ?? (Text(row, "project_type") switch
+        {
+            "modpack" => ModProjectKind.Modpack,
+            "datapack" => ModProjectKind.DataPack,
+            "resourcepack" => ModProjectKind.ResourcePack,
+            "shader" => ModProjectKind.ShaderPack,
+            _ when loaders is ["datapack"] => ModProjectKind.DataPack,
+            _ => ModProjectKind.Mod
+        });
+        return new ModProject(ModPlatform.Modrinth, id, slug, Text(row, "title"), Text(row, "description"), new Uri("https://modrinth.com/" + ModrinthKind(kind) + "/" + Escape(slug)),
             Url(Text(row, "icon_url")), Number(row, "downloads"), Date(row, search ? "date_modified" : "updated"), search ? Strings(row, "versions") : Strings(row, "game_versions"),
-            search ? categories.Intersect(KnownLoaders).ToArray() : Strings(row, "loaders"), categories.Except(KnownLoaders).ToArray());
+            loaders, categories.Except(KnownLoaders).ToArray()) { Kind = kind };
     }
 
-    private static ModProject ReadCurseForgeProject(JsonElement row)
+    private static ModProject ReadCurseForgeProject(JsonElement row, ModProjectKind? requestedKind = null)
     {
         var categories = row.TryGetProperty("categories", out var categoryArray) ? categoryArray.EnumerateArray().Select(value => Text(value, "slug")).ToArray() : [];
         var indices = row.TryGetProperty("latestFilesIndexes", out var array) ? array.EnumerateArray().ToArray() : [];
         string id = Text(row, "id"), slug = Text(row, "slug", id);
-        return new ModProject(ModPlatform.CurseForge, id, slug, Text(row, "name"), Text(row, "summary"), new Uri("https://www.curseforge.com/minecraft/mc-mods/" + Escape(slug)),
+        ModProjectKind kind = requestedKind ?? (Number(row, "classId") switch
+        {
+            4471 => ModProjectKind.Modpack, 6945 => ModProjectKind.DataPack, 12 => ModProjectKind.ResourcePack,
+            6552 => ModProjectKind.ShaderPack, _ => ModProjectKind.Mod
+        });
+        return new ModProject(ModPlatform.CurseForge, id, slug, Text(row, "name"), Text(row, "summary"), new Uri("https://www.curseforge.com/minecraft/" + CurseForgeType(kind).Slug + "/" + Escape(slug)),
             row.TryGetProperty("logo", out var logo) && logo.ValueKind == JsonValueKind.Object ? Url(Text(logo, "thumbnailUrl")) : null,
             Number(row, "downloadCount"), Date(row, "dateModified"), indices.Select(index => Text(index, "gameVersion")).Distinct().ToArray(),
             indices.Select(index => Number(index, "modLoader") switch { 1 => "forge", 3 => "liteloader", 4 => "fabric", 5 => "quilt", 6 => "neoforge", _ => "" }).Where(value => value.Length > 0).Distinct().ToArray(), categories,
-            !row.TryGetProperty("allowModDistribution", out var allowed) || allowed.ValueKind != JsonValueKind.False);
+            !row.TryGetProperty("allowModDistribution", out var allowed) || allowed.ValueKind != JsonValueKind.False) { Kind = kind };
     }
 
-    private static ModFile ReadModrinthFile(JsonElement row)
+    private static JsonElement FindModrinthArchive(JsonElement row, ModProjectKind? kind)
     {
-        var files = row.GetProperty("files").EnumerateArray().OrderByDescending(file => file.TryGetProperty("primary", out var primary) && primary.GetBoolean()).ToArray();
-        var binary = files.FirstOrDefault(file => Text(file, "filename").EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
-        if (binary.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Mods 版本没有 JAR 文件.");
+        return row.GetProperty("files").EnumerateArray()
+            .OrderByDescending(file => file.TryGetProperty("primary", out var primary) && primary.ValueKind == JsonValueKind.True)
+            .FirstOrDefault(file => Path.GetExtension(Text(file, "filename")).ToLowerInvariant() switch
+            {
+                ".jar" => kind is null or ModProjectKind.Mod,
+                ".mrpack" => kind is null or ModProjectKind.Modpack,
+                ".zip" => kind != ModProjectKind.Mod,
+                _ => false
+            });
+    }
+
+    private static ModFile ReadModrinthFile(JsonElement row, JsonElement binary)
+    {
+        if (binary.ValueKind != JsonValueKind.Object) throw new InvalidDataException("资源版本没有可下载的文件.");
         var hashes = binary.GetProperty("hashes");
         var dependencies = row.TryGetProperty("dependencies", out var deps)
             ? deps.EnumerateArray().Where(dep => Text(dep, "dependency_type") == "required")
@@ -443,4 +487,8 @@ public sealed partial class ModRepositoryClient
             allowed ? Url(Text(row, "downloadUrl")) : null, Number(row, "fileLength"), sha, null, Date(row, "fileDate"), Number(row, "releaseType") switch { 2 => "beta", 3 => "alpha", _ => "release" },
             versions.Where(version => version.Length > 0 && char.IsDigit(version[0])).ToArray(), versions.Select(version => version.ToLowerInvariant()).Intersect(KnownLoaders).ToArray(), dependencies);
     }
+
+    private static ModFile ReadCurseForgeProjectFile(JsonElement row, ModProject project) => ReadCurseForgeFile(row,
+        project.CanDownload && !(project.Kind == ModProjectKind.Modpack && row.TryGetProperty("isServerPack", out var serverPack)
+            && serverPack.ValueKind == JsonValueKind.True));
 }
