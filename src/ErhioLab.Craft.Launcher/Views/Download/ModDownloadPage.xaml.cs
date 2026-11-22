@@ -103,6 +103,29 @@ public partial class ModDownloadPage
 
     private void Search_Click(object sender, RoutedEventArgs e) => Refresh();
 
+    private void ResetFilters_Click(object sender, RoutedEventArgs e)
+    {
+        _ready = false;
+        try
+        {
+            QueryBox.Clear();
+            SourcesBox.SelectedIndex = 0;
+            GameVersionBox.SelectedIndex = 0;
+            GameVersionBox.Version = null;
+            _lastVersion = "";
+            LoaderBox.SelectedIndex = 0;
+            CategoryBox.SelectedIndex = 0;
+            SortBox.SelectedIndex = 0;
+        }
+        finally
+        {
+            _ready = true;
+        }
+
+        App.Logger.Information("Mods", "重置 Mods 搜索条件.");
+        Refresh();
+    }
+
     private void Query_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)

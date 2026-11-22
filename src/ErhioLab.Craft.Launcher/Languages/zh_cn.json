@@ -27,6 +27,7 @@
         "mods.sortDownloads": "下载量",
         "mods.sortHint": "默认排序优先显示与名称相关的 Mods；下载量排序优先显示下载次数更多的 Mods。",
         "mods.search": "搜索",
+        "mods.resetFilters": "重置条件",
         "mods.refresh": "刷新",
         "mods.previous": "上一页",
         "mods.next": "下一页",
