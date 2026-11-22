@@ -402,11 +402,13 @@ public partial class MainWindow
 
     /// <summary>在主窗口内显示弹窗, 并等待用户确认或取消.</summary>
     internal async Task<bool> ShowDialogAsync(string title, string message, LauncherDialogLevel level,
-        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null, Action<string>? inputConfirmed = null)
+        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null,
+        Action<string>? inputConfirmed = null, IReadOnlyList<LauncherDialogAction>? actions = null)
     {
         await _dialogGate.WaitAsync();
         try
         {
+            if (!IsVisible || Dispatcher.HasShutdownStarted) return false;
             TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
             void Complete(bool confirmed) => completion.TrySetResult(confirmed);
             void OnDialogWindowClosed(object? sender, EventArgs e) => completion.TrySetResult(false);
@@ -414,7 +416,7 @@ public partial class MainWindow
             Closed += OnDialogWindowClosed;
             try
             {
-                DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText, inputText, inputValidator);
+                DialogOverlay.Configure(title, message, level, requiresConfirmation, confirmText, inputText, inputValidator, actions);
                 TopNavigationHost.IsHitTestVisible = false;
                 WindowControls.IsHitTestVisible = false;
                 DialogOverlay.Visibility = Visibility.Visible;
@@ -428,6 +430,7 @@ public partial class MainWindow
                 DialogOverlay.Completed -= Complete;
                 Closed -= OnDialogWindowClosed;
                 DialogOverlay.Visibility = Visibility.Collapsed;
+                DialogOverlay.SetActions(null);
                 TopNavigationHost.IsHitTestVisible = true;
                 WindowControls.IsHitTestVisible = true;
             }

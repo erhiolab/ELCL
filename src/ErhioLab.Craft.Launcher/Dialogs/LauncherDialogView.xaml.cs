@@ -1,9 +1,12 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Notifications;
 
 namespace ErhioLab.Craft.Launcher.Dialogs;
 
@@ -39,7 +42,8 @@ public partial class LauncherDialogView
 
     /// <summary>填充本次提示的文字/按钮和等级颜色.</summary>
     internal void Configure(string title, string message, LauncherDialogLevel level,
-        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null)
+        bool requiresConfirmation, string confirmText, string? inputText = null, Func<string, string?>? inputValidator = null,
+        IReadOnlyList<LauncherDialogAction>? actions = null)
     {
         _closing = false;
         _requiresConfirmation = requiresConfirmation;
@@ -52,6 +56,7 @@ public partial class LauncherDialogView
         ConfirmButton.Content = confirmText;
         ConfirmButton.IsDefault = inputText is not null || !requiresConfirmation;
         CancelButton.Visibility = requiresConfirmation ? Visibility.Visible : Visibility.Collapsed;
+        SetActions(actions);
 
         bool day = App.Settings.Theme == LauncherTheme.Day;
         Brush levelBrush = level switch
@@ -167,6 +172,25 @@ public partial class LauncherDialogView
     };
 
     private void ConfirmButton_Click(object sender, RoutedEventArgs e) => Close(true);
+
+    internal void SetActions(IReadOnlyList<LauncherDialogAction>? actions)
+    {
+        ExtraActions.ItemsSource = actions;
+        ExtraActions.Visibility = actions is { Count: > 0 } ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void ExtraAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (_closing || sender is not Button { DataContext: LauncherDialogAction action } button) return;
+        button.IsEnabled = false;
+        try { await action.ExecuteAsync(); }
+        catch (Exception error)
+        {
+            App.Logger.Error("Dialog", $"弹窗操作失败: {action.Label}.", error);
+            LauncherToasts.Error(LocalizationManager.Get("dialog.actionFailed"));
+        }
+        finally { button.IsEnabled = true; }
+    }
 
     private void InputBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {

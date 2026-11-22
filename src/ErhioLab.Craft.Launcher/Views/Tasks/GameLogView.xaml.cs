@@ -127,7 +127,8 @@ public partial class GameLogView
         if (IsLoaded && IsVisible) StartReading();
     }
 
-    internal void ShowFile(string path, string title, bool snapshot) => ShowFile(path, title, snapshot, launcherLog: false);
+    internal void ShowFile(string path, string title, bool snapshot, string? backToolTipKey = null) =>
+        ShowFile(path, title, snapshot, launcherLog: false, backToolTipKey: backToolTipKey);
 
     internal void ShowLauncherFile(string path, bool isCurrent)
     {
@@ -135,7 +136,7 @@ public partial class GameLogView
         ShowFile(path, Path.GetFileName(path), snapshot: !isCurrent, launcherLog: true);
     }
 
-    private void ShowFile(string path, string title, bool snapshot, bool launcherLog)
+    private void ShowFile(string path, string title, bool snapshot, bool launcherLog, string? backToolTipKey = null)
     {
         StopReading();
         _task = null;
@@ -144,7 +145,8 @@ public partial class GameLogView
         _snapshot = snapshot;
         ResetDocument(path);
         AutoUpdateBox.Visibility = snapshot ? Visibility.Collapsed : Visibility.Visible;
-        BackButton.SetResourceReference(ToolTipProperty, launcherLog ? "I18n.debug.backToDebug" : "I18n.versionLogs.back");
+        BackButton.SetResourceReference(ToolTipProperty, backToolTipKey is not null ? "I18n." + backToolTipKey
+            : launcherLog ? "I18n.debug.backToDebug" : "I18n.versionLogs.back");
         if (IsLoaded && IsVisible) StartReading();
     }
 

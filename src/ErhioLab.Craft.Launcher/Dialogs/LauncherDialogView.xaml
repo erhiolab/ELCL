@@ -177,7 +177,7 @@
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-                <StackPanel
+                <WrapPanel
                     Grid.Row="3"
                     Margin="0,24,0,0"
                     HorizontalAlignment="Right"
@@ -193,7 +193,25 @@
                         Click="ConfirmButton_Click"
                         Content="{DynamicResource I18n.common.gotIt}"
                         Style="{StaticResource DialogButtonStyle}" />
-                </StackPanel>
+                    <ItemsControl
+                        x:Name="ExtraActions"
+                        Visibility="Collapsed">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel
+                                    Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button
+                                    Click="ExtraAction_Click"
+                                    Content="{Binding Label}"
+                                    Style="{StaticResource DialogButtonStyle}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </WrapPanel>
             </Grid>
         </Border>
     </Grid>

@@ -48,6 +48,8 @@
 - [`MinecraftLaunchBuilder.CreateStartInfo`](launch.md#minecraftlaunchbuilder-createstartinfo)
 - [`MinecraftLaunchBuilder.CreateContext`](launch.md#minecraftlaunchbuilder-createcontext)
 - [`MinecraftLaunchBuilder.SplitArguments`](launch.md#minecraftlaunchbuilder-splitarguments)
+- [`MinecraftCrashAnalyzer.Analyze`](launch.md#minecraftcrashanalyzer-analyze)
+- [`MinecraftCrashAnalyzer.FindModKeywords`](launch.md#minecraftcrashanalyzer-findmodkeywords)
 
 ## 启动器安装档案
 

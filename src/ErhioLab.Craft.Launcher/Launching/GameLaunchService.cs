@@ -277,15 +277,20 @@ internal sealed class GameLaunchService
                         await Task.Delay(250, task.CancellationToken);
                     }
 
-                    await running.Completion;
-                    throw new InvalidOperationException(string.Format(L("gameLaunch.exitedEarly"), running.Process.ExitCode, log));
+                    int code = await running.Completion;
+                    task.CancellationToken.ThrowIfCancellationRequested();
+                    string message = string.Format(L("gameLaunch.exitedEarly"), code, log);
+                    if (code != 0)
+                        throw new GameProcessExitException(message, new GameCrashReport(name, version!.GameVersion, java!.Version,
+                            running.Process.Id, code, BeforeWindow: true, DateTimeOffset.Now, log));
+                    throw new InvalidOperationException(message);
                 })
             ], versionDirectory, onCompleted: () =>
             {
                 if (exportPath is not null) return;
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
                 var runningTask = App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
-                    runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, runningTask),
+                    runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, java?.Version, runningTask),
                     game.TerminateAsync, logPath: game.LogPath);
                 runningTask.JavaExecutablePath = java?.Path;
                 handedOff = true;
@@ -313,7 +318,7 @@ internal sealed class GameLaunchService
     }
 
     private static async Task<int> WatchGameAsync(RunningGame running, string runDirectory, string name,
-        string title, MinecraftLaunchPlaceholderContext context, LauncherTask task)
+        string title, MinecraftLaunchPlaceholderContext context, string? javaVersion, LauncherTask task)
     {
         try
         {
@@ -346,7 +351,8 @@ internal sealed class GameLaunchService
                 else
                 {
                     task.Error = string.Format(L("gameLaunch.crashed"), name, code, running.LogPath);
-                    LauncherToasts.Error(task.Error);
+                    GameCrashDialog.Queue(new GameCrashReport(name, context.GameVersion, javaVersion, running.Process.Id,
+                        code, BeforeWindow: false, DateTimeOffset.Now, running.LogPath));
                 }
             }
             return code;

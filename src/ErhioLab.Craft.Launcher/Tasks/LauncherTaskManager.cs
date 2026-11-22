@@ -8,6 +8,8 @@ using System.Windows;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Java;
+using ErhioLab.Craft.Launcher.Dialogs;
+using ErhioLab.Craft.Launcher.Launching;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
@@ -463,7 +465,10 @@ internal sealed class LauncherTaskManager
             await CleanupFailedTaskAsync(task);
             task.IsStopping = false;
             task.Status = LauncherTaskStatus.Failed;
-            LauncherToasts.Error(string.Format(LocalizationManager.Get("task.failedToast"), task.Error));
+            if (error is GameProcessExitException exited)
+                GameCrashDialog.Queue(exited.Report);
+            else
+                LauncherToasts.Error(string.Format(LocalizationManager.Get("task.failedToast"), task.Error));
             App.Logger.Error("Tasks", $"任务失败: {task.Title}.", error);
         }
         finally

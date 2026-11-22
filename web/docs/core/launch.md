@@ -171,3 +171,40 @@ var arguments = MinecraftLaunchBuilder.SplitArguments(
 按双引号和反斜杠规则拆分，返回字符串集合。它不是 Shell：不展开环境变量，不运行命令，不处理重定向管道。
 
 模板本身的规则见[替换标记](launch-placeholders.md)。
+
+## `MinecraftCrashAnalyzer.Analyze` {#minecraftcrashanalyzer-analyze}
+
+游戏异常退出后，把这次进程的输出传给 `Analyze`，可识别 JVM 参数错误、Java 版本不兼容、内存不足、OpenGL 不可用、Mods 依赖冲突、Mixin 失败和部分 JVM 致命错误。F3 + C 触发的调试崩溃返回 `ManualDebugCrash`；只有按键预警时不会匹配。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+
+string log = "java.lang.OutOfMemoryError: Java heap space";
+MinecraftCrashDiagnosis? diagnosis = MinecraftCrashAnalyzer.Analyze(log);
+if (diagnosis is { Kind: MinecraftCrashKind.JavaHeapExhausted })
+{
+    Console.WriteLine("游戏用完了 Java 堆内存。");
+}
+```
+
+`log` 是单次游戏进程的文本日志，可以包含标准输出和标准错误。方法只检查末尾最多 524288 个字符，返回一个已知故障或 `null`。当错误明确给出所需 Java 的类文件版本时，`RequiredJavaMajorVersion` 会包含对应的 Java 主版本；其他情况下留空。
+
+该方法不会读取文件、发送请求或修改设置。`log` 为 `null` 时抛出 `ArgumentNullException`。规则未匹配不代表游戏正常；请保留原始日志供进一步排查。
+
+## `MinecraftCrashAnalyzer.FindModKeywords` {#minecraftcrashanalyzer-findmodkeywords}
+
+把本次退出的日志传给 `FindModKeywords`，可以提取一些用于搜索的 Mods 线索。这个方法可以单独调用，不要求 `Analyze` 先匹配出原因。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+
+string log = "[Render thread/ERROR]: Mixin apply for mod example failed: example.mixins.json";
+foreach (MinecraftCrashModKeyword keyword in MinecraftCrashAnalyzer.FindModKeywords(log))
+{
+    Console.WriteLine($"{keyword.Kind}: {keyword.Value}");
+}
+```
+
+`log` 是单次游戏进程的文本输出或崩溃文本，为 `null` 时抛出 `ArgumentNullException`。方法只检查日志末尾最多 524288 个字符里的错误段落，最多返回六项。`Value` 是搜索用的文字；`Kind` 区分 Mod ID、Mixin 配置、JAR 文件名和堆栈包名。前几种是日志写出的标识；没有这些标识时才尝试提取包名。找不到返回空列表。
+
+方法不会扫描 Mods 目录、联网、翻译或判断某个 Mods 一定是崩溃原因。JAR 线索只包含文件名，不包含完整路径。
