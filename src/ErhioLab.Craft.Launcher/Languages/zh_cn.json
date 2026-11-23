@@ -877,6 +877,7 @@
         "background.stretch": "拉伸到窗口",
         "background.opacity": "背景不透明度",
         "background.cardOpacity": "卡片不透明度",
+        "background.navigationOpacity": "导航栏不透明度",
         "background.blur": "背景模糊",
         "background.volume": "视频音量",
         "background.refresh": "刷新背景",

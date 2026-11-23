@@ -66,6 +66,7 @@ public partial class LauncherBackgroundPage
         IntervalReveal.IsExpanded = options.PlaybackMode == BackgroundPlaybackMode.Slideshow;
         BackgroundOpacitySlider.Value = options.Opacity;
         CardOpacitySlider.Value = options.CardOpacity;
+        NavigationOpacitySlider.Value = options.NavigationOpacity;
         BlurSlider.Value = options.BlurRadius;
         VolumeSlider.Value = options.Volume;
         _binding = false;
@@ -313,6 +314,7 @@ public partial class LauncherBackgroundPage
         Fit = (BackgroundFit)Math.Max(FitBox.SelectedIndex, 0),
         Opacity = (int)BackgroundOpacitySlider.Value,
         CardOpacity = (int)CardOpacitySlider.Value,
+        NavigationOpacity = (int)NavigationOpacitySlider.Value,
         BlurRadius = (int)BlurSlider.Value,
         Volume = (int)VolumeSlider.Value,
         PlaybackMode = (BackgroundPlaybackMode)Math.Max(ModeBox.SelectedIndex, 0),
@@ -345,6 +347,14 @@ public partial class LauncherBackgroundPage
             SelectedRelativePath = tile.File.WallpaperId is null ? tile.RelativePath : App.Settings.BackgroundOptions.SelectedRelativePath,
             SelectedWallpaperId = tile.File.WallpaperId
         });
+    }
+
+    private void AppearanceFields_SizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        if (!args.WidthChanged || sender is not System.Windows.Controls.Primitives.UniformGrid fields) return;
+        // 每列保留足够的拖动空间; 窗口变窄时优先减少列数.
+        int columns = args.NewSize.Width >= 680 ? 3 : args.NewSize.Width >= 450 ? 2 : 1;
+        if (fields.Columns != columns) fields.Columns = columns;
     }
 
     private void Options_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> args)

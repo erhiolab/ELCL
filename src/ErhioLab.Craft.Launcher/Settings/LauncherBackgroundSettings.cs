@@ -25,6 +25,7 @@ public sealed record LauncherBackgroundSettings
     public BackgroundFit Fit { get; init; }
     public int Opacity { get; init; } = 85;
     public int CardOpacity { get; init; } = 85;
+    public int NavigationOpacity { get; init; } = 90;
     public int BlurRadius { get; init; }
     public int Volume { get; init; }
 
@@ -40,6 +41,7 @@ public sealed record LauncherBackgroundSettings
         Fit = Enum.IsDefined(Fit) ? Fit : BackgroundFit.Cover,
         Opacity = Math.Clamp(Opacity, 0, 100),
         CardOpacity = Math.Clamp(CardOpacity, 0, 100),
+        NavigationOpacity = Math.Clamp(NavigationOpacity, 0, 100),
         BlurRadius = Math.Clamp(BlurRadius, 0, 32),
         Volume = Math.Clamp(Volume, 0, 100),
         PlaybackMode = Enum.IsDefined(PlaybackMode) ? PlaybackMode : BackgroundPlaybackMode.RandomOnStartup,

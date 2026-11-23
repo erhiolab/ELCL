@@ -8,6 +8,73 @@
     Background="{DynamicResource PageSurfaceBrush}"
     Loaded="Card_Loaded"
     Unloaded="Card_Unloaded">
+    <UserControl.Resources>
+        <Style
+            x:Key="BackgroundPickerRowStyle"
+            TargetType="Grid"
+            BasedOn="{StaticResource FormFollowingSettingRowStyle}">
+            <Setter
+                Property="Margin"
+                Value="0,14,24,0" />
+        </Style>
+        <Style
+            x:Key="BackgroundSliderStyle"
+            TargetType="Slider"
+            BasedOn="{StaticResource {x:Type Slider}}">
+            <Setter
+                Property="IsSnapToTickEnabled"
+                Value="True" />
+            <Setter
+                Property="Maximum"
+                Value="100" />
+            <Setter
+                Property="TickFrequency"
+                Value="1" />
+        </Style>
+        <Style
+            x:Key="BackgroundSliderFieldStyle"
+            TargetType="HeaderedContentControl">
+            <Setter
+                Property="Margin"
+                Value="12,14,12,0" />
+            <Setter
+                Property="Tag"
+                Value="%" />
+            <Setter
+                Property="Template">
+                <Setter.Value>
+                    <ControlTemplate
+                        TargetType="HeaderedContentControl">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Margin="8,0,0,0"
+                                    FontFamily="{StaticResource MonoFont}"
+                                    Foreground="{DynamicResource AccentTextBrush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding
+                                            StringFormat="{}{0:0}{1}">
+                                            <Binding
+                                                Path="Content.Value"
+                                                RelativeSource="{RelativeSource TemplatedParent}" />
+                                            <Binding
+                                                Path="Tag"
+                                                RelativeSource="{RelativeSource TemplatedParent}" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ContentPresenter
+                                    ContentSource="Header" />
+                            </DockPanel>
+                            <ContentPresenter
+                                Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <ScrollViewer
         VerticalScrollBarVisibility="Auto"
         HorizontalScrollBarVisibility="Disabled">
@@ -52,87 +119,67 @@
                 Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.background.settings}">
                 <StackPanel>
-                    <CheckBox
-                        x:Name="EnabledBox"
-                        Checked="PlaybackOption_Changed"
-                        Content="{DynamicResource I18n.background.enabled}"
-                        Style="{StaticResource FormCheckBoxStyle}"
-                        Unchecked="PlaybackOption_Changed" />
-                    <CheckBox
-                        x:Name="PlayInBackgroundBox"
-                        Checked="PlaybackOption_Changed"
-                        Content="{DynamicResource I18n.background.playInBackground}"
-                        Style="{StaticResource FormCheckBoxStyle}"
-                        ToolTip="{DynamicResource I18n.background.playInBackgroundTip}"
-                        Unchecked="PlaybackOption_Changed" />
-                    <Grid
-                        Style="{StaticResource FormFollowingSettingRowStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition
-                                Width="155" />
-                            <ColumnDefinition
-                                Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock
+                    <WrapPanel>
+                        <CheckBox
+                            x:Name="EnabledBox"
+                            Margin="0,0,24,0"
                             VerticalAlignment="Center"
-                            Text="{DynamicResource I18n.background.playbackMode}" />
-                        <ComboBox
-                            x:Name="ModeBox"
-                            Grid.Column="1"
-                            HorizontalAlignment="Left"
-                            MinWidth="180"
-                            SelectionChanged="Mode_Changed"
-                            Style="{StaticResource FormComboBoxStyle}">
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.background.randomOnStartup}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.background.fixed}" />
-                            <ComboBoxItem
-                                Content="{DynamicResource I18n.background.slideshow}" />
-                        </ComboBox>
-                    </Grid>
-                    <controls:AnimatedReveal
-                        x:Name="IntervalReveal">
+                            Checked="PlaybackOption_Changed"
+                            Content="{DynamicResource I18n.background.enabled}"
+                            Style="{StaticResource FormCheckBoxStyle}"
+                            Unchecked="PlaybackOption_Changed" />
+                        <CheckBox
+                            x:Name="PlayInBackgroundBox"
+                            Margin="0,0,24,0"
+                            VerticalAlignment="Center"
+                            Checked="PlaybackOption_Changed"
+                            Content="{DynamicResource I18n.background.playInBackground}"
+                            Style="{StaticResource FormCheckBoxStyle}"
+                            ToolTip="{DynamicResource I18n.background.playInBackgroundTip}"
+                            Unchecked="PlaybackOption_Changed" />
+                        <Button
+                            x:Name="NextButton"
+                            VerticalAlignment="Center"
+                            Click="Next_Click"
+                            Content="{DynamicResource I18n.background.next}"
+                            Style="{StaticResource PageActionButtonStyle}" />
+                    </WrapPanel>
+                    <WrapPanel>
                         <Grid
-                            Style="{StaticResource FormFollowingSettingRowStyle}">
+                            Style="{StaticResource BackgroundPickerRowStyle}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition
                                     Width="155" />
                                 <ColumnDefinition
-                                    Width="*" />
+                                    Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 VerticalAlignment="Center"
-                                Text="{DynamicResource I18n.background.interval}" />
+                                Text="{DynamicResource I18n.background.playbackMode}" />
                             <ComboBox
-                                x:Name="IntervalBox"
+                                x:Name="ModeBox"
                                 Grid.Column="1"
-                                HorizontalAlignment="Left"
                                 MinWidth="180"
-                                DisplayMemberPath="Value"
-                                SelectedValuePath="Key"
-                                SelectionChanged="Interval_Changed"
-                                Style="{StaticResource FormComboBoxStyle}" />
+                                SelectionChanged="Mode_Changed"
+                                Style="{StaticResource FormComboBoxStyle}">
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.randomOnStartup}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.fixed}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource I18n.background.slideshow}" />
+                            </ComboBox>
                         </Grid>
-                    </controls:AnimatedReveal>
-                    <controls:AnimatedReveal
-                        x:Name="MissingBackgroundReveal">
-                        <TextBlock
-                            x:Name="MissingBackgroundLabel"
-                            Margin="{StaticResource FormSectionSpacing}"
-                            Foreground="{DynamicResource WarningTextBrush}"
-                            TextWrapping="Wrap" />
-                    </controls:AnimatedReveal>
-                    <controls:AnimatedReveal
-                        x:Name="OptionsReveal">
-                        <StackPanel>
+                        <controls:AnimatedReveal
+                            x:Name="FitReveal"
+                            IsExpanded="{Binding IsExpanded, ElementName=OptionsReveal, Mode=OneWay}">
                             <Grid
-                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                Style="{StaticResource BackgroundPickerRowStyle}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition
                                         Width="155" />
                                     <ColumnDefinition
-                                        Width="*" />
+                                        Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     VerticalAlignment="Center"
@@ -140,7 +187,6 @@
                                 <ComboBox
                                     x:Name="FitBox"
                                     Grid.Column="1"
-                                    HorizontalAlignment="Left"
                                     MinWidth="180"
                                     SelectionChanged="Fit_Changed"
                                     Style="{StaticResource FormComboBoxStyle}">
@@ -152,135 +198,94 @@
                                         Content="{DynamicResource I18n.background.stretch}" />
                                 </ComboBox>
                             </Grid>
+                        </controls:AnimatedReveal>
+                        <controls:AnimatedReveal
+                            x:Name="IntervalReveal">
                             <Grid
-                                Style="{StaticResource FormFollowingSettingRowStyle}">
+                                Style="{StaticResource BackgroundPickerRowStyle}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition
                                         Width="155" />
                                     <ColumnDefinition
-                                        Width="*" />
-                                    <ColumnDefinition
-                                        Width="48" />
+                                        Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     VerticalAlignment="Center"
-                                    Text="{DynamicResource I18n.background.opacity}" />
+                                    Text="{DynamicResource I18n.background.interval}" />
+                                <ComboBox
+                                    x:Name="IntervalBox"
+                                    Grid.Column="1"
+                                    MinWidth="180"
+                                    DisplayMemberPath="Value"
+                                    SelectedValuePath="Key"
+                                    SelectionChanged="Interval_Changed"
+                                    Style="{StaticResource FormComboBoxStyle}" />
+                            </Grid>
+                        </controls:AnimatedReveal>
+                    </WrapPanel>
+                    <controls:AnimatedReveal
+                        x:Name="MissingBackgroundReveal">
+                        <TextBlock
+                            x:Name="MissingBackgroundLabel"
+                            Margin="0,8,0,0"
+                            Foreground="{DynamicResource WarningTextBrush}"
+                            TextWrapping="Wrap" />
+                    </controls:AnimatedReveal>
+                    <controls:AnimatedReveal
+                        x:Name="OptionsReveal">
+                        <UniformGrid
+                            Columns="1"
+                            Margin="-12,0,-12,0"
+                            SizeChanged="AppearanceFields_SizeChanged">
+                            <HeaderedContentControl
+                                Header="{DynamicResource I18n.background.opacity}"
+                                Style="{StaticResource BackgroundSliderFieldStyle}">
                                 <Slider
                                     x:Name="BackgroundOpacitySlider"
-                                    Grid.Column="1"
-                                    Margin="0,0,16,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="100"
-                                    TickFrequency="1"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.opacity}"
+                                    Style="{StaticResource BackgroundSliderStyle}"
                                     ValueChanged="Options_ValueChanged" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{StaticResource MonoFont}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding Value, ElementName=BackgroundOpacitySlider, StringFormat={}{0:0}%}"
-                                    TextAlignment="Right" />
-                            </Grid>
-                            <Grid
-                                Style="{StaticResource FormFollowingSettingRowStyle}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition
-                                        Width="155" />
-                                    <ColumnDefinition
-                                        Width="*" />
-                                    <ColumnDefinition
-                                        Width="48" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock
-                                    VerticalAlignment="Center"
-                                    Text="{DynamicResource I18n.background.cardOpacity}" />
+                            </HeaderedContentControl>
+                            <HeaderedContentControl
+                                Header="{DynamicResource I18n.background.cardOpacity}"
+                                Style="{StaticResource BackgroundSliderFieldStyle}">
                                 <Slider
                                     x:Name="CardOpacitySlider"
-                                    Grid.Column="1"
-                                    Margin="0,0,16,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="100"
-                                    TickFrequency="1"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.cardOpacity}"
+                                    Style="{StaticResource BackgroundSliderStyle}"
                                     ValueChanged="Options_ValueChanged" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{StaticResource MonoFont}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding Value, ElementName=CardOpacitySlider, StringFormat={}{0:0}%}"
-                                    TextAlignment="Right" />
-                            </Grid>
-                            <Grid
-                                Style="{StaticResource FormFollowingSettingRowStyle}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition
-                                        Width="155" />
-                                    <ColumnDefinition
-                                        Width="*" />
-                                    <ColumnDefinition
-                                        Width="48" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock
-                                    VerticalAlignment="Center"
-                                    Text="{DynamicResource I18n.background.blur}" />
+                            </HeaderedContentControl>
+                            <HeaderedContentControl
+                                Header="{DynamicResource I18n.background.navigationOpacity}"
+                                Style="{StaticResource BackgroundSliderFieldStyle}">
+                                <Slider
+                                    x:Name="NavigationOpacitySlider"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.navigationOpacity}"
+                                    Style="{StaticResource BackgroundSliderStyle}"
+                                    ValueChanged="Options_ValueChanged" />
+                            </HeaderedContentControl>
+                            <HeaderedContentControl
+                                Header="{DynamicResource I18n.background.blur}"
+                                Style="{StaticResource BackgroundSliderFieldStyle}"
+                                Tag="">
                                 <Slider
                                     x:Name="BlurSlider"
-                                    Grid.Column="1"
-                                    Margin="0,0,16,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.blur}"
                                     Maximum="32"
-                                    TickFrequency="1"
+                                    Style="{StaticResource BackgroundSliderStyle}"
                                     ValueChanged="Options_ValueChanged" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{StaticResource MonoFont}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding Value, ElementName=BlurSlider, StringFormat={}{0:0}}"
-                                    TextAlignment="Right" />
-                            </Grid>
-                            <Grid
-                                Style="{StaticResource FormFollowingSettingRowStyle}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition
-                                        Width="155" />
-                                    <ColumnDefinition
-                                        Width="*" />
-                                    <ColumnDefinition
-                                        Width="48" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock
-                                    VerticalAlignment="Center"
-                                    Text="{DynamicResource I18n.background.volume}" />
+                            </HeaderedContentControl>
+                            <HeaderedContentControl
+                                Header="{DynamicResource I18n.background.volume}"
+                                Style="{StaticResource BackgroundSliderFieldStyle}">
                                 <Slider
                                     x:Name="VolumeSlider"
-                                    Grid.Column="1"
-                                    Margin="0,0,16,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="100"
-                                    TickFrequency="1"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.volume}"
+                                    Style="{StaticResource BackgroundSliderStyle}"
                                     ValueChanged="Options_ValueChanged" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{StaticResource MonoFont}"
-                                    Foreground="{DynamicResource AccentTextBrush}"
-                                    Text="{Binding Value, ElementName=VolumeSlider, StringFormat={}{0:0}%}"
-                                    TextAlignment="Right" />
-                            </Grid>
-                        </StackPanel>
+                            </HeaderedContentControl>
+                        </UniformGrid>
                     </controls:AnimatedReveal>
-                    <Button
-                        x:Name="NextButton"
-                        Margin="0,14,0,0"
-                        HorizontalAlignment="Left"
-                        Click="Next_Click"
-                        Content="{DynamicResource I18n.background.next}"
-                        Style="{StaticResource PageActionButtonStyle}" />
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard

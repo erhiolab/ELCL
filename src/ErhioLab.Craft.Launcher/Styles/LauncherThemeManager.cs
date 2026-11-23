@@ -24,7 +24,7 @@ internal static class LauncherThemeManager
         Set("LineSoftBrush", day ? "#FFE2EBF2" : "#FF1D222B");
         Set("TextBrush", day ? "#FF1B2733" : "#FFF1F3F5");
         Set("TextMutedBrush", day ? "#FF647587" : "#FF7F8998");
-        ApplyBackgroundSurfaces(false, 1);
+        ApplyBackgroundSurfaces(false, 1, 1);
         Set("DangerTextBrush", day ? "#FFBD2D37" : "#FFFF717D");
         Set("WarningTextBrush", day ? "#FF916208" : "#FFE6BD6A");
         Set("AccentBrush", accent);
@@ -46,7 +46,7 @@ internal static class LauncherThemeManager
         Set("MemoryFreeBrush", Blend(Colors.White, memoryAccent, day ? 0.24 : 0.4));
     }
 
-    internal static void ApplyBackgroundSurfaces(bool active, double cardOpacity)
+    internal static void ApplyBackgroundSurfaces(bool active, double cardOpacity, double navigationOpacity)
     {
         UpdateSurface("PageSurfaceBrush", GetThemeColor("InkBrush"), active ? 0 : 1);
         var panel = GetThemeColor("PanelBrush");
@@ -55,7 +55,7 @@ internal static class LauncherThemeManager
         UpdateSurface("ButtonBorderBrush", active ? Blend(panel, GetThemeColor("TextBrush"), 0.55) : GetThemeColor("LineBrush"), 1);
         var raised = GetThemeColor("InkRaisedBrush");
         UpdateSurface("RaisedCardSurfaceBrush", raised, active ? cardOpacity : 1);
-        UpdateSurface("ChromeSurfaceBrush", raised, active ? 0.9 : 1);
+        UpdateSurface("ChromeSurfaceBrush", raised, active ? navigationOpacity : 1);
     }
 
     private static Color GetThemeColor(string key) => Application.Current.TryFindResource(key) is SolidColorBrush brush

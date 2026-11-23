@@ -84,7 +84,8 @@ public partial class MainWindow
     }
 
     private void UpdateBackgroundSurfaces() => LauncherThemeManager.ApplyBackgroundSurfaces(
-        BackgroundPresenter.IsDisplayingBackground, _backgroundPreview.CardOpacity / 100.0);
+        BackgroundPresenter.IsDisplayingBackground, _backgroundPreview.CardOpacity / 100.0,
+        _backgroundPreview.NavigationOpacity / 100.0);
 
     private void SetWindowMoveSizeActive(bool active)
     {
