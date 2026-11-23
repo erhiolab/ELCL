@@ -391,7 +391,7 @@
                                         x:Name="MessageText"
                                         Grid.Column="3"
                                         Text="{Binding Message}"
-                                        ToolTip="{Binding Logger}"
+                                        ToolTip="{Binding MessageToolTip}"
                                         Style="{StaticResource LogMessageTextStyle}" />
                                 </Grid>
                                 <TextBlock

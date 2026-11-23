@@ -132,11 +132,22 @@ src/
 └─ ErhioLab.Craft.Launcher.Core/  独立核心库
 web/
 └─ docs/                        官网与文档源文件
-tools/                          发布脚本
+tools/                          发布与构建产物清理脚本
 .run/                           Rider 运行与发布配置
 ```
 
 修改前请阅读 [AGENTS.md](AGENTS.md)。新增功能或改变使用方式时，同步更新对应文档；核心公开方法需要说明和调用示例。
+
+### 清理本地构建产物
+
+在仓库根目录运行。先预览，确认后在没有构建、发布或验证任务运行时执行清理：
+
+```powershell
+.\tools\clean-artifacts.ps1
+.\tools\clean-artifacts.ps1 -Apply
+```
+
+脚本只清理识别出的 WPF 临时目录、旧验证输出和发布暂存副本。启动器及核心库的常规构建目录、正式发布文件、测试源码和 `artifacts/mcmod-index/` 不会删除。检测到游戏存档、启动器数据、数据库或链接时会跳过；最近 15 分钟修改的候选目录也会保留。`-Apply` 是永久删除，不经过回收站。
 
 ### 界面翻译
 

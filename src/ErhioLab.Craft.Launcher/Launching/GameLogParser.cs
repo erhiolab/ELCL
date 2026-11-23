@@ -11,7 +11,11 @@ internal sealed record GameLogLine(string Message, string Level, string Time, st
 {
     public string LevelLabel => Level switch { "Warning" => "WARN", "Error" => "ERROR", "Debug" => "DEBUG", _ => "INFO" };
     public string Text => $"{Time} [{LevelLabel}]{(Thread.Length == 0 ? "" : " [" + Thread + "]")} {Message}";
-    public string Source => string.Join(Environment.NewLine, new[] { Thread, Logger }.Where(value => value.Length > 0));
+    public string? Source => string.IsNullOrWhiteSpace(Thread) ? LoggerName
+        : LoggerName is { } logger ? Thread + Environment.NewLine + logger : Thread;
+    public string? MessageToolTip => string.IsNullOrWhiteSpace(Message) ? null : LoggerName;
+
+    private string? LoggerName => string.IsNullOrWhiteSpace(Logger) ? null : Logger;
 }
 
 /// <summary>将按行保存的 Log4j XML 与普通文本转换成事件, 分别维护输出和错误流的未完成片段.</summary>
