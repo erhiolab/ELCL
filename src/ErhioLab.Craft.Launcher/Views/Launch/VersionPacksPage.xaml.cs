@@ -16,6 +16,7 @@ using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.SystemTools;
+using ErhioLab.Craft.Launcher.Tasks;
 using ErhioLab.Craft.Launcher.Versions;
 
 using Microsoft.Win32;
@@ -38,9 +39,19 @@ public partial class VersionPacksPage
 
     internal event Action<ModProjectKind, ModBrowserContext>? BrowseRequested;
     internal event Action<ModProjectRow, ModBrowserContext>? DetailsRequested;
+    internal event Action? BackRequested;
 
-    private ModProjectKind ProjectKind => _kind == MinecraftPackKind.ResourcePack ? ModProjectKind.ResourcePack : ModProjectKind.ShaderPack;
-    private static ModBrowserContext BrowserContext(LocalMinecraftVersion version) => new(version.GameVersion, null, version.FolderPath);
+    private bool IsDataPack => _kind == MinecraftPackKind.DataPack;
+    private ModProjectKind ProjectKind => _kind switch
+    {
+        MinecraftPackKind.ResourcePack => ModProjectKind.ResourcePack,
+        MinecraftPackKind.ShaderPack => ModProjectKind.ShaderPack,
+        _ => ModProjectKind.DataPack
+    };
+    private ModBrowserContext BrowserContext(LocalMinecraftVersion version) => new(version.GameVersion, null, version.FolderPath)
+    {
+        WorldDataPacksDirectory = IsDataPack ? _directory : null
+    };
 
     public VersionPacksPage() : this(MinecraftPackKind.ResourcePack)
     {
@@ -52,9 +63,22 @@ public partial class VersionPacksPage
         InitializeComponent();
         HeaderCard.SetResourceReference(HeaderedContentControl.HeaderProperty,
             kind == MinecraftPackKind.ResourcePack ? "I18n.community.resourcePacks" : "I18n.community.shaderPacks");
-        BrowseButton.SetResourceReference(ContentControl.ContentProperty, kind == MinecraftPackKind.ResourcePack
-            ? "I18n.localPacks.downloadResourcePacks"
-            : "I18n.localPacks.downloadShaderPacks");
+        BrowseButton.SetResourceReference(ContentControl.ContentProperty, "I18n.localPacks." + (kind switch
+        {
+            MinecraftPackKind.ResourcePack => "downloadResourcePacks",
+            MinecraftPackKind.ShaderPack => "downloadShaderPacks",
+            _ => "downloadDataPacks"
+        }));
+        PageHint.SetResourceReference(TextBlock.TextProperty, "I18n.localPacks." + (kind switch
+        {
+            MinecraftPackKind.ResourcePack => "resourcePacksHint",
+            MinecraftPackKind.ShaderPack => "shaderPacksHint",
+            _ => "dataPacksHint"
+        }));
+        if (IsDataPack)
+        {
+            WorldBackButton.Visibility = Visibility.Visible;
+        }
         SelectionBar.EnableRequested += () => _ = ChangeAsync(SelectedRows(), true);
         SelectionBar.DisableRequested += () => _ = ChangeAsync(SelectedRows(), false);
         SelectionBar.DeleteRequested += () => _ = DeleteAsync(SelectedRows());
@@ -63,16 +87,39 @@ public partial class VersionPacksPage
         {
             if (PackList.SelectedItem is LocalMinecraftPackRow row) OpenLocalInfo(row);
         };
+        if (_kind == MinecraftPackKind.ShaderPack)
+        {
+            SelectionBar.AddAction("localPacks.importShaderConfig", () => TransferSelectedShaderConfig(importing: true), count => count == 1);
+            SelectionBar.AddAction("localPacks.exportShaderConfig", () => TransferSelectedShaderConfig(importing: false), count => count == 1,
+                () => PackList.SelectedItem is LocalMinecraftPackRow { HasShaderConfig: true });
+        }
     }
 
-    internal void SetContext(string gameDirectory, LocalMinecraftVersion version)
+    private void TransferSelectedShaderConfig(bool importing)
+    {
+        if (PackList.SelectedItems.Count == 1 && PackList.SelectedItem is LocalMinecraftPackRow row)
+            _ = TransferShaderConfigAsync(row, importing);
+    }
+
+    internal void SetContext(string gameDirectory, LocalMinecraftVersion version) => SetDirectory(gameDirectory, version,
+        Path.Combine(version.FolderPath, _kind == MinecraftPackKind.ResourcePack ? "resourcepacks" : "shaderpacks"));
+
+    internal void SetWorldContext(string gameDirectory, LocalMinecraftVersion version, LocalMinecraftWorld world)
+    {
+        HeaderCard.Header = string.Format(LocalizationManager.Get("worlds.dataPacksTitle"), world.Name);
+        SetDirectory(gameDirectory, version, Path.Combine(world.DirectoryPath, "datapacks"));
+    }
+
+    private void WorldBack_Click(object sender, RoutedEventArgs e) => BackRequested?.Invoke();
+
+    private void SetDirectory(string gameDirectory, LocalMinecraftVersion version, string directory)
     {
         _generation++;
         _scan?.Cancel();
         _lookup?.Cancel();
         _version = version;
         _gameDirectory = gameDirectory;
-        _directory = Path.Combine(version.FolderPath, _kind == MinecraftPackKind.ResourcePack ? "resourcepacks" : "shaderpacks");
+        _directory = directory;
         DetailsReveal.IsExpanded = false;
         DetailsReveal.DataContext = null;
         _rows = [];
@@ -83,19 +130,27 @@ public partial class VersionPacksPage
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        CommunityMods.Installed += Installed;
         UpdateDropTarget();
         await RefreshAsync();
     }
 
     private void Page_Unloaded(object sender, RoutedEventArgs e)
     {
+        CommunityMods.Installed -= Installed;
         _scan?.Cancel();
         _lookup?.Cancel();
+        DetailsReveal.IsExpanded = false;
         _windowsDrop?.Dispose();
         _windowsDrop = null;
     }
 
     private void DropTarget_Changed(object sender, DependencyPropertyChangedEventArgs e) => UpdateDropTarget();
+
+    private void Installed(string directory)
+    {
+        if (!_busy && string.Equals(directory, _directory, StringComparison.OrdinalIgnoreCase)) _ = RefreshAsync();
+    }
 
     private void UpdateDropTarget()
     {
@@ -109,8 +164,6 @@ public partial class VersionPacksPage
         _windowsDrop ??= WindowsFileDropTarget.Attach(this, AcceptZip, FilesDropped, DropFailed, MainWindow.IsVersionFileDropAllowed);
         _windowsDrop?.SetEnabled(!_busy);
     }
-
-    private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
 
     internal Task RefreshAsync() => _scanWork = RefreshCoreAsync();
 
@@ -128,14 +181,19 @@ public partial class VersionPacksPage
         App.Logger.Information("Packs", $"扫描本地包: 类型={_kind}, 目录={directory}.");
         try
         {
-            var rows = await Task.Run(() =>
+            var rows = await Task.Run(async () =>
             {
                 LocalPackFiles.ValidateDirectory(directory);
                 var paths = LocalMinecraftPackScanner.Enumerate(directory, token);
                 LocalPackPreferences? settings = null;
+                MinecraftWorldDataPackSelection? dataPacks = null;
                 try
                 {
-                    settings = LocalPackPreferences.Load(version.FolderPath, _kind, version.GameVersion);
+                    if (IsDataPack)
+                    {
+                        if (paths.Count > 0) dataPacks = await LocalMinecraftWorldManager.ReadDataPackSelectionAsync(Path.GetDirectoryName(directory)!, token);
+                    }
+                    else settings = LocalPackPreferences.Load(version.FolderPath, _kind, version.GameVersion);
                 }
                 catch (Exception error) when (IsPackFileError(error))
                 {
@@ -144,7 +202,12 @@ public partial class VersionPacksPage
 
                 return paths.Select(path =>
                 {
-                    var row = new LocalMinecraftPackRow(path, _kind, settings?.IsEnabled(Path.GetFileName(path)));
+                    string fileName = Path.GetFileName(path);
+                    string id = "file/" + fileName;
+                    bool? enabled = dataPacks is null ? settings?.IsEnabled(fileName)
+                        : dataPacks.Enabled.Contains(id, StringComparer.Ordinal) ? true
+                        : dataPacks.Disabled.Contains(id, StringComparer.Ordinal) ? false : null;
+                    var row = new LocalMinecraftPackRow(path, _kind, enabled, canChangeSelection: dataPacks is not null);
                     if (row.IsShaderPack) row.SetHasShaderConfig(File.Exists(LocalPackFiles.ShaderConfigName(path)));
                     return row;
                 }).ToArray();
@@ -166,7 +229,7 @@ public partial class VersionPacksPage
                 var icon = pack.Icon is { } bytes ? await Task.Run(() => ModIconDecoder.Decode(bytes), token) : null;
                 token.ThrowIfCancellationRequested();
                 row.Apply(pack, icon);
-                if (pack.Error is { } error) App.Logger.Warning("Packs", $"无法读取包: {row.Path}. {error}");
+                if (pack.Error is { } error) App.Logger.Warning("Packs", $"无法读取包: {pack.Path}. {error}");
             }
 
             var format = await currentFormat;
@@ -223,7 +286,7 @@ public partial class VersionPacksPage
         CollectionViewSource.GetDefaultView(PackList.ItemsSource).Filter = query.Length > 0
             ? item => item is LocalMinecraftPackRow row && row.Matches(query)
             : null;
-        if (PackList.Items.Count == 0) ShowStatus(_rows.Count == 0 ? "empty" : "noResults");
+        if (PackList.Items.Count == 0) ShowStatus(_rows.Count == 0 ? IsDataPack ? "noDataPacks" : "empty" : "noResults");
         else EmptyText.Visibility = Visibility.Collapsed;
     }
 
@@ -244,7 +307,8 @@ public partial class VersionPacksPage
     private void Selection_Changed(object sender, SelectionChangedEventArgs e)
     {
         int count = PackList.SelectedItems.Count;
-        SelectionBar?.UpdateSelection(count, string.Format(L("selected"), count));
+        SelectionBar?.UpdateSelection(count, string.Format(L("selected"), count),
+            !IsDataPack || SelectedRows().All(row => row.CanToggle));
         if (DetailsReveal is not null && (count != 1 || !ReferenceEquals(DetailsReveal.DataContext, PackList.SelectedItem)))
             DetailsReveal.IsExpanded = false;
     }
@@ -332,7 +396,7 @@ public partial class VersionPacksPage
 
     private async void Toggle_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: LocalMinecraftPackRow { Enabled: { } enabled } row }) await ChangeAsync([row], !enabled);
+        if (sender is Button { Tag: LocalMinecraftPackRow { CanToggle: true } row }) await ChangeAsync([row], row.Enabled != true);
     }
 
     private async void Delete_Click(object sender, RoutedEventArgs e)
@@ -403,12 +467,24 @@ public partial class VersionPacksPage
         }
     }
 
-    private Task ChangeAsync(LocalMinecraftPackRow[] rows, bool enabled) => EditPacksAsync(rows, enabled, deleting: false);
+    private async Task ChangeAsync(LocalMinecraftPackRow[] rows, bool enabled)
+    {
+        if (rows.Length == 0 || _busy) return;
+        int generation = _generation;
+        if (IsDataPack && !enabled && rows.Any(row => row.Enabled != false)
+            && !await LauncherDialogs.ConfirmAsync(CommunityMods.L("disable"), L("disableDataPackConfirm"), confirmText: CommunityMods.L("disable"))) return;
+        if (generation == _generation) await EditPacksAsync(rows, enabled, deleting: false);
+    }
 
     private async Task DeleteAsync(LocalMinecraftPackRow[] rows)
     {
         int generation = _generation;
-        string confirmation = _kind == MinecraftPackKind.ShaderPack ? "deleteShaderConfirm" : "deleteConfirm";
+        string confirmation = _kind switch
+        {
+            MinecraftPackKind.ShaderPack => "deleteShaderConfirm",
+            MinecraftPackKind.DataPack => "deleteDataPackConfirm",
+            _ => "deleteConfirm"
+        };
         if (_busy || rows.Length == 0 || !await LauncherDialogs.ConfirmAsync(CommunityMods.L("delete"), string.Format(L(confirmation), rows.Length))) return;
         if (generation == _generation) await EditPacksAsync(rows, enabled: false, deleting: true);
     }
@@ -429,6 +505,11 @@ public partial class VersionPacksPage
             await _scanWork;
             if (generation != _generation) return;
             EnsureGameStopped(version);
+            if (IsDataPack)
+            {
+                await EditDataPacksAsync(version, directory, rows, enabled, deleting);
+                return;
+            }
             bool deleteShaderConfig = deleting && _kind == MinecraftPackKind.ShaderPack;
             var preferences = await Task.Run(() =>
             {
@@ -478,6 +559,47 @@ public partial class VersionPacksPage
         }
     }
 
+    private async Task EditDataPacksAsync(LocalMinecraftVersion version, string directory, LocalMinecraftPackRow[] rows, bool enabled, bool deleting)
+    {
+        if (App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, version.FolderPath, StringComparison.OrdinalIgnoreCase)))
+            throw new IOException(LocalizationManager.Get("worlds.versionBusy"));
+        string action = CommunityMods.L(deleting ? "delete" : enabled ? "enable" : "disable");
+        string title = string.Format(L("dataPackTask"), action, rows.Length);
+        var stage = new LauncherTaskStage(title, async context =>
+        {
+            var token = context.CancellationToken;
+            await Task.Run(() =>
+            {
+                foreach (var row in rows) LocalPackFiles.ValidatePack(directory, row.Path);
+            }, token);
+            if (enabled)
+            {
+                foreach (var row in rows)
+                {
+                    var pack = await LocalMinecraftPackScanner.ReadAsync(row.Path, _kind, token);
+                    if (pack.Error is not null) throw new InvalidDataException(string.Format(L("invalidForEnable"), row.FileName));
+                }
+            }
+            try
+            {
+                await LocalMinecraftWorldManager.SetDataPackSelectionAsync(Path.GetDirectoryName(directory)!,
+                    rows.Select(row => row.FileName), deleting ? null : enabled, token);
+            }
+            catch (Exception error) when (error is InvalidDataException or FileNotFoundException)
+            {
+                throw new IOException(L("dataPackSettingsMissing"), error);
+            }
+            if (deleting)
+                await Task.Run(() =>
+                {
+                    // 清理同批文件与记录时, 不在提交记录后半途响应取消.
+                    foreach (var row in rows) LocalPackFiles.Delete(directory, row.Path, deleteShaderConfig: false);
+                });
+        });
+        var task = App.Tasks.Start(title, [stage], version.FolderPath);
+        await task.Completion;
+    }
+
     private static void EnsureGameStopped(LocalMinecraftVersion version)
     {
         if (App.Tasks.Tasks.Any(task => task.IsActive && task.IsGameLaunch && string.Equals(task.TargetPath, version.FolderPath, StringComparison.OrdinalIgnoreCase)))
@@ -497,6 +619,7 @@ public partial class VersionPacksPage
         OpenLocation(() =>
         {
             if (!Directory.Exists(version.FolderPath)) throw new DirectoryNotFoundException();
+            LocalPackFiles.ValidateDirectory(_directory);
             Directory.CreateDirectory(_directory);
             return new ProcessStartInfo(_directory) { UseShellExecute = true };
         });
@@ -555,6 +678,8 @@ public partial class VersionPacksPage
         {
             if (_version is not { } version || !Directory.Exists(version.FolderPath))
                 throw new DirectoryNotFoundException(LocalizationManager.Get("versionSelector.directoryChanged"));
+            if (IsDataPack) EnsureGameStopped(version);
+            LocalPackFiles.ValidateDirectory(directory);
             int count = await LocalMinecraftPackScanner.ImportAsync(directory, files, _kind);
             LauncherToasts.Success(string.Format(L("imported"), count));
             App.Logger.Information("Packs", $"本地包导入完成: 类型={_kind}, 数量={count}, 目录={directory}.");

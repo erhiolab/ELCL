@@ -134,10 +134,11 @@ internal sealed partial class LocalPackPreferences
     private List<string> ReadIds(string key)
     {
         if (Get(key) is not { } value) return [];
-        var ids = JsonSerializer.Deserialize<List<string>>(value);
-        if (ids is null || ids.Any(id => id is null)) throw new InvalidDataException("Expected a list of pack IDs for " + key);
-        return ids;
+        var ids = JsonSerializer.Deserialize<List<string?>>(value) ?? throw InvalidIds(key);
+        return ids.ConvertAll(id => id ?? throw InvalidIds(key));
     }
+
+    private static InvalidDataException InvalidIds(string key) => new("Expected a list of pack IDs for " + key);
 
     private string? Get(string key)
     {

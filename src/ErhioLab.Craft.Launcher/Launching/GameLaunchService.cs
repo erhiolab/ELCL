@@ -27,10 +27,41 @@ internal sealed class GameLaunchService
 
     internal Task StartAsync() => PrepareAsync(App.Settings);
 
+    internal async Task StartWorldAsync(string gameDirectory, LocalMinecraftVersion version, LocalMinecraftWorld world)
+    {
+        if (!version.IsValid || world.MetadataError is not null)
+        {
+            LauncherToasts.Error(L("worlds.quickPlayUnavailable"));
+            return;
+        }
+        string saves = Path.Combine(version.FolderPath, "saves");
+        if (!string.Equals(Path.GetDirectoryName(world.DirectoryPath), saves, StringComparison.OrdinalIgnoreCase)) return;
+        try { LocalPackFiles.ValidateDirectory(world.DirectoryPath); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            App.Logger.Error("Worlds", $"快速进入前无法验证世界目录: {world.DirectoryPath}.", error);
+            LauncherToasts.Error(L("worlds.quickPlayUnavailable"));
+            return;
+        }
+        if (!File.Exists(Path.Combine(world.DirectoryPath, "level.dat")) && !File.Exists(Path.Combine(world.DirectoryPath, "level.dat_old")))
+        {
+            LauncherToasts.Error(L("worlds.quickPlayUnavailable"));
+            return;
+        }
+        if (App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, version.FolderPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            LauncherToasts.Information(L("worlds.versionBusy"));
+            return;
+        }
+        App.Logger.Information("Worlds", $"请求快速进入世界: {world.DirectoryPath}.");
+        await PrepareAsync(App.Settings with { SelectedGameFolderPath = gameDirectory, SelectedVersionPath = version.FolderPath, SelectedVersionId = version.Id },
+            quickPlayWorld: Path.GetFileName(world.DirectoryPath));
+    }
+
     internal Task ExportScriptAsync(string gameDirectory, LocalMinecraftVersion version, string path) =>
         PrepareAsync(App.Settings with { SelectedGameFolderPath = gameDirectory, SelectedVersionPath = version.FolderPath, SelectedVersionId = version.Id }, Path.GetFullPath(path));
 
-    private async Task PrepareAsync(LauncherSettings settings, string? exportPath = null)
+    private async Task PrepareAsync(LauncherSettings settings, string? exportPath = null, string? quickPlayWorld = null)
     {
         AccountEntry? account = App.Accounts.SelectedAccount;
         if (account is null && exportPath is null)
@@ -153,6 +184,8 @@ internal sealed class GameLaunchService
                 {
                     version = await MinecraftLaunchVersion.LoadAsync(gameDirectory, jsonPath,
                         (id, token) => Application.Current.Dispatcher.InvokeAsync(() => FetchParentAsync(id, source, downloads, task, token)).Task.Unwrap(), task.CancellationToken);
+                    if (quickPlayWorld is not null && !MinecraftLaunchBuilder.SupportsQuickPlaySingleplayer(version))
+                        throw new NotSupportedException(L("worlds.quickPlayUnsupported"));
                     App.Logger.Information("Launch", $"版本元数据已解析: 基础版本={version.GameVersion}, Java 要求={version.JavaMajorVersion}.");
                 }),
                 .. (optimizeMemory ? new[] { Stage("memoryOptimization.launchStage", async task =>
@@ -223,7 +256,7 @@ internal sealed class GameLaunchService
                         Java = java!, Context = context, WorkingDirectory = versionDirectory, NativesDirectory = natives,
                         AccessToken = accessToken, IsMicrosoftAccount = exportPath is null && account.IsMicrosoft, ClientId = ServiceConfiguration.MicrosoftClientId,
                         MemoryMiB = memory, GarbageCollector = (MinecraftGarbageCollector)settings.GarbageCollector,
-                        JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments,
+                        JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments, QuickPlayWorld = quickPlayWorld,
                         WindowWidth = width, WindowHeight = height, Fullscreen = settings.WindowMode == GameWindowMode.Fullscreen,
                         JavaWrapperPath = wrapper, LwjglAgentPath = agent,
                         Environment = MinecraftLaunchEnvironment.Current with { Architecture = JavaArchitecture(java!) }

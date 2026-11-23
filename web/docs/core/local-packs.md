@@ -1,4 +1,4 @@
-# 本地资源包与光影包
+# 本地资源包、光影包和数据包
 
 命名空间：`ErhioLab.Craft.Launcher.Core.Minecraft`。
 
@@ -18,7 +18,7 @@ foreach (string path in paths) Console.WriteLine(Path.GetFileName(path));
 
 ## LocalMinecraftPackScanner.ReadAsync
 
-传入单个包的路径、`MinecraftPackKind.ResourcePack` 或 `MinecraftPackKind.ShaderPack`，可选传入取消令牌。返回 `LocalMinecraftPack`；包损坏、读不到或类型不符时，`Error` 保存原因，调用方仍可保留这一项。无效参数与取消仍会抛出异常。此方法不写文件。
+传入单个包的路径、包种类和可选的取消令牌。种类可选 `MinecraftPackKind.ResourcePack`、`MinecraftPackKind.ShaderPack` 或 `MinecraftPackKind.DataPack`。返回 `LocalMinecraftPack`；包损坏、读不到或类型不符时，`Error` 保存原因，调用方仍可保留这一项。无效参数与取消仍会抛出异常。此方法不写文件。
 
 `pack.mcmeta` 支持有或没有 BOM 的 UTF‑8。读取时跳过开头的 BOM，但仍会校验 JSON。
 
@@ -35,11 +35,13 @@ else foreach (var span in pack.Description) Console.Write(span.Text);
 | --- | --- |
 | `Name`、`Author`、`Version` | 声明的名称、作者、包版本。没有名称时使用文件名，其余缺失值为 `null`。 |
 | `MinecraftVersions` | 作者显式声明的 Minecraft 版本文字或列表，不根据文件名推测。 |
-| `MinimumFormat`、`MaximumFormat` | 资源包声明的格式范围。支持 `pack_format`、`supported_formats` 和 `min_format`／`max_format`。 |
+| `MinimumFormat`、`MaximumFormat` | 资源包或数据包各自声明的格式范围。支持 `pack_format`、`supported_formats` 和 `min_format`／`max_format`。 |
 | `Description`、`Icon` | 描述的文本片段和可选 `pack.png` 原始字节。颜色采用 `#RRGGBB`，支持斜体、粗体、下划线和删除线；不执行文本组件中的交互。 |
 | `Path`、`IsDirectory`、`Size`、`Error` | 路径、是否为文件夹、ZIP 字节数和读取错误。不会递归计算文件夹大小。 |
 
 光影包从 `shaders/` 结构识别。包内有 `pack.mcmeta` 或 `shaders.properties` 的名称、描述等字段才补充显示；这些不是光影引擎的通用版本规则。ZIP 中识别根目录或一个包装目录下的 `shaders/`。元数据最多 128 KiB，图标最多 4 MiB；超过限制的图标不显示。
+
+世界的数据包可从存档下的 `datapacks` 目录扫描，按 `MinecraftPackKind.DataPack` 读取。这里读取的是包声明，不用资源包格式判断数据包兼容性。要查看或修改世界中的启用状态，使用[世界数据包接口](local-worlds.md#localminecraftworldmanager-readdatapackselectionasync)。
 
 ## LocalMinecraftPackScanner.ReadClientResourceFormatAsync
 
@@ -57,7 +59,7 @@ if (format is { } value) Console.WriteLine($"{value.Major}.{value.Minor ?? 0}");
 
 ## LocalMinecraftPackScanner.ImportAsync
 
-传入目标目录、待复制的 ZIP 路径集合、包类别和可选取消令牌。返回复制成功的文件数量。识别包的结构后才复制；源文件不移动，同名目标不会覆盖。不导入文件夹，不读取链接形式的包。
+传入目标目录、待复制的 ZIP 路径集合、包类别和可选取消令牌。返回复制成功的文件数量。接受资源包、光影包和数据包 ZIP，按指定类别检查元数据或目录结构后才复制；源文件不移动，同名目标不会覆盖。不导入文件夹，不读取链接形式的包。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Minecraft;

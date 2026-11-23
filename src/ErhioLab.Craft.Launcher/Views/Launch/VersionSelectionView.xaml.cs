@@ -50,7 +50,7 @@ public partial class VersionSelectionView
     public VersionSelectionView()
     {
         InitializeComponent();
-        FolderList.ItemTemplate = (DataTemplate)Resources[new DataTemplateKey(typeof(FolderRow))];
+        FolderList.ItemTemplate = (DataTemplate)FindResource(new DataTemplateKey(typeof(FolderRow)));
         ViewLayout.Children.Remove(FolderSidebar);
         FolderList.ItemsSource = _folders;
         LocalizationManager.Changed += (_, _) =>

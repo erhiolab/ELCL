@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -91,7 +92,7 @@ internal static class GameCrashDialog
             Height = Math.Min(660, SystemParameters.WorkArea.Height),
             Content = viewer
         };
-        window.SetResourceReference(Window.BackgroundProperty, "InkBrush");
+        window.SetResourceReference(Control.BackgroundProperty, "InkBrush");
         viewer.BackRequested += window.Close;
         window.Closed += (_, _) => viewer.CloseFile();
         App.Logger.Information("CrashReport", $"查看错误实例日志: PID={report.ProcessId}, 日志={report.LogPath}.");

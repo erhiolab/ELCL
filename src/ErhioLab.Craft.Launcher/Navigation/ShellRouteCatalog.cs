@@ -49,7 +49,7 @@ internal static class ShellRouteCatalog
             details.BackRequested += () => downloadContent.Navigate(versionList, back: true);
             downloadContent.Navigate(details);
         };
-        void OpenModDetails(Mods.ModProjectRow row, Mods.ModBrowserContext context, FrameworkElement parent)
+        void OpenModDetails(ModProjectRow row, ModBrowserContext context, FrameworkElement parent)
         {
             ModDetailsPage details = new(row, context);
             details.BackRequested += () => downloadContent.Navigate(parent, back: true);

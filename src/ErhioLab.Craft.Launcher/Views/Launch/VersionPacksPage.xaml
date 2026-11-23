@@ -45,8 +45,29 @@
             x:Name="HeaderCard"
             Margin="0,0,0,14">
             <StackPanel>
+                <Button
+                    x:Name="WorldBackButton"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource CompactActionButtonStyle}"
+                    Click="WorldBack_Click"
+                    Visibility="Collapsed">
+                    <StackPanel
+                        Orientation="Horizontal">
+                        <Path
+                            Width="13"
+                            Height="13"
+                            Margin="0,0,7,0"
+                            Data="{x:Static icons:LauncherIcons.Back}"
+                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                            StrokeThickness="1.5"
+                            Stretch="Uniform" />
+                        <TextBlock
+                            Text="{DynamicResource I18n.worlds.back}" />
+                    </StackPanel>
+                </Button>
                 <TextBlock
-                    Text="{DynamicResource I18n.localPacks.hint}"
+                    x:Name="PageHint"
                     Foreground="{DynamicResource TextMutedBrush}"
                     TextWrapping="Wrap"
                     Margin="0,0,0,12" />
@@ -57,6 +78,7 @@
                         Click="Browse_Click"
                         Margin="0,0,8,8" />
                     <Button
+                        x:Name="ImportButton"
                         Content="{DynamicResource I18n.mods.installFromFile}"
                         Style="{StaticResource CompactActionButtonStyle}"
                         Click="Import_Click"
@@ -67,11 +89,7 @@
                         Click="Folder_Click"
                         Margin="0,0,8,8" />
                     <Button
-                        Content="{DynamicResource I18n.mods.refresh}"
-                        Style="{StaticResource CompactActionButtonStyle}"
-                        Click="Refresh_Click"
-                        Margin="0,0,8,8" />
-                    <Button
+                        x:Name="SelectAllButton"
                         Content="{DynamicResource I18n.mods.selectAll}"
                         Style="{StaticResource CompactActionButtonStyle}"
                         Click="SelectAll_Click"
@@ -230,13 +248,13 @@
                                         Click="Delete_Click" />
                                     <controls:IconButton
                                         Style="{StaticResource ShaderConfigActionStyle}"
-                                        Icon="{x:Static icons:LauncherIcons.ArrowDown}"
+                                        Icon="{x:Static icons:LauncherIcons.ArchiveIn}"
                                         ToolTip="{DynamicResource I18n.localPacks.importShaderConfig}"
                                         Tag="{Binding}"
                                         Click="ImportShaderConfig_Click" />
                                     <controls:IconButton
                                         Style="{StaticResource ShaderConfigActionStyle}"
-                                        Icon="{x:Static icons:LauncherIcons.ArrowUp}"
+                                        Icon="{x:Static icons:LauncherIcons.ArchiveOut}"
                                         ToolTip="{DynamicResource I18n.localPacks.exportShaderConfig}"
                                         IsEnabled="{Binding HasShaderConfig}"
                                         Tag="{Binding}"

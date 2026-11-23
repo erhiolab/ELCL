@@ -46,6 +46,7 @@
 - [`MinecraftLaunchFiles.ExtractNativesAsync`](launch.md#minecraftlaunchfiles-extractnativesasync)
 - [`MinecraftLaunchFiles.MaterializeLegacyAssetsAsync`](launch.md#minecraftlaunchfiles-materializelegacyassetsasync)
 - [`MinecraftLaunchBuilder.CreateStartInfo`](launch.md#minecraftlaunchbuilder-createstartinfo)
+- [`MinecraftLaunchBuilder.SupportsQuickPlaySingleplayer`](launch.md#minecraftlaunchbuilder-supportsquickplaysingleplayer)
 - [`MinecraftLaunchBuilder.CreateContext`](launch.md#minecraftlaunchbuilder-createcontext)
 - [`MinecraftLaunchBuilder.SplitArguments`](launch.md#minecraftlaunchbuilder-splitarguments)
 - [`MinecraftCrashAnalyzer.Analyze`](launch.md#minecraftcrashanalyzer-analyze)
@@ -197,12 +198,25 @@
 - [`LocalModManager.SetEnabled`](mods.md#localmodmanager-setenabled)
 - [`LocalModManager.Delete`](mods.md#localmodmanager-delete)
 
-## 本地资源包与光影包
+## 本地资源包、光影包和数据包
 
 - [`LocalMinecraftPackScanner.Enumerate`](local-packs.md#localminecraftpackscanner-enumerate)
 - [`LocalMinecraftPackScanner.ReadAsync`](local-packs.md#localminecraftpackscanner-readasync)
 - [`LocalMinecraftPackScanner.ReadClientResourceFormatAsync`](local-packs.md#localminecraftpackscanner-readclientresourceformatasync)
 - [`LocalMinecraftPackScanner.ImportAsync`](local-packs.md#localminecraftpackscanner-importasync)
+
+## 本地世界与备份
+
+- [`LocalMinecraftWorldManager.ScanAsync`](local-worlds.md#localminecraftworldmanager-scanasync)
+- [`LocalMinecraftWorldManager.ListBackupsAsync`](local-worlds.md#localminecraftworldmanager-listbackupsasync)
+- [`LocalMinecraftWorldManager.BackupAsync`](local-worlds.md#localminecraftworldmanager-backupasync)
+- [`LocalMinecraftWorldManager.DeleteBackupAsync`](local-worlds.md#localminecraftworldmanager-deletebackupasync)
+- [`LocalMinecraftWorldManager.ExportBackupAsync`](local-worlds.md#localminecraftworldmanager-exportbackupasync)
+- [`LocalMinecraftWorldManager.RestoreAsync`](local-worlds.md#localminecraftworldmanager-restoreasync)
+- [`LocalMinecraftWorldManager.DeleteAsync`](local-worlds.md#localminecraftworldmanager-deleteasync)
+- [`LocalMinecraftWorldManager.ReadDataPackSelectionAsync`](local-worlds.md#localminecraftworldmanager-readdatapackselectionasync)
+- [`LocalMinecraftWorldManager.SetDataPackSelectionAsync`](local-worlds.md#localminecraftworldmanager-setdatapackselectionasync)
+- [`LocalMinecraftWorldManager.ResetIconAsync`](local-worlds.md#localminecraftworldmanager-reseticonasync)
 
 ## 整合包
 

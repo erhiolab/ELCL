@@ -34,6 +34,7 @@
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
                 <ContentPresenter
+                    VerticalAlignment="Top"
                     Content="{Binding Body, ElementName=Root}" />
             </ScrollViewer>
         </Grid>

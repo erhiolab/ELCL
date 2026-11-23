@@ -7,15 +7,18 @@
     <controls:AnimatedReveal
         x:Name="SelectionReveal">
         <Border
-            Padding="16,12"
+            Padding="16,8"
             Margin="0,12,0,0"
             Style="{StaticResource PanelCardStyle}">
             <DockPanel>
                 <TextBlock
                     x:Name="SelectionText"
+                    MaxWidth="160"
                     VerticalAlignment="Center"
-                    Foreground="{DynamicResource AccentBrush}" />
+                    Foreground="{DynamicResource AccentBrush}"
+                    TextTrimming="CharacterEllipsis" />
                 <WrapPanel
+                    x:Name="ActionsPanel"
                     HorizontalAlignment="Right">
                     <Button
                         x:Name="LocalInfoButton"
@@ -23,27 +26,30 @@
                         Click="LocalInfo_Click"
                         Style="{StaticResource CompactActionButtonStyle}"
                         Visibility="Collapsed"
-                        Margin="8,0,0,0" />
+                        Margin="8,4,0,4" />
                     <Button
+                        x:Name="EnableButton"
                         Content="{DynamicResource I18n.mods.enable}"
                         Click="Enable_Click"
                         Style="{StaticResource CompactActionButtonStyle}"
-                        Margin="8,0,0,0" />
+                        Margin="8,4,0,4" />
                     <Button
+                        x:Name="DisableButton"
                         Content="{DynamicResource I18n.mods.disable}"
                         Click="Disable_Click"
                         Style="{StaticResource CompactActionButtonStyle}"
-                        Margin="8,0,0,0" />
+                        Margin="8,4,0,4" />
                     <Button
                         Content="{DynamicResource I18n.mods.delete}"
                         Click="Delete_Click"
                         Style="{StaticResource CompactActionButtonStyle}"
-                        Margin="8,0,0,0" />
+                        Margin="8,4,0,4" />
                     <Button
+                        x:Name="DeselectButton"
                         Content="{DynamicResource I18n.mods.deselect}"
                         Click="Deselect_Click"
                         Style="{StaticResource CompactActionButtonStyle}"
-                        Margin="8,0,0,0" />
+                        Margin="8,4,0,4" />
                 </WrapPanel>
             </DockPanel>
         </Border>

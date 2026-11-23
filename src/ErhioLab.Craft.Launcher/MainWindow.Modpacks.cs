@@ -47,14 +47,14 @@ public partial class MainWindow
             _modpackDrop?.Dispose();
             ModpackInstallTasks.Imported -= ModpackImported;
         };
-        VersionSelectionPage.ImportModpackRequested += () => _ = ImportModpackAsync();
+        _versionSelectionPage.ImportModpackRequested += () => _ = ImportModpackAsync();
         ModpackInstallTasks.Imported += ModpackImported;
     }
 
     private void ModpackImported(string directory)
     {
         App.Logger.Information("Modpacks", $"整合包导入完成: {directory}.");
-        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) _ = VersionSelectionPage.ReloadAsync();
+        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) _ = _versionSelectionPage.ReloadAsync();
     }
 
     private void UpdateModpackDropTarget()

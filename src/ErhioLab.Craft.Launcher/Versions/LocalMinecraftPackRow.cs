@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.IO;
 using System.Windows.Media;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -9,14 +8,15 @@ using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Versions;
 
-public sealed class LocalMinecraftPackRow(string path, MinecraftPackKind kind, bool? enabled = null) : INotifyPropertyChanged
+public sealed class LocalMinecraftPackRow(string path, MinecraftPackKind kind, bool? enabled = null, bool canChangeSelection = false) : INotifyPropertyChanged
 {
     private LocalMinecraftPack? _pack;
     private MinecraftPackFormat? _clientFormat;
     internal string Path { get; } = path;
     internal bool? Enabled { get; } = enabled;
-    public bool CanToggle => Enabled.HasValue;
+    public bool CanToggle => Enabled.HasValue || canChangeSelection;
     public bool IsShaderPack => kind == MinecraftPackKind.ShaderPack;
+    public bool IsDataPack => kind == MinecraftPackKind.DataPack;
     public bool HasShaderConfig { get; private set; }
 
     internal void SetHasShaderConfig(bool hasConfig)
@@ -31,20 +31,25 @@ public sealed class LocalMinecraftPackRow(string path, MinecraftPackKind kind, b
     public string FileName => System.IO.Path.GetFileName(Path);
     public string Name => _pack?.Name ?? FileName;
     public ImageSource? Icon { get; private set; }
-    public Geometry FallbackIcon => _pack?.Error is not null ? LauncherIcons.Info : Enabled == false ? LauncherIcons.Disable : kind == MinecraftPackKind.ResourcePack ? LauncherIcons.Image : LauncherIcons.DayTheme;
+    public Geometry FallbackIcon => _pack?.Error is not null ? LauncherIcons.Info : Enabled == false ? LauncherIcons.Disable : kind switch
+    {
+        MinecraftPackKind.ResourcePack => LauncherIcons.Image,
+        MinecraftPackKind.ShaderPack => LauncherIcons.DayTheme,
+        _ => LauncherIcons.Clover
+    };
 
     public IReadOnlyList<MinecraftTextSpan> Description => _pack?.Description is { Count: > 0 } description ? description : [new(_pack?.Error is not null ? L("invalid") : L(_pack is null ? "reading" : "noDescription"))];
 
-    public string Summary => string.Join(" · ", new[] { Enabled switch { true => L("enabled"), false => LocalizationManager.Get("mods.disabled"), _ => L("stateUnknown") }, _pack?.Version, _pack?.Author, _pack is null ? FileName : Versions }.Where(text => !string.IsNullOrWhiteSpace(text)));
+    public string Summary => string.Join(" · ", new[] { Enabled switch { true => L("enabled"), false => LocalizationManager.Get("mods.disabled"), _ => L(IsDataPack && canChangeSelection ? "dataPackUnlisted" : "stateUnknown") }, _pack?.Version, _pack?.Author, _pack is null ? FileName : Versions }.Where(text => !string.IsNullOrWhiteSpace(text)));
 
     public string Details => string.Format(L("detailsText"), _pack?.Author ?? L("notDeclared"), _pack?.Version ?? L("notDeclared"), _pack?.MinecraftVersions ?? L("notDeclared"), _pack?.Size is { } size ? DataSizeFormatter.Format(size, App.Settings.MemoryUnit, "0.##", minimumPower: 0) : L("folder"), Path);
 
-    public string FormatText => kind == MinecraftPackKind.ResourcePack ? string.Format(L("packFormat"), FormatRange) : "";
+    public string FormatText => !IsShaderPack ? string.Format(L(IsDataPack ? "dataPackFormat" : "packFormat"), FormatRange) : "";
     public string Error => _pack?.Error ?? "";
 
     public string Compatibility => _clientFormat is { } format && (_pack?.MinimumFormat is not null || _pack?.MaximumFormat is not null) ? string.Format(L(IsInRange(_pack, format) ? "matches" : "doesNotMatch"), Format(format)) : "";
 
-    private string Versions => _pack?.MinecraftVersions is { } declared ? string.Format(L("gameVersions"), declared) : kind == MinecraftPackKind.ResourcePack && (_pack?.MinimumFormat is not null || _pack?.MaximumFormat is not null) ? FormatText : L("noVersionRange");
+    private string Versions => _pack?.MinecraftVersions is { } declared ? string.Format(L("gameVersions"), declared) : !IsShaderPack && (_pack?.MinimumFormat is not null || _pack?.MaximumFormat is not null) ? FormatText : L("noVersionRange");
 
     private string FormatRange => (_pack?.MinimumFormat, _pack?.MaximumFormat) switch
     {

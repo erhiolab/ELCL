@@ -57,7 +57,8 @@ internal static class CommunityArchiveTasks
             context.CancellationToken.ThrowIfCancellationRequested();
             File.Move(temporary, destination);
         }) { LocalizedName = StageName, PlannedBytes = Math.Max(1, file.Size) };
-        var task = App.Tasks.Start(Title(), [stage], destination, cleanupOnFailure: () =>
+        var task = App.Tasks.Start(Title(), [stage], destination,
+            onCompleted: () => CommunityMods.NotifyInstalled(Path.GetDirectoryName(destination)!), cleanupOnFailure: () =>
         {
             File.Delete(temporary);
             return Task.CompletedTask;

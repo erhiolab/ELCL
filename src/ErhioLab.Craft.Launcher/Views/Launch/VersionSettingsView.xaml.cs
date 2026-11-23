@@ -7,6 +7,7 @@ using System.Windows.Input;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Mods;
+using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Views.Download;
@@ -32,6 +33,8 @@ public partial class VersionSettingsView
     private readonly VersionModsPage _modsPage;
     private readonly VersionPacksPage _resourcePacksPage;
     private readonly VersionPacksPage _shaderPacksPage;
+    private readonly VersionWorldsPage _worldsPage;
+    private readonly VersionPacksPage _dataPacksPage;
     private readonly VersionExportPage _exportPage;
     private readonly AnimatedPageHost _pageHost;
     private readonly Stack<FrameworkElement> _modHistory = new();
@@ -49,11 +52,24 @@ public partial class VersionSettingsView
         _modsPage = new VersionModsPage();
         _resourcePacksPage = new VersionPacksPage(MinecraftPackKind.ResourcePack);
         _shaderPacksPage = new VersionPacksPage(MinecraftPackKind.ShaderPack);
+        _worldsPage = new VersionWorldsPage();
+        _dataPacksPage = new VersionPacksPage(MinecraftPackKind.DataPack);
         _exportPage = new VersionExportPage();
         _modsPage.BrowseRequested += context => OpenCommunityBrowser(ModProjectKind.Mod, context, _modsPage);
         _modsPage.DetailsRequested += (row, context) => OpenModDetails(row, context, _modsPage);
         ConnectPacksPage(_resourcePacksPage);
         ConnectPacksPage(_shaderPacksPage);
+        ConnectPacksPage(_dataPacksPage);
+        _worldsPage.DataPacksRequested += world =>
+        {
+            if (Version is not { } version) return;
+            _dataPacksPage.SetWorldContext(_gameDirectory, version, world);
+            _modHistory.Push(_worldsPage);
+            _pageHost.Navigate(_dataPacksPage);
+        };
+        _worldsPage.QuickPlayRequested += world => Version is { } version
+            ? App.GameLauncher.StartWorldAsync(_gameDirectory, version, world) : Task.CompletedTask;
+        _dataPacksPage.BackRequested += () => CloseModPage();
         Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
         LocalizationManager.Changed += (_, _) => RefreshSummary();
     }
@@ -84,39 +100,48 @@ public partial class VersionSettingsView
 
     private void RefreshSidebar()
     {
-        var overview = new SectionSidebarItem("versionSettings.overview", LauncherIcons.VersionRelease);
-        var settings = new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true, ActionToolTipKey: "versionLaunch.reset");
-        var mods = new SectionSidebarItem("mods.manage", LauncherIcons.ModsAndResources);
-        var resourcePacks = new SectionSidebarItem("community.resourcePacks", LauncherIcons.Image);
-        var shaderPacks = new SectionSidebarItem("community.shaderPacks", LauncherIcons.DayTheme);
-        var logs = new SectionSidebarItem("versionLogs.title", LauncherIcons.Document);
-        var export = new SectionSidebarItem("packExport.title", LauncherIcons.Toolbox, CanRefresh: true, ActionToolTipKey: "packExport.rescan");
-        var sidebar = Version is { } current && CommunityMods.HasLoader(current)
-            ? new SectionSidebarView(overview, settings, mods, resourcePacks, shaderPacks, logs, export)
-            : new SectionSidebarView(overview, settings, resourcePacks, shaderPacks, logs, export);
+        List<(SectionSidebarItem Item, FrameworkElement Page, Func<Task>? Action)> routes = [];
+        void Add(string key, System.Windows.Media.Geometry icon, FrameworkElement page, Func<Task>? refresh = null, string? tooltip = null) =>
+            routes.Add((new SectionSidebarItem(key, icon, CanRefresh: refresh is not null,
+                ActionToolTipKey: refresh is null ? null : tooltip ?? "versionSettings.refreshList"), page, refresh));
+
+        Add("versionSettings.overview", LauncherIcons.VersionRelease, OverviewPage);
+        routes.Add((new SectionSidebarItem("versionSettings.settings", LauncherIcons.Settings, CanReset: true,
+            ActionToolTipKey: "versionLaunch.reset"), _launchSettingsPage, ConfirmVersionResetAsync));
+        if (Version is { } current && CommunityMods.HasLoader(current))
+            Add("mods.manage", LauncherIcons.ModsAndResources, _modsPage, _modsPage.RefreshAsync);
+        Add("community.resourcePacks", LauncherIcons.Image, _resourcePacksPage, _resourcePacksPage.RefreshAsync);
+        Add("community.shaderPacks", LauncherIcons.DayTheme, _shaderPacksPage, _shaderPacksPage.RefreshAsync);
+        Add("worlds.title", LauncherIcons.Globe, _worldsPage, () => ReferenceEquals(_pageHost.CurrentPage, _dataPacksPage)
+            ? _dataPacksPage.RefreshAsync() : _worldsPage.RefreshAsync());
+        Add("versionLogs.title", LauncherIcons.Document, _logsPage, () => _logsPage.RefreshAsync(notify: true));
+        Add("packExport.title", LauncherIcons.Toolbox, _exportPage, _exportPage.RefreshAsync, "packExport.rescan");
+
+        var byItem = routes.ToDictionary(route => route.Item);
+        var sidebar = new SectionSidebarView(routes.Select(route => route.Item).ToArray());
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
             _launchSettingsPage.FlushPendingChanges();
             _modHistory.Clear();
-            if (ReferenceEquals(item, settings) && Version is { } version)
-            {
+            var route = byItem[item];
+            if (ReferenceEquals(route.Page, _launchSettingsPage) && Version is { } version)
                 _launchSettingsPage.SetVersionContext(_gameDirectory, version);
-                _pageHost.Navigate(_launchSettingsPage);
-            }
-            else if (ReferenceEquals(item, logs)) _pageHost.Navigate(_logsPage);
-            else if (ReferenceEquals(item, mods)) _pageHost.Navigate(_modsPage);
-            else if (ReferenceEquals(item, resourcePacks)) _pageHost.Navigate(_resourcePacksPage);
-            else if (ReferenceEquals(item, shaderPacks)) _pageHost.Navigate(_shaderPacksPage);
-            else if (ReferenceEquals(item, export)) _pageHost.Navigate(_exportPage);
-            else _pageHost.Navigate(OverviewPage, back: true);
+            _pageHost.Navigate(route.Page, back: ReferenceEquals(route.Page, OverviewPage));
         };
         sidebar.ActionRequested += async item =>
         {
-            if (ReferenceEquals(item, settings)) _launchSettingsPage.ResetVersionOptions();
-            else if (ReferenceEquals(item, export)) await _exportPage.RefreshAsync();
+            if (byItem[item].Action is { } action) await action();
         };
         _pageHost.Navigate(OverviewPage, back: true);
+    }
+
+    private async Task ConfirmVersionResetAsync()
+    {
+        if (Version is not { } version) return;
+        if (await LauncherDialogs.ConfirmAsync(L("versionLaunch.reset"), L("versionLaunch.resetPrompt"), confirmText: L("reset.button"))
+            && ReferenceEquals(Version, version))
+            _launchSettingsPage.ResetVersionOptions();
     }
 
     internal void SetVersion(string gameDirectory, LocalMinecraftVersion version)
@@ -128,6 +153,7 @@ public partial class VersionSettingsView
         _modsPage.SetContext(new ModBrowserContext(version.GameVersion, CommunityMods.Loader(version.Loader), version.FolderPath));
         _resourcePacksPage.SetContext(_gameDirectory, version);
         _shaderPacksPage.SetContext(_gameDirectory, version);
+        _worldsPage.SetVersion(version);
         _modHistory.Clear();
         RefreshSidebar();
         _logsPage.SetVersionDirectory(version.FolderPath);

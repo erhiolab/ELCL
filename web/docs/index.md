@@ -45,7 +45,7 @@ description: 安装 Minecraft、管理账户与版本，阅读 ELCL 使用指南
       <a class="home-feature" href="./launcher/version-settings">
         <span class="feature-number">03 / 版本</span>
         <h3>每个版本都有自己的位置</h3>
-        <p>记住上次选择，管理各版本的 Mods、资源包和光影包。查看日志，需要时补全文件，或导出一个启动脚本。</p>
+        <p>记住上次选择，管理各版本的 Mods、资源包和光影包。也能备份世界、查看日志，或给缺了文件的版本补一补。</p>
         <span class="home-feature-link">了解版本管理</span>
       </a>
       <a class="home-feature" href="./launcher/launch-settings">

@@ -76,8 +76,8 @@ internal sealed class MinecraftPackText
 
         return style;
 
-        bool Flag(string key, bool previous) => component.TryGetProperty(key, out var value)
-            ? value.ValueKind switch
+        bool Flag(string key, bool previous) => component.TryGetProperty(key, out var flag)
+            ? flag.ValueKind switch
             {
                 JsonValueKind.True => true, JsonValueKind.False => false, _ => previous
             }

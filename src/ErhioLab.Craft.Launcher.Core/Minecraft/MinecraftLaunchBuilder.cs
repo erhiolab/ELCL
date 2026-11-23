@@ -31,6 +31,7 @@ public sealed class MinecraftLaunchOptions
     public MinecraftGarbageCollector GarbageCollector { get; init; } = MinecraftGarbageCollector.StandardG1;
     public string JvmArguments { get; init; } = "";
     public string GameArguments { get; init; } = "";
+    public string? QuickPlayWorld { get; init; }
     public bool Fullscreen { get; init; }
     public int? WindowWidth { get; init; }
     public int? WindowHeight { get; init; }
@@ -41,6 +42,29 @@ public sealed class MinecraftLaunchOptions
 
 public static partial class MinecraftLaunchBuilder
 {
+    private const string QuickPlaySingleplayer = "--quickPlaySingleplayer";
+    private static readonly IReadOnlyDictionary<string, bool> SingleplayerFeatures = new Dictionary<string, bool>
+    {
+        ["is_quick_play_singleplayer"] = true,
+        ["has_quick_plays_support"] = true
+    };
+
+    /// <summary>检查解析后的版本是否声明了本机可用的单人快速进入参数.</summary>
+    public static bool SupportsQuickPlaySingleplayer(MinecraftLaunchVersion version, MinecraftLaunchEnvironment? environment = null)
+    {
+        using var document = JsonDocument.Parse(version.Json);
+        return SupportsQuickPlaySingleplayer(document.RootElement, environment ?? MinecraftLaunchEnvironment.Current);
+    }
+
+    private static bool SupportsQuickPlaySingleplayer(JsonElement root, MinecraftLaunchEnvironment environment)
+    {
+        static bool Matches(JsonElement value) => value.ValueKind == JsonValueKind.String && value.GetString() == QuickPlaySingleplayer;
+        return root.TryGetProperty("arguments", out var arguments) && arguments.TryGetProperty("game", out var game)
+            && game.ValueKind == JsonValueKind.Array && game.EnumerateArray().Any(item => Matches(item)
+                || item.ValueKind == JsonValueKind.Object && MinecraftLaunchRules.Allows(item, environment, SingleplayerFeatures)
+                && item.TryGetProperty("value", out var value) && (Matches(value) || value.ValueKind == JsonValueKind.Array && value.EnumerateArray().Any(Matches)));
+    }
+
     /// <summary>生成参数列表, 避免把包含空格的路径和用户名重新拼接为 shell 命令. 不启动进程.</summary>
     public static ProcessStartInfo CreateStartInfo(MinecraftLaunchVersion version, MinecraftLaunchFilePlan files, MinecraftLaunchOptions options)
     {
@@ -107,6 +131,25 @@ public static partial class MinecraftLaunchBuilder
         }
 
         game = DeduplicateGame(game);
+        if (options.QuickPlayWorld is { } world)
+        {
+            if (string.IsNullOrWhiteSpace(world) || world is "." or ".." || world.IndexOfAny(['/', '\\', ':']) >= 0
+                || world.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                throw new ArgumentException("快速进入需要单个世界文件夹名.", nameof(options));
+            if (!SupportsQuickPlaySingleplayer(root, options.Environment))
+                throw new NotSupportedException("此游戏版本未声明单人快速进入参数.");
+            // 目标是文件夹名, 直接传递为一个参数, 不参与附加参数分词或占位符替换.
+            for (int index = game.Count - 1; index >= 0; index--)
+            {
+                string value = game[index];
+                string flag = value.Split('=', 2)[0];
+                if (flag is not (QuickPlaySingleplayer or "--quickPlayMultiplayer" or "--quickPlayRealms")) continue;
+                if (value == flag && index + 1 < game.Count && !game[index + 1].StartsWith("--", StringComparison.Ordinal)) game.RemoveAt(index + 1);
+                game.RemoveAt(index);
+            }
+            if (world.StartsWith("-", StringComparison.Ordinal)) game.Add(QuickPlaySingleplayer + "=" + world);
+            else game.AddRange([QuickPlaySingleplayer, world]);
+        }
         ProcessStartInfo start = new(options.Java.Path)
         {
             WorkingDirectory = Path.GetFullPath(options.WorkingDirectory), UseShellExecute = false, CreateNoWindow = true,

@@ -17,7 +17,8 @@ ELCLC 是可单独使用的 .NET 10 类库，提供 Minecraft Java 版启动器�
 | 生成并执行原版安装所需的下载计划 | [安装原版](vanilla-installation.md) |
 | 安装 Forge、NeoForge、Fabric、Quilt、LiteLoader 或 OptiFine | [安装加载器](loader-installation.md) |
 | 查询 Mods、整合包、数据包、资源包和光影包，识别和管理本地 Mods | [社区资源与 Mods](mods.md) |
-| 扫描、读取及导入本地资源包与光影包 | [本地资源包与光影包](local-packs.md) |
+| 扫描、读取及导入本地资源包、光影包和数据包 | [本地包扫描](local-packs.md) |
+| 读取存档信息，备份、还原或删除世界 | [本地世界与备份](local-worlds.md) |
 | 读取通用整合包、规划下载、验证文件和解压配置 | [整合包](modpacks.md) |
 | 扫描版本内容、精确选择文件并生成通用整合包 | [整合包导出](modpack-export.md) |
 

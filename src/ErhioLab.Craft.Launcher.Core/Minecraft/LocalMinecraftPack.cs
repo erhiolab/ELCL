@@ -3,7 +3,8 @@ namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 public enum MinecraftPackKind
 {
     ResourcePack,
-    ShaderPack
+    ShaderPack,
+    DataPack
 }
 
 /// <summary>包元数据的格式版本, 次版本号可以省略.</summary>

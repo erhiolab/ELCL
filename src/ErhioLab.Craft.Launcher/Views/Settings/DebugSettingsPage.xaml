@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Settings"
     Background="{DynamicResource PageSurfaceBrush}">
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
@@ -26,7 +27,8 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate
+                                DataType="{x:Type local:DebugSettingsPage+LauncherLogEntry}">
                                 <Button
                                     Margin="0,0,8,8"
                                     Click="LauncherLog_Click"

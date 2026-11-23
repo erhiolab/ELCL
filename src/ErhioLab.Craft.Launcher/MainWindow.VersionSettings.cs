@@ -17,24 +17,24 @@ public partial class MainWindow
 
     private void InitializeVersionSettings()
     {
-        VersionSelectionPage.VersionSettingsRequested += OpenVersionSettings;
-        VersionSettingsPage.BackRequested += CloseVersionSettings;
+        _versionSelectionPage.VersionSettingsRequested += OpenVersionSettings;
+        _versionSettingsPage.BackRequested += CloseVersionSettings;
         LocalizationManager.Changed += (_, _) => RefreshVersionSettingsTitle();
         VersionManagementService.Changed += async (oldPath, replacement) =>
         {
             bool selecting = ReferenceEquals(_activeRoute, _versionSelectionRoute);
             if (ReferenceEquals(_activeRoute, _versionSettingsRoute)
-                && VersionManagementService.SamePath(VersionSettingsPage.Version?.FolderPath, oldPath))
+                && VersionManagementService.SamePath(_versionSettingsPage.Version?.FolderPath, oldPath))
             {
                 if (replacement is null) CloseVersionSettings();
                 else
                 {
-                    VersionSettingsPage.SetVersion(GameDirectoryOf(replacement), replacement);
+                    _versionSettingsPage.SetVersion(GameDirectoryOf(replacement), replacement);
                     RefreshVersionSettingsTitle();
                 }
             }
 
-            if (selecting) await VersionSelectionPage.ReloadAsync();
+            if (selecting) await _versionSelectionPage.ReloadAsync();
             if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
             {
                 if (App.Settings.SelectedVersionId is { } id) sidebar.ShowSelectedVersion(id);
@@ -70,7 +70,7 @@ public partial class MainWindow
     {
         if (ReferenceEquals(_activeRoute, _versionSettingsRoute) || App.FeatureVisibility.IsHidden(LauncherHiddenFeatures.VersionManagement)) return;
         _versionSettingsFromSelector = ReferenceEquals(_activeRoute, _versionSelectionRoute);
-        VersionSettingsPage.SetVersion(GameDirectoryOf(version), version);
+        _versionSettingsPage.SetVersion(GameDirectoryOf(version), version);
         RefreshVersionSettingsTitle();
         ApplyShellRoute(_versionSettingsRoute);
         App.Logger.Information("Navigation", "打开版本设置.");
@@ -80,13 +80,13 @@ public partial class MainWindow
 
     private void RefreshVersionSettingsTitle()
     {
-        if (VersionSettingsPage.Version is { } version)
+        if (_versionSettingsPage.Version is { } version)
             VersionSettingsTitleText.Text = string.Format(LocalizationManager.Get("versionSettings.title"), version.GameVersion ?? version.Id);
     }
 
     private void CloseVersionSettings_Click(object sender, RoutedEventArgs e)
     {
-        if (!VersionSettingsPage.TryCloseLog()) CloseVersionSettings();
+        if (!_versionSettingsPage.TryCloseLog()) CloseVersionSettings();
     }
 
     private void CloseVersionSettings()

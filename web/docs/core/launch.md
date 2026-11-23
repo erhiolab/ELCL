@@ -140,6 +140,7 @@ var start = MinecraftLaunchBuilder.CreateStartInfo(version, files, options);
 | `AccessToken`、`IsMicrosoftAccount`、`ClientId` | 身份参数，核心不替你检查会话或保存令牌。 |
 | `MemoryMiB` | 最大堆内存，至少 128 MiB。 |
 | `JvmArguments`、`GameArguments` | 用户附加参数，支持模板。 |
+| `QuickPlayWorld` | 可选的世界文件夹名，位于工作目录的 `saves` 下。为空值（`null`）表示正常启动。 |
 | `GarbageCollector` | ZGC、分代 ZGC、标准／调优 G1 或自定义。 |
 | `Fullscreen`、`WindowWidth`、`WindowHeight` | 游戏参数支持的窗口选项。 |
 | `JavaWrapperPath`、`LwjglAgentPath` | 调用方准备的兼容补丁路径，默认不传。 |
@@ -147,7 +148,23 @@ var start = MinecraftLaunchBuilder.CreateStartInfo(version, files, options);
 
 内存参数由 `MemoryMiB` 统一生成；GC 按所选策略与 Java 能力处理。未知模板标记会抛出异常，避免生成无效命令。
 
+`QuickPlayWorld` 只接受单个文件夹名称，不接受路径。指定后会用它替代其他快速进入目标。无效名称抛出 `ArgumentException`，版本不支持时抛出 `NotSupportedException`。核心只生成参数，不检查世界是否存在或正在使用；在设置该选项前请确认目标世界可用。
+
 返回值已重定向 stdout 和 stderr。真正运行它时要持续读取两个流，并自行处理取消、退出码、优先级和窗口；不要把含令牌的完整参数写入日志。
+
+## `MinecraftLaunchBuilder.SupportsQuickPlaySingleplayer` {#minecraftlaunchbuilder-supportsquickplaysingleplayer}
+
+传入已解析的 `MinecraftLaunchVersion`，可选传入 `MinecraftLaunchEnvironment` 来匹配目标平台。只有版本元数据声明了可用的单人快速进入参数才返回 `true`。不读存档、不联网，也不启动游戏；读取无效的版本 JSON 会抛出 `JsonException`。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+
+string game = Path.Combine(Environment.CurrentDirectory, "game");
+string versionJson = Path.Combine(game, "versions", "1.21.1", "1.21.1.json");
+var version = await MinecraftLaunchVersion.LoadAsync(game, versionJson);
+if (MinecraftLaunchBuilder.SupportsQuickPlaySingleplayer(version))
+    Console.WriteLine("启动时可为 MinecraftLaunchOptions.QuickPlayWorld 指定存档目录名。");
+```
 
 ## `MinecraftLaunchBuilder.CreateContext` {#minecraftlaunchbuilder-createcontext}
 

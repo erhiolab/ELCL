@@ -92,7 +92,7 @@ internal sealed record GameCrashReport(
                     Analysis = Diagnosis is not null || ModKeywords.Count > 0 ? new
                     {
                         Kind = Diagnosis?.Kind.ToString(),
-                        RequiredJavaMajorVersion = Diagnosis?.RequiredJavaMajorVersion,
+                        Diagnosis?.RequiredJavaMajorVersion,
                         ModKeywords = ModKeywords.Select(keyword => new { keyword.Value, Kind = keyword.Kind.ToString() })
                     } : null,
                     GameLog = log is null ? null : "game.log"

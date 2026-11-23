@@ -346,7 +346,10 @@ public partial class ModDownloadPage
     {
         string? version = GameVersionBox.Version;
         string? loader = version is null || !CommunityResourceCatalog.HasLoaderFilter(_kind) ? null : (LoaderBox.SelectedItem as FilterOption)?.Value;
-        ProjectSelected?.Invoke(row, new ModBrowserContext(version, string.IsNullOrEmpty(loader) ? null : loader, _context?.VersionDirectory));
+        ProjectSelected?.Invoke(row, new ModBrowserContext(version, string.IsNullOrEmpty(loader) ? null : loader, _context?.VersionDirectory)
+        {
+            WorldDataPacksDirectory = _context?.WorldDataPacksDirectory
+        });
     }
 
     private static CategoryOption[] Categories() =>

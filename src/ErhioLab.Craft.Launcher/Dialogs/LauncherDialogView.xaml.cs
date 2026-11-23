@@ -196,7 +196,7 @@ public partial class LauncherDialogView
         finally { button.IsEnabled = true; }
     }
 
-    private void InputBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    private void InputBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (InputError is not null) ValidateInput();
     }

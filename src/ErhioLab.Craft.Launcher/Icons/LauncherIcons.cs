@@ -46,6 +46,12 @@ public static class LauncherIcons
     /// <summary>向下移动.</summary>
     public static readonly Geometry ArrowDown = Parse("M 9,2 V 16 M 3,10 L 9,16 L 15,10");
 
+    /// <summary>导入.</summary>
+    public static readonly Geometry ArchiveIn = Parse("M 2,8 V 16 H 16 V 8 M 2,9 H 5 L 6.5,12 H 11.5 L 13,9 H 16 M 9,1 V 8 M 6,5 L 9,8 L 12,5");
+
+    /// <summary>导出.</summary>
+    public static readonly Geometry ArchiveOut = Parse("M 2,8 V 16 H 16 V 8 M 2,9 H 5 L 6.5,12 H 11.5 L 13,9 H 16 M 9,8 V 1 M 6,4 L 9,1 L 12,4");
+
     /// <summary>设置.</summary>
     public static readonly Geometry Settings = Parse("M 9,2 L 10,3.5 L 12,3 L 14,5 L 13.5,7 L 15,8 L 15,11 L 13.5,12 L 14,14 L 12,16 L 10,15.5 L 9,17 L 6,17 L 5,15.5 L 3,16 L 1,14 L 1.5,12 L 0,11 L 0,8 L 1.5,7 L 1,5 L 3,3 L 5,3.5 L 6,2 Z M 11,9.5 A 3.5,3.5 0 1 1 4,9.5 A 3.5,3.5 0 1 1 11,9.5");
 

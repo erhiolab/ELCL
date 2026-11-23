@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
-/// <summary>读取本地资源包和光影包的元数据, 不把包解压到磁盘, 也不执行或下载包内容.</summary>
+/// <summary>读取本地资源包/光影包和数据包的元数据, 不把包解压到磁盘, 也不执行或下载包内容.</summary>
 public static class LocalMinecraftPackScanner
 {
     private const int MetadataLimit = 128 * 1024;
@@ -127,7 +127,7 @@ public static class LocalMinecraftPackScanner
         try
         {
             RejectLink(path);
-            if (directory)
+            if (pack.IsDirectory)
             {
                 if (kind == MinecraftPackKind.ShaderPack)
                 {
@@ -136,7 +136,8 @@ public static class LocalMinecraftPackScanner
                     RejectLink(shaders);
                 }
 
-                return ReadMetadata(pack, kind, (entry, limit) => ReadFile(path, entry, limit, token), "shaders/");
+                return ReadMetadata(pack, kind, (path, token),
+                    static (source, entry, limit) => ReadFile(source.path, entry, limit, source.token), "shaders/");
             }
 
             pack = pack with { Size = new FileInfo(path).Length };
@@ -144,7 +145,8 @@ public static class LocalMinecraftPackScanner
             if (zip.Entries.Count > EntryLimit) throw new InvalidDataException("ZIP 条目过多.");
             string shaderRoot = kind == MinecraftPackKind.ShaderPack ? FindShaderRoot(zip, token) : "shaders/";
             string prefix = shaderRoot[..^"shaders/".Length];
-            return ReadMetadata(pack, kind, (entry, limit) => ReadEntry(zip.GetEntry(entry), limit, token), shaderRoot, prefix);
+            return ReadMetadata(pack, kind, (zip, token),
+                static (source, entry, limit) => ReadEntry(source.zip.GetEntry(entry), limit, source.token), shaderRoot, prefix);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException or NotSupportedException)
         {
@@ -152,27 +154,27 @@ public static class LocalMinecraftPackScanner
         }
     }
 
-    private static LocalMinecraftPack ReadMetadata(LocalMinecraftPack pack, MinecraftPackKind kind, Func<string, int, byte[]?> read,
-        string shaderRoot, string prefix = "")
+    private static LocalMinecraftPack ReadMetadata<TSource>(LocalMinecraftPack pack, MinecraftPackKind kind, TSource source,
+        Func<TSource, string, int, byte[]?> read, string shaderRoot, string prefix = "")
     {
-        bool resource = kind == MinecraftPackKind.ResourcePack;
-        byte[]? metadata = read(prefix + "pack.mcmeta", MetadataLimit) ?? (prefix.Length > 0 ? read("pack.mcmeta", MetadataLimit) : null);
+        bool standardPack = kind != MinecraftPackKind.ShaderPack;
+        byte[]? metadata = read(source, prefix + "pack.mcmeta", MetadataLimit) ?? (prefix.Length > 0 ? read(source, "pack.mcmeta", MetadataLimit) : null);
         ReadOnlyMemory<byte> jsonBytes = metadata;
         if (jsonBytes.Span.StartsWith(Encoding.UTF8.Preamble)) jsonBytes = jsonBytes[Encoding.UTF8.Preamble.Length..];
         using var json = metadata is null ? null : JsonDocument.Parse(jsonBytes, JsonOptions);
         JsonElement packInfo = json is null ? default : Property(json.RootElement, "pack");
-        if (resource && packInfo.ValueKind != JsonValueKind.Object) throw new InvalidDataException("找不到有效的 pack.mcmeta.");
-        var properties = !resource && read(shaderRoot + "shaders.properties", MetadataLimit) is { } bytes ? ReadProperties(bytes) : null;
+        if (standardPack && packInfo.ValueKind != JsonValueKind.Object) throw new InvalidDataException("找不到有效的 pack.mcmeta.");
+        var properties = !standardPack && read(source, shaderRoot + "shaders.properties", MetadataLimit) is { } bytes ? ReadProperties(bytes) : null;
 
         string? Get(string key) => Trim(MinecraftPackText.String(packInfo, key) ?? (json is null ? null : MinecraftPackText.String(json.RootElement, key)) ?? properties?.GetValueOrDefault(key));
 
         var description = MinecraftPackText.Parse(Property(packInfo, "description"));
         if (description.Count == 0 && json is not null) description = MinecraftPackText.Parse(Property(json.RootElement, "description"));
         if (description.Count == 0 && Get("description") is { } plain) description = MinecraftPackText.Parse(plain);
-        var (minimum, maximum) = resource ? FormatRange(packInfo) : (null, null);
-        if (resource && minimum is null && maximum is null) throw new InvalidDataException("pack.mcmeta 未声明资源包格式.");
+        var (minimum, maximum) = standardPack ? FormatRange(packInfo) : (null, null);
+        if (standardPack && minimum is null && maximum is null) throw new InvalidDataException("pack.mcmeta 未声明包格式.");
         if (minimum is { } low && maximum is { } high && (low.Major, low.Minor ?? 0).CompareTo((high.Major, high.Minor ?? int.MaxValue)) > 0)
-            throw new InvalidDataException("资源包格式范围无效.");
+            throw new InvalidDataException("包格式范围无效.");
         return pack with
         {
             Name = Get("name") ?? pack.Name,
@@ -180,7 +182,7 @@ public static class LocalMinecraftPackScanner
             MinecraftVersions = Get("minecraft_version") ?? Get("minecraftVersion") ?? Get("minecraft_versions")
             ?? VersionList(packInfo) ?? (json is null ? null : VersionList(json.RootElement)),
             MinimumFormat = minimum, MaximumFormat = maximum, Description = description,
-            Icon = ReadIcon(read, prefix)
+            Icon = ReadIcon(source, read, prefix)
         };
     }
 
@@ -192,11 +194,11 @@ public static class LocalMinecraftPackScanner
             .Select(item => item.GetString()).Where(item => !string.IsNullOrWhiteSpace(item)).Take(32)));
     }
 
-    private static byte[]? ReadIcon(Func<string, int, byte[]?> read, string prefix)
+    private static byte[]? ReadIcon<TSource>(TSource source, Func<TSource, string, int, byte[]?> read, string prefix)
     {
         try
         {
-            return read(prefix + "pack.png", IconLimit) ?? (prefix.Length > 0 ? read("pack.png", IconLimit) : null);
+            return read(source, prefix + "pack.png", IconLimit) ?? (prefix.Length > 0 ? read(source, "pack.png", IconLimit) : null);
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -280,9 +282,11 @@ public static class LocalMinecraftPackScanner
 
     private static byte[] ReadBounded(Stream input, long length, int limit, CancellationToken token)
     {
-        if (length < 0 || length > limit) throw new InvalidDataException("包内的元数据或图标超过大小限制.");
+        int count = length >= 0 && length <= limit
+            ? (int)length
+            : throw new InvalidDataException("包内的元数据或图标超过大小限制.");
         token.ThrowIfCancellationRequested();
-        byte[] bytes = new byte[(int)length];
+        byte[] bytes = new byte[count];
         input.ReadExactly(bytes);
         if (input.ReadByte() != -1) throw new InvalidDataException("包内文件大小与记录不一致.");
         return bytes;

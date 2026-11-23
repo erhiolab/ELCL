@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 
-using ErhioLab.Craft.Launcher.Controls;
 using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
@@ -36,7 +35,7 @@ public partial class FeatureVisibilityCard
             box.IsEnabled = !features.IsParentConfiguredHidden(feature);
         }
 
-        Card.SetResourceReference(LauncherCard.HeaderProperty, features.IsTemporarilyRevealed
+        Card.SetResourceReference(HeaderedContentControl.HeaderProperty, features.IsTemporarilyRevealed
             ? "I18n.featureVisibility.temporarilyDisabled"
             : "I18n.featureVisibility.title");
         Visibility = features.IsHidden(LauncherHiddenFeatures.FeatureVisibility) ? Visibility.Collapsed : Visibility.Visible;

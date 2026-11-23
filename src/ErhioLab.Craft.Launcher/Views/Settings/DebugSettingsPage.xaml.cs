@@ -22,7 +22,7 @@ public partial class DebugSettingsPage
     private int _toastStressIndex;
     internal event Action<string, bool>? LauncherLogRequested;
 
-    private sealed record LauncherLogEntry(string Name, string Path, bool IsCurrent, bool Exists);
+    internal sealed record LauncherLogEntry(string Name, string Path, bool IsCurrent, bool Exists);
 
     /// <summary>初始化调试页面.</summary>
     public DebugSettingsPage()

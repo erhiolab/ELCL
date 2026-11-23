@@ -19,6 +19,8 @@ namespace ErhioLab.Craft.Launcher.Mods;
 
 internal sealed record ModBrowserContext(string? GameVersion, string? Loader, string? VersionDirectory)
 {
+    internal string? WorldDataPacksDirectory { get; init; }
+
     internal static ModBrowserContext Current()
     {
         string? path = App.Settings.SelectedVersionPath;
@@ -285,9 +287,9 @@ public sealed class ModProjectRow : INotifyPropertyChanged
     public System.Windows.Visibility WikiVisibility => Project.Kind == ModProjectKind.Mod && ModLocalization.SupportsLanguage(App.Settings.Language)
         ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public IReadOnlyList<string> CategoryLabels => Project.Categories.Select(ModPresentation.CategoryName).Distinct().Take(3).ToArray();
-    public System.Windows.Media.Geometry KindIcon => CommunityResourceCatalog.Icon(Project.Kind);
+    public Geometry KindIcon => CommunityResourceCatalog.Icon(Project.Kind);
     public string LoadersText => !CommunityResourceCatalog.HasLoaderFilter(Project.Kind)
-        ? Localization.LocalizationManager.Get(CommunityResourceCatalog.TitleKey(Project.Kind)) : Project.Loaders.Count == 0
+        ? LocalizationManager.Get(CommunityResourceCatalog.TitleKey(Project.Kind)) : Project.Loaders.Count == 0
         ? CommunityMods.L("anyLoader") : string.Join(" / ", Project.Loaders.OrderBy(ModPresentation.LoaderOrder).Select(ModPresentation.LoaderName));
     public string PlatformText => Project.Platform.ToString();
 

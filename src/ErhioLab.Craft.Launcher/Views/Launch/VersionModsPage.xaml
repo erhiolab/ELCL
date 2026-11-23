@@ -47,11 +47,6 @@
                         Click="Folder_Click"
                         Margin="0,0,8,8" />
                     <Button
-                        Content="{DynamicResource I18n.mods.refresh}"
-                        Style="{StaticResource CompactActionButtonStyle}"
-                        Click="Refresh_Click"
-                        Margin="0,0,8,8" />
-                    <Button
                         Content="{DynamicResource I18n.mods.selectAll}"
                         Style="{StaticResource CompactActionButtonStyle}"
                         Click="SelectAll_Click"

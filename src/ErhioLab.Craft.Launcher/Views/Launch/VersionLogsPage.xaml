@@ -31,12 +31,6 @@
                     TextTrimming="CharacterEllipsis" />
                 <WrapPanel>
                     <Button
-                        x:Name="RefreshButton"
-                        Margin="0,0,8,0"
-                        Click="Refresh_Click"
-                        Content="{DynamicResource I18n.versionLogs.refresh}"
-                        Style="{StaticResource CompactActionButtonStyle}" />
-                    <Button
                         Margin="0,0,8,0"
                         Click="OpenFolder_Click"
                         Content="{DynamicResource I18n.versionLogs.openFolder}"

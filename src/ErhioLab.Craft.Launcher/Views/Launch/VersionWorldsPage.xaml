@@ -1,0 +1,266 @@
+<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionWorldsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
+    Background="{DynamicResource PageSurfaceBrush}"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <Grid
+        Margin="{StaticResource FormPageContentMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
+        </Grid.RowDefinitions>
+        <controls:LauncherCard
+            Margin="0,0,0,14"
+            Header="{DynamicResource I18n.worlds.title}">
+            <WrapPanel>
+                <Button
+                    Click="OpenSaves_Click"
+                    Content="{DynamicResource I18n.worlds.openSaves}"
+                    Style="{StaticResource CompactActionButtonStyle}" />
+            </WrapPanel>
+        </controls:LauncherCard>
+        <Border
+            x:Name="WorldListCard"
+            Grid.Row="1"
+            Padding="12">
+            <Border.Style>
+                <Style
+                    TargetType="Border"
+                    BasedOn="{StaticResource PanelCardStyle}">
+                    <Style.Triggers>
+                        <DataTrigger
+                            Binding="{Binding IsExpanded, ElementName=DetailsReveal}"
+                            Value="True">
+                            <Setter
+                                Property="Visibility"
+                                Value="Hidden" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <ListBox
+                    x:Name="WorldList"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    MouseDoubleClick="WorldList_DoubleClick"
+                    SelectionChanged="WorldList_SelectionChanged"
+                    ScrollViewer.CanContentScroll="True"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.ScrollUnit="Pixel"
+                    VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ListBox.ItemContainerStyle>
+                        <Style
+                            TargetType="ListBoxItem"
+                            BasedOn="{StaticResource SelectableListRowStyle}">
+                            <Setter
+                                Property="MinHeight"
+                                Value="72" />
+                            <Setter
+                                Property="HorizontalContentAlignment"
+                                Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate
+                            DataType="{x:Type local:VersionWorldsPage+WorldRow}">
+                            <Grid
+                                Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="54" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid
+                                    Width="40"
+                                    Height="40"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                                    <Path
+                                        Data="{Binding FallbackIcon}"
+                                        Stroke="{DynamicResource TextMutedBrush}"
+                                        StrokeThickness="1.5"
+                                        Width="25"
+                                        Height="25"
+                                        Stretch="Uniform">
+                                        <Path.Style>
+                                            <Style
+                                                TargetType="Path">
+                                                <Style.Triggers>
+                                                    <DataTrigger
+                                                        Binding="{Binding HasIcon}"
+                                                        Value="True">
+                                                        <Setter
+                                                            Property="Visibility"
+                                                            Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                    <Image
+                                        Source="{Binding Icon}"
+                                        Stretch="Uniform"
+                                        RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                </Grid>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center"
+                                    ToolTip="{Binding FolderName}">
+                                    <TextBlock
+                                        FontWeight="SemiBold"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Margin="0,3,0,0"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        Text="{Binding Summary}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding Summary}" />
+                                </StackPanel>
+                                <StackPanel
+                                    Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource VersionListActionsStyle}">
+                                    <controls:IconButton
+                                        Click="QuickPlay_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Launch}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.worlds.quickPlay}" />
+                                    <controls:IconButton
+                                        Click="LocalInfo_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Info}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.common.localInfo}" />
+                                    <controls:IconButton
+                                        Click="DataPacks_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Clover}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.community.dataPacks}" />
+                                    <controls:IconButton
+                                        Click="RevealWorld_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Folder}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.mods.reveal}" />
+                                    <controls:IconButton
+                                        Click="ResetIcon_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Reset}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.worlds.resetIcon}" />
+                                    <controls:IconButton
+                                        Click="Backup_Click"
+                                        Icon="{x:Static icons:LauncherIcons.ArchiveIn}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.worlds.backup}" />
+                                    <controls:IconButton
+                                        Click="ShowBackups_Click"
+                                        Icon="{x:Static icons:LauncherIcons.ArchiveOut}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.worlds.restore}" />
+                                    <controls:IconButton
+                                        Click="Delete_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Delete}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.worlds.delete}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock
+                    x:Name="ListStatus"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    IsHitTestVisible="False"
+                    TextWrapping="Wrap" />
+            </Grid>
+        </Border>
+        <controls:AnimatedReveal
+            x:Name="DetailsReveal"
+            Grid.Row="1"
+            VerticalAlignment="Top">
+            <ContentPresenter
+                Height="{Binding ActualHeight, ElementName=WorldListCard}"
+                Content="{Binding}">
+                <ContentPresenter.ContentTemplate>
+                    <DataTemplate
+                        DataType="{x:Type local:VersionWorldsPage+WorldRow}">
+                        <controls:LocalItemInfoCard
+                            Heading="{Binding Name}"
+                            CloseRequested="CloseDetails_Click">
+                            <TextBlock
+                                Foreground="{DynamicResource TextMutedBrush}"
+                                Text="{Binding Details}"
+                                TextWrapping="Wrap" />
+                        </controls:LocalItemInfoCard>
+                    </DataTemplate>
+                </ContentPresenter.ContentTemplate>
+            </ContentPresenter>
+        </controls:AnimatedReveal>
+        <StackPanel
+            Grid.Row="2">
+            <controls:LocalItemSelectionBar
+                x:Name="SelectionBar" />
+            <controls:AnimatedReveal
+                x:Name="BackupReveal">
+                <controls:LauncherCard
+                    x:Name="BackupCard"
+                    Margin="{StaticResource FormSectionSpacing}">
+                    <WrapPanel>
+                        <ComboBox
+                            x:Name="BackupBox"
+                            Margin="0,0,8,8"
+                            MinWidth="220"
+                            DisplayMemberPath="Label"
+                            AutomationProperties.Name="{DynamicResource I18n.worlds.restore}"
+                            Style="{StaticResource FormComboBoxStyle}" />
+                        <Button
+                            Margin="0,0,8,8"
+                            Click="Restore_Click"
+                            Content="{DynamicResource I18n.worlds.restore}"
+                            Style="{StaticResource CompactActionButtonStyle}" />
+                        <Button
+                            Margin="0,0,8,8"
+                            Click="ExportBackup_Click"
+                            Content="{DynamicResource I18n.worlds.exportBackup}"
+                            Style="{StaticResource CompactActionButtonStyle}" />
+                        <Button
+                            Margin="0,0,8,8"
+                            Click="DeleteBackup_Click"
+                            Content="{DynamicResource I18n.worlds.deleteBackup}"
+                            Style="{StaticResource CompactActionButtonStyle}" />
+                        <Button
+                            Margin="0,0,0,8"
+                            Click="CloseBackups_Click"
+                            Content="{DynamicResource I18n.common.cancel}"
+                            Style="{StaticResource CompactActionButtonStyle}" />
+                    </WrapPanel>
+                </controls:LauncherCard>
+            </controls:AnimatedReveal>
+        </StackPanel>
+    </Grid>
+</UserControl>

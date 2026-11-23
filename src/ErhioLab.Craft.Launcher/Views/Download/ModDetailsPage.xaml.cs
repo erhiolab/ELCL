@@ -434,6 +434,9 @@ public partial class ModDetailsPage
                 _ => "shaderpacks"
             };
             string? initial = root is null ? null : Path.Combine(root, subdirectory);
+            string? worldDataPacks = _context.WorldDataPacksDirectory;
+            if (project.Kind == ModProjectKind.DataPack && worldDataPacks is not null)
+                initial = Directory.Exists(worldDataPacks) ? worldDataPacks : Path.GetDirectoryName(worldDataPacks);
             var picker = new OpenFolderDialog { Title = CommunityResourceCatalog.L(project.Kind == ModProjectKind.DataPack ? "dataPackFolder" : "downloadFolder") };
             if (initial is not null && Directory.Exists(initial)) picker.InitialDirectory = initial;
             else if (root is not null && Directory.Exists(root)) picker.InitialDirectory = root;
@@ -441,8 +444,10 @@ public partial class ModDetailsPage
             string directory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(picker.FolderName));
             if (project.Kind == ModProjectKind.DataPack)
             {
-                if (File.Exists(Path.Combine(directory, "level.dat"))) directory = Path.Combine(directory, "datapacks");
-                else if (root is not null && (string.Equals(directory, Path.TrimEndingDirectorySeparator(root), StringComparison.OrdinalIgnoreCase)
+                if (File.Exists(Path.Combine(directory, "level.dat")) || File.Exists(Path.Combine(directory, "level.dat_old")))
+                    directory = Path.Combine(directory, "datapacks");
+                else if (!string.Equals(directory, worldDataPacks, StringComparison.OrdinalIgnoreCase) && root is not null
+                    && (string.Equals(directory, Path.TrimEndingDirectorySeparator(root), StringComparison.OrdinalIgnoreCase)
                     || string.Equals(directory, initial, StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException(CommunityResourceCatalog.L("dataPackFolder"));
             }

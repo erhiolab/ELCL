@@ -58,14 +58,11 @@ public partial class VersionLogsPage
         if (IsLoaded && IsVisible) _ = RefreshAsync();
     }
 
-    private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync(notify: true);
-
-    private async Task RefreshAsync(bool notify = false)
+    internal async Task RefreshAsync(bool notify = false)
     {
         if (_directory is not { } directory || _scanCancellation is not null) return;
         using var cancellation = new CancellationTokenSource();
         _scanCancellation = cancellation;
-        RefreshButton.IsEnabled = false;
         var selected = (FilesList.SelectedItem as VersionLogListItem)?.File;
         App.Logger.Information("GameLogs", $"开始扫描版本日志: {directory}.");
         try
@@ -97,7 +94,6 @@ public partial class VersionLogsPage
             if (ReferenceEquals(_scanCancellation, cancellation))
             {
                 _scanCancellation = null;
-                RefreshButton.IsEnabled = true;
             }
         }
     }
@@ -183,7 +179,6 @@ public partial class VersionLogsPage
         _openCancellation?.Cancel();
         _openCancellation = null;
         CloseLog();
-        RefreshButton.IsEnabled = true;
         UpdateOpenButton();
     }
 

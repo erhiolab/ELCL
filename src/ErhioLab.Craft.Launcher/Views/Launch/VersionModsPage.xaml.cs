@@ -92,6 +92,7 @@ public partial class VersionModsPage
         CommunityMods.Installed -= Installed;
         _scan?.Cancel();
         _lookup?.Cancel();
+        DetailsReveal.IsExpanded = false;
         _windowsDrop?.Dispose();
         _windowsDrop = null;
     }
@@ -101,8 +102,7 @@ public partial class VersionModsPage
         if (!_busy && string.Equals(directory, _directory, StringComparison.OrdinalIgnoreCase)) _ = RefreshAsync();
     }
 
-    private void Refresh_Click(object sender, RoutedEventArgs e) => _ = RefreshAsync();
-    private Task RefreshAsync() => _scanWork = RefreshCoreAsync();
+    internal Task RefreshAsync() => _scanWork = RefreshCoreAsync();
 
     private async Task RefreshCoreAsync()
     {

@@ -31,7 +31,7 @@ public sealed partial class ModRepositoryClient
 
         if (string.IsNullOrWhiteSpace(_key) || stream.Length > 512L * 1024 * 1024) return null;
         stream.Position = 0;
-        uint fingerprint = await Task.Run(() => LocalModManager.Fingerprint(stream, cancellationToken), cancellationToken).ConfigureAwait(false);
+        uint fingerprint = await ComputeFingerprintAsync(stream, cancellationToken).ConfigureAwait(false);
         using var cf = await RequestAsync(ModPlatform.CurseForge, "/v1/fingerprints/432", new { fingerprints = new[] { fingerprint } }, cancellationToken).ConfigureAwait(false);
         foreach (var match in cf.RootElement.GetProperty("data").GetProperty("exactMatches").EnumerateArray())
         {
@@ -43,4 +43,7 @@ public sealed partial class ModRepositoryClient
 
         return null;
     }
+
+    private static Task<uint> ComputeFingerprintAsync(Stream stream, CancellationToken token) =>
+        Task.Run(() => LocalModManager.Fingerprint(stream, token), token);
 }

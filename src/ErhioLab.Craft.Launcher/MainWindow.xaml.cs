@@ -41,8 +41,8 @@ public partial class MainWindow
     private const uint MonitorDefaultToNearest = 2;
     private const double MinSidebarWidth = 135;
     private readonly IReadOnlyDictionary<ShellSection, ShellRoute> _routes;
-    private readonly VersionSelectionView VersionSelectionPage;
-    private readonly VersionSettingsView VersionSettingsPage;
+    private readonly VersionSelectionView _versionSelectionPage;
+    private readonly VersionSettingsView _versionSettingsPage;
     private readonly ShellRoute _versionSelectionRoute;
     private readonly ShellRoute _versionSettingsRoute;
     private readonly SemaphoreSlim _dialogGate = new(1, 1);
@@ -71,20 +71,20 @@ public partial class MainWindow
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
 
         _routes = ShellRouteCatalog.Create();
-        VersionSelectionPage = new VersionSelectionView();
-        VersionSettingsPage = new VersionSettingsView();
-        _versionSelectionRoute = new ShellRoute(260, VersionSelectionPage.Sidebar, VersionSelectionPage);
-        _versionSettingsRoute = new ShellRoute(180, VersionSettingsPage.Sidebar, VersionSettingsPage);
+        _versionSelectionPage = new VersionSelectionView();
+        _versionSettingsPage = new VersionSettingsView();
+        _versionSelectionRoute = new ShellRoute(260, _versionSelectionPage.Sidebar, _versionSelectionPage);
+        _versionSettingsRoute = new ShellRoute(0, _versionSettingsPage.Sidebar, _versionSettingsPage);
         InitializeVersionSettings();
-        VersionSelectionPage.VersionChosen += OnVersionChosen;
-        VersionSelectionPage.VersionSelectionChanged += version =>
+        _versionSelectionPage.VersionChosen += OnVersionChosen;
+        _versionSelectionPage.VersionSelectionChanged += version =>
         {
             if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
             {
                 sidebar.ShowSelectedVersion(version.Id);
             }
         };
-        VersionSelectionPage.VersionSelectionCleared += () =>
+        _versionSelectionPage.VersionSelectionCleared += () =>
         {
             if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
             {
@@ -208,12 +208,12 @@ public partial class MainWindow
 
     private void ShowVersionSelection(bool back = false)
     {
-        if (!back) VersionSelectionPage.PrepareForOpen();
+        if (!back) _versionSelectionPage.PrepareForOpen();
         ApplyShellRoute(_versionSelectionRoute, back);
         int routeVersion = _routeVersion;
         _ = Dispatcher.InvokeAsync(() =>
         {
-            if (routeVersion == _routeVersion) _ = VersionSelectionPage.LoadForRouteAsync();
+            if (routeVersion == _routeVersion) _ = _versionSelectionPage.LoadForRouteAsync();
         }, DispatcherPriority.Background);
         App.Logger.Information("Navigation", "打开版本选择.");
     }
@@ -319,7 +319,7 @@ public partial class MainWindow
 
     private void OnVersionChosen(LocalMinecraftVersion version)
     {
-        if (!ReferenceEquals(_activeRoute, _versionSelectionRoute) || !VersionSelectionPage.IsVisible) return;
+        if (!ReferenceEquals(_activeRoute, _versionSelectionRoute) || !_versionSelectionPage.IsVisible) return;
 
         if (_routes[ShellSection.Launch].Sidebar is LaunchSidebarView sidebar)
         {
@@ -480,7 +480,7 @@ public partial class MainWindow
         bool first = _activeRoute is null;
         bool versionNavigation = ReferenceEquals(_activeRoute, _versionSelectionRoute) || ReferenceEquals(_activeRoute, _versionSettingsRoute)
             || ReferenceEquals(route, _versionSelectionRoute) || ReferenceEquals(route, _versionSettingsRoute);
-        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) VersionSelectionPage.CancelPendingScan();
+        if (ReferenceEquals(_activeRoute, _versionSelectionRoute)) _versionSelectionPage.CancelPendingScan();
         _activeRoute = route;
         _routeVersion++;
 

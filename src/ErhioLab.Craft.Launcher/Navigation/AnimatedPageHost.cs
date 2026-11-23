@@ -15,6 +15,8 @@ internal sealed class AnimatedPageHost : Grid
     private int _transitionVersion;
     private bool _transitioning;
 
+    internal UIElement? CurrentPage => _layers[_activeIndex].Content as UIElement;
+
     /// <summary>以指定页面作为初始内容.</summary>
     internal AnimatedPageHost(UIElement initialPage, bool resetOnUnload = false)
     {
