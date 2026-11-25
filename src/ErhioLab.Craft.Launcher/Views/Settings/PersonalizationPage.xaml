@@ -308,11 +308,18 @@
                         Content="{DynamicResource I18n.background.enabled}"
                         Style="{StaticResource FormCheckBoxStyle}"
                         Unchecked="BackgroundEnabled_Changed" />
-                    <Button
+                    <StackPanel
                         Grid.Column="1"
-                        Click="BackgroundManagement_Click"
-                        Content="{DynamicResource I18n.background.manage}"
-                        Style="{StaticResource PageActionButtonStyle}" />
+                        Orientation="Horizontal">
+                        <Button
+                            Click="OpenBackgroundFolder_Click"
+                            Content="{DynamicResource I18n.background.openLocalFolder}"
+                            Style="{StaticResource PageActionButtonStyle}" />
+                        <Button
+                            Click="BackgroundManagement_Click"
+                            Content="{DynamicResource I18n.background.manage}"
+                            Style="{StaticResource PageActionButtonStyle}" />
+                    </StackPanel>
                 </Grid>
             </controls:LauncherCard>
 

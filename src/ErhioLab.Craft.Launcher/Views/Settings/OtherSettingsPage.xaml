@@ -34,23 +34,34 @@
                         Foreground="{DynamicResource TextMutedBrush}"
                         Text="{DynamicResource I18n.settings.configurationDescription}"
                         TextWrapping="Wrap" />
-                    <StackPanel
-                        Margin="0,16,0,0"
-                        Orientation="Horizontal">
+                    <WrapPanel
+                        Margin="0,12,0,0">
                         <Button
-                            Width="112"
-                            Height="36"
                             Click="ExportSettings_Click"
                             Content="{DynamicResource I18n.settings.export}"
-                            Style="{StaticResource SecondaryActionStyle}" />
+                            Style="{StaticResource PageActionButtonStyle}" />
                         <Button
-                            Width="112"
-                            Height="36"
-                            Margin="10,0,0,0"
                             Click="ImportSettings_Click"
                             Content="{DynamicResource I18n.settings.import}"
-                            Style="{StaticResource SecondaryActionStyle}" />
-                    </StackPanel>
+                            Style="{StaticResource PageActionButtonStyle}" />
+                    </WrapPanel>
+                    <TextBlock
+                        Margin="{StaticResource FormSectionSpacing}"
+                        FontSize="{DynamicResource LabelFontSize}"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Text="{DynamicResource I18n.settings.accountsBackupDescription}"
+                        TextWrapping="Wrap" />
+                    <WrapPanel
+                        Margin="0,12,0,0">
+                        <Button
+                            Click="ExportAccounts_Click"
+                            Content="{DynamicResource I18n.settings.accountsExport}"
+                            Style="{StaticResource PageActionButtonStyle}" />
+                        <Button
+                            Click="ImportAccounts_Click"
+                            Content="{DynamicResource I18n.settings.accountsImport}"
+                            Style="{StaticResource PageActionButtonStyle}" />
+                    </WrapPanel>
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard

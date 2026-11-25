@@ -20,7 +20,11 @@ public sealed class LauncherBackgroundPresenter : Grid
     private readonly DispatcherTimer _slideshow = new();
     private LauncherBackgroundFile[] _catalog = [];
     private LauncherBackgroundFile[] _wallpaperFiles = [];
+    private LauncherBackgroundFile[] _automaticFiles = [];
+    private LauncherBackgroundFile[] _randomOrder = [];
     private LauncherBackgroundFile[] _files = [];
+    private bool _localCatalogReady;
+    private bool _wallpaperCatalogReady;
     private LauncherBackgroundSettings _options = new();
     private MediaElement? _video;
     private Image? _image;
@@ -32,7 +36,9 @@ public sealed class LauncherBackgroundPresenter : Grid
     internal event Action<LauncherBackgroundFile, Exception>? MediaRejected;
     internal event Action<LauncherBackgroundFile>? MediaReady;
     internal LauncherBackgroundFile? DisplayedFile { get; private set; }
+    internal BackgroundSlideshowPosition SlideshowPosition { get; set; } = new();
     internal bool IsDisplayingBackground => DisplayedFile is not null;
+    internal bool CanAdvance => _options.Enabled && _options.PlaybackMode != BackgroundPlaybackMode.Fixed && _automaticFiles.Length > 1;
 
     public LauncherBackgroundPresenter()
     {
@@ -49,61 +55,117 @@ public sealed class LauncherBackgroundPresenter : Grid
     internal void SetFiles(LauncherBackgroundFile[] files)
     {
         _catalog = files;
-        if (!UsesWallpaper(_options)) SelectMedia(DisplayedFile?.Path, advance: false);
+        _localCatalogReady = true;
+        if (_options.ActiveCategory != BackgroundCategory.Wallpaper)
+            SelectMedia(keepCurrent: true);
     }
 
     internal void SetWallpaperFiles(LauncherBackgroundFile[] files)
     {
         _wallpaperFiles = files;
-        if (UsesWallpaper(_options)) SelectMedia(null, advance: false);
+        _wallpaperCatalogReady = true;
+        if (_options.NeedsWallpaperCatalog) SelectMedia(keepCurrent: true);
     }
-
-    private static bool UsesWallpaper(LauncherBackgroundSettings options) =>
-        options.PlaybackMode == BackgroundPlaybackMode.Fixed && options.SelectedWallpaperId is not null;
 
     internal void Advance()
     {
-        if (!_options.Enabled || _options.PlaybackMode == BackgroundPlaybackMode.Fixed || _catalog.Length < 2) return;
-        SelectMedia(DisplayedFile?.Path, advance: true);
+        if (CanAdvance) SelectMedia(keepCurrent: false, step: 1);
     }
 
-    private void SelectMedia(string? previousPath, bool advance)
+    internal void GoBack()
     {
+        if (CanAdvance) SelectMedia(keepCurrent: false, step: -1);
+    }
+
+    internal bool TryShowFile(LauncherBackgroundFile file) => _options.PlaybackMode != BackgroundPlaybackMode.Fixed
+        && SelectMedia(keepCurrent: true, requestedKey: file.FavoriteKey);
+
+    private LauncherBackgroundFile[] ResolveAutomaticFiles(bool waitForCatalogs)
+    {
+        if (_options.ActiveCategory != BackgroundCategory.Favorites) return _catalog;
+        // 随机和轮播都应等待所需的图库就绪, 避免启动时只从先加载的来源中选取.
+        if (waitForCatalogs && ((_options.HasLocalFavorites && !_localCatalogReady) || (_options.HasWallpaperFavorites && !_wallpaperCatalogReady))) return [];
+        return _options.ResolveFavorites(_catalog, _wallpaperFiles);
+    }
+
+    private bool SelectMedia(bool keepCurrent, string? requestedKey = null, int step = 0)
+    {
+        var displayed = DisplayedFile;
+        // 刷新图库时保留正在载入的素材, 也允许用户先播放已加载的收藏.
+        var current = keepCurrent || step != 0 ? displayed ?? _files.ElementAtOrDefault(_index) : null;
+        if (step == 0)
+        {
+            var automaticFiles = _options.PlaybackMode == BackgroundPlaybackMode.Fixed ? []
+                : ResolveAutomaticFiles(waitForCatalogs: requestedKey is null && (!keepCurrent || current is null));
+            if (requestedKey is not null)
+            {
+                current = automaticFiles.FirstOrDefault(file => string.Equals(file.FavoriteKey, requestedKey, StringComparison.OrdinalIgnoreCase));
+                if (current is null) return false;
+            }
+            // 随机模式在同一轮内保持顺序, 上一张可以回到刚才看过的素材.
+            if (_options.PlaybackMode == BackgroundPlaybackMode.RandomOnStartup
+                && (!keepCurrent || !_automaticFiles.SequenceEqual(automaticFiles)))
+            {
+                _randomOrder = [.. automaticFiles];
+                Random.Shared.Shuffle(_randomOrder);
+            }
+            _automaticFiles = automaticFiles;
+        }
         switch (_options.PlaybackMode)
         {
             case BackgroundPlaybackMode.Fixed:
-                var fixedFile = UsesWallpaper(_options)
-                    ? _wallpaperFiles.FirstOrDefault(file => string.Equals(file.WallpaperId, _options.SelectedWallpaperId, StringComparison.OrdinalIgnoreCase))
-                    : _catalog.FirstOrDefault(file => string.Equals(file.RelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase));
+                var fixedFile = _options.FixedKey is { } key
+                    ? _options.ResolveCategory(_catalog, _wallpaperFiles)
+                        .FirstOrDefault(file => string.Equals(file.FavoriteKey, key, StringComparison.OrdinalIgnoreCase))
+                    : null;
                 _files = fixedFile is null ? [] : [fixedFile];
                 break;
-            case BackgroundPlaybackMode.Slideshow:
-                var previous = Array.FindIndex(_catalog, file => string.Equals(file.Path, previousPath, StringComparison.OrdinalIgnoreCase));
-                var start = previous < 0 ? 0 : previous + (advance ? 1 : 0);
-                _files = [.. _catalog.Skip(start), .. _catalog.Take(start)];
-                break;
             default:
-                _files = [.. _catalog];
-                Random.Shared.Shuffle(_files);
-                if (_files.Length > 1 && string.Equals(previousPath, _files[0].Path, StringComparison.OrdinalIgnoreCase))
-                {
-                    var other = Random.Shared.Next(1, _files.Length);
-                    (_files[0], _files[other]) = (_files[other], _files[0]);
-                }
-
+                _files = BuildPlaybackOrder(current, step);
                 break;
         }
 
         _index = 0;
+        if (keepCurrent && _options.Enabled && displayed is not null && _files.Length != 0 && SameKey(_files[0], displayed)
+            && string.Equals(_files[0].Path, displayed.Path, StringComparison.OrdinalIgnoreCase))
+        {
+            RestartSlideTimer();
+            return true;
+        }
         Restart();
+        return true;
     }
+
+    private LauncherBackgroundFile[] BuildPlaybackOrder(LauncherBackgroundFile? current, int step)
+    {
+        var slideshow = _options.PlaybackMode == BackgroundPlaybackMode.Slideshow;
+        var order = slideshow ? _automaticFiles : _randomOrder;
+        var count = order.Length;
+        if (count == 0) return [];
+
+        var index = Array.FindIndex(order, file => SameKey(file, current));
+        if (index < 0 && step == 0 && slideshow && SlideshowPosition.GetKey(_options.ActiveCategory) is { } key)
+            index = Array.FindIndex(order, file => string.Equals(file.FavoriteKey, key, StringComparison.OrdinalIgnoreCase));
+
+        var direction = step < 0 ? -1 : 1;
+        var start = index >= 0 ? (index + step + count) % count : direction < 0 ? count - 1 : 0;
+        var result = new LauncherBackgroundFile[count];
+        for (int i = 0; i < count; i++) result[i] = order[(start + direction * i + count) % count];
+        return result;
+    }
+
+    private static bool SameKey(LauncherBackgroundFile file, LauncherBackgroundFile? current) =>
+        current is not null && string.Equals(file.FavoriteKey, current.FavoriteKey, StringComparison.OrdinalIgnoreCase);
 
     internal void Apply(LauncherBackgroundSettings options)
     {
         var enabledChanged = options.Enabled != _options.Enabled;
-        var modeChanged = options.PlaybackMode != _options.PlaybackMode || options.PlaybackMode == BackgroundPlaybackMode.Fixed
-            && (!string.Equals(options.SelectedRelativePath, _options.SelectedRelativePath, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(options.SelectedWallpaperId, _options.SelectedWallpaperId, StringComparison.OrdinalIgnoreCase));
+        var categoryChanged = options.ActiveCategory != _options.ActiveCategory;
+        var modeChanged = options.PlaybackMode != _options.PlaybackMode;
+        var fixedFileChanged = options.PlaybackMode == BackgroundPlaybackMode.Fixed
+            && !string.Equals(options.FixedKey, _options.FixedKey, StringComparison.OrdinalIgnoreCase);
+        var poolChanged = options.ActiveCategory == BackgroundCategory.Favorites
+            && !options.Favorites.SequenceEqual(_options.Favorites, StringComparer.OrdinalIgnoreCase);
         var intervalChanged = options.SlideIntervalSeconds != _options.SlideIntervalSeconds;
         _options = options;
         _surface.Opacity = options.Opacity / 100.0;
@@ -116,7 +178,8 @@ public sealed class LauncherBackgroundPresenter : Grid
             _video.Volume = IsDisplayingBackground ? options.Volume / 100.0 : 0;
         }
 
-        if (modeChanged) SelectMedia(DisplayedFile?.Path, advance: false);
+        if (categoryChanged || modeChanged || fixedFileChanged || poolChanged)
+            SelectMedia(keepCurrent: (!categoryChanged && !modeChanged) || options.PlaybackMode == BackgroundPlaybackMode.Fixed);
         else if (enabledChanged) Restart();
         else if (intervalChanged) RestartSlideTimer();
     }
@@ -182,7 +245,9 @@ public sealed class LauncherBackgroundPresenter : Grid
                     return;
                 }
 
-                var bitmap = await Task.Run(() => ReadImage(file.Path));
+                var dpi = VisualTreeHelper.GetDpi(this);
+                var decodeEdge = GetImageDecodeEdge(ActualWidth * dpi.DpiScaleX, ActualHeight * dpi.DpiScaleY);
+                var bitmap = await Task.Run(() => ReadImage(file.Path, decodeEdge));
                 if (generation != _generation) return;
                 _image = new Image { Source = bitmap, Stretch = MediaStretch };
                 _surface.Children.Add(_image);
@@ -250,6 +315,8 @@ public sealed class LauncherBackgroundPresenter : Grid
     private void ShowMedia(LauncherBackgroundFile file)
     {
         DisplayedFile = file;
+        if (_options.PlaybackMode == BackgroundPlaybackMode.Slideshow)
+            SlideshowPosition = SlideshowPosition.WithKey(_options.ActiveCategory, file.FavoriteKey);
         RestartSlideTimer();
         MediaReady?.Invoke(file);
         BackgroundChanged?.Invoke();
@@ -264,14 +331,22 @@ public sealed class LauncherBackgroundPresenter : Grid
     private void RestartSlideTimer()
     {
         _slideshow.Stop();
-        if (_playbackActive && IsDisplayingBackground && _options.PlaybackMode == BackgroundPlaybackMode.Slideshow && _catalog.Length > 1)
+        if (_playbackActive && IsDisplayingBackground && _options.PlaybackMode == BackgroundPlaybackMode.Slideshow && _automaticFiles.Length > 1)
         {
             _slideshow.Interval = TimeSpan.FromSeconds(_options.SlideIntervalSeconds);
             _slideshow.Start();
         }
     }
 
-    internal static BitmapSource ReadImage(string path, int maxEdge = 2560)
+    // 按实际像素尺寸解码, 并留出放大窗口的余量, 避免拖动窗口时重新读取文件.
+    internal static int GetImageDecodeEdge(double width, double height)
+    {
+        var longestEdge = Math.Max(width, height);
+        if (!double.IsFinite(longestEdge) || longestEdge <= 0) return 1536;
+        return (int)Math.Clamp(Math.Ceiling(longestEdge * 1.25 / 256) * 256, 1024, 2560);
+    }
+
+    internal static BitmapSource ReadImage(string path, int maxEdge)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         var header = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0];

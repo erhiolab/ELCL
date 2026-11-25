@@ -16,6 +16,7 @@ public partial class App
     private static LauncherConsent _consent = new();
 
     internal static bool AnonymousAnalyticsEnabled => _consent.AnalyticsAllowed == true;
+    internal static bool DailyLuckDisclaimerAccepted => _consent.DailyLuckDisclaimerAccepted;
 
     private bool EnsureStartupConsent(string dataDirectory)
     {
@@ -109,6 +110,26 @@ public partial class App
 
         _consent = updated;
         _analytics?.SetEnabled(enabled);
+        return true;
+    }
+
+    internal static bool AcceptDailyLuckDisclaimer()
+    {
+        if (DailyLuckDisclaimerAccepted) return true;
+        if (_consentStore is not { } store) return false;
+
+        var updated = _consent with { DailyLuckDisclaimerAccepted = true };
+        Logger.Information("Toolbox", "开始保存今日人品免责声明的确认状态.");
+        try { store.Save(updated); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            Logger.Error("Toolbox", "保存今日人品免责声明的确认状态失败.", error);
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.luckDisclaimerSaveFailed"));
+            return false;
+        }
+
+        _consent = updated;
+        Logger.Information("Toolbox", "已保存今日人品免责声明的确认状态.");
         return true;
     }
 }

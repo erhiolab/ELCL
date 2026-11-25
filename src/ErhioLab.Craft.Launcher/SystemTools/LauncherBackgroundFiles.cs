@@ -16,10 +16,24 @@ internal sealed record LauncherBackgroundFile(string Path, string RelativePath, 
     internal string? Title { get; init; }
     internal string? PreviewPath { get; init; }
     internal WallpaperAgeRating AgeRating { get; init; }
+    internal string FavoriteKey => WallpaperId is { } id ? LauncherBackgroundFiles.WallpaperPrefix + id : LauncherBackgroundFiles.LocalPrefix + RelativePath;
 }
 
 internal static class LauncherBackgroundFiles
 {
+    internal const string LocalPrefix = "local:";
+    internal const string WallpaperPrefix = "wallpaper:";
+
+    internal static string? NormalizeFavoriteKey(string? key)
+    {
+        if (key?.StartsWith(LocalPrefix, StringComparison.OrdinalIgnoreCase) == true)
+            return NormalizeRelativePath(key[LocalPrefix.Length..]) is { } path ? LocalPrefix + path : null;
+        if (key?.StartsWith(WallpaperPrefix, StringComparison.OrdinalIgnoreCase) == true &&
+            key[WallpaperPrefix.Length..] is { Length: > 0 and <= 100 } id && !string.IsNullOrWhiteSpace(id))
+            return WallpaperPrefix + id;
+        return null;
+    }
+
     private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".bmp", ".gif" };
 
     private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase) { ".mp4", ".m4v", ".mov", ".wmv", ".avi" };

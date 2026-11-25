@@ -93,6 +93,28 @@
                         Click="Back_Click"
                         Icon="{x:Static icons:LauncherIcons.Back}"
                         ToolTip="{DynamicResource I18n.common.back}" />
+                    <StackPanel
+                        x:Name="PlaybackNavigation"
+                        DockPanel.Dock="Right"
+                        Margin="12,0,0,0"
+                        Orientation="Horizontal"
+                        Visibility="Collapsed">
+                        <controls:IconButton
+                            Width="32"
+                            Height="32"
+                            AutomationProperties.Name="{DynamicResource I18n.background.previous}"
+                            Click="Previous_Click"
+                            Icon="{x:Static icons:LauncherIcons.SkipBackward}"
+                            ToolTip="{DynamicResource I18n.background.previous}" />
+                        <controls:IconButton
+                            Width="32"
+                            Height="32"
+                            Margin="4,0,0,0"
+                            AutomationProperties.Name="{DynamicResource I18n.background.next}"
+                            Click="Next_Click"
+                            Icon="{x:Static icons:LauncherIcons.SkipForward}"
+                            ToolTip="{DynamicResource I18n.background.next}" />
+                    </StackPanel>
                     <TextBlock
                         DockPanel.Dock="Left"
                         VerticalAlignment="Center"
@@ -138,12 +160,6 @@
                             Style="{StaticResource FormCheckBoxStyle}"
                             ToolTip="{DynamicResource I18n.background.playInBackgroundTip}"
                             Unchecked="PlaybackOption_Changed" />
-                        <Button
-                            x:Name="NextButton"
-                            VerticalAlignment="Center"
-                            Click="Next_Click"
-                            Content="{DynamicResource I18n.background.next}"
-                            Style="{StaticResource PageActionButtonStyle}" />
                     </WrapPanel>
                     <WrapPanel>
                         <Grid
@@ -164,10 +180,12 @@
                                 SelectionChanged="Mode_Changed"
                                 Style="{StaticResource FormComboBoxStyle}">
                                 <ComboBoxItem
+                                    x:Name="RandomModeItem"
                                     Content="{DynamicResource I18n.background.randomOnStartup}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource I18n.background.fixed}" />
                                 <ComboBoxItem
+                                    x:Name="SlideModeItem"
                                     Content="{DynamicResource I18n.background.slideshow}" />
                             </ComboBox>
                         </Grid>
@@ -213,14 +231,16 @@
                                 <TextBlock
                                     VerticalAlignment="Center"
                                     Text="{DynamicResource I18n.background.interval}" />
-                                <ComboBox
+                                <TextBox
                                     x:Name="IntervalBox"
                                     Grid.Column="1"
-                                    MinWidth="180"
-                                    DisplayMemberPath="Value"
-                                    SelectedValuePath="Key"
-                                    SelectionChanged="Interval_Changed"
-                                    Style="{StaticResource FormComboBoxStyle}" />
+                                    Width="116"
+                                    MaxLength="12"
+                                    AutomationProperties.Name="{DynamicResource I18n.background.interval}"
+                                    PreviewKeyDown="Interval_KeyDown"
+                                    LostKeyboardFocus="Interval_LostKeyboardFocus"
+                                    Style="{StaticResource FormTextBoxStyle}"
+                                    ToolTip="{DynamicResource I18n.background.intervalTip}" />
                             </Grid>
                         </controls:AnimatedReveal>
                     </WrapPanel>
@@ -297,6 +317,12 @@
                     <StackPanel
                         Orientation="Horizontal">
                         <RadioButton
+                            x:Name="FavoriteSource"
+                            GroupName="BackgroundGallerySource"
+                            Checked="Source_Checked"
+                            Content="{DynamicResource I18n.background.favoriteSource}"
+                            Style="{StaticResource GalleryTabStyle}" />
+                        <RadioButton
                             x:Name="LocalSource"
                             GroupName="BackgroundGallerySource"
                             IsChecked="True"
@@ -316,7 +342,7 @@
                         <Button
                             x:Name="OpenFolderButton"
                             Click="OpenFolder_Click"
-                            Content="{DynamicResource I18n.toolbox.openFolder}"
+                            Content="{DynamicResource I18n.background.openLocalFolder}"
                             Style="{StaticResource PageActionButtonStyle}" />
                         <Button
                             Click="Refresh_Click"
@@ -415,68 +441,83 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate
                                 DataType="{x:Type local:LauncherBackgroundTile}">
-                                <Button
-                                    Width="172"
-                                    Height="131"
-                                    Margin="0,4,8,4"
-                                    Padding="5"
-                                    HorizontalContentAlignment="Stretch"
-                                    VerticalContentAlignment="Stretch"
-                                    Click="SelectTile_Click"
-                                    ToolTip="{Binding ToolTip}">
-                                    <Button.Style>
-                                        <Style
-                                            TargetType="Button"
-                                            BasedOn="{StaticResource SecondaryActionStyle}">
-                                            <Style.Triggers>
-                                                <DataTrigger
-                                                    Binding="{Binding IsCurrent}"
-                                                    Value="True">
-                                                    <Setter
-                                                        Property="BorderBrush"
-                                                        Value="{DynamicResource AccentBrush}" />
-                                                    <Setter
-                                                        Property="Background"
-                                                        Value="{DynamicResource AccentMutedBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                    <StackPanel
-                                        Width="160">
-                                        <Border
-                                            Height="79"
-                                            Background="{DynamicResource InkBrush}"
-                                            ClipToBounds="True"
-                                            CornerRadius="5">
-                                            <Grid
-                                                ClipToBounds="True">
-                                                <Path
-                                                    Width="24"
-                                                    Height="24"
-                                                    Data="{Binding Icon}"
-                                                    Stretch="Uniform"
-                                                    Stroke="{DynamicResource TextMutedBrush}"
-                                                    StrokeThickness="1.4"
-                                                    StrokeLineJoin="Round" />
-                                                <Image
-                                                    Source="{Binding Thumbnail}"
-                                                    Stretch="UniformToFill" />
-                                            </Grid>
-                                        </Border>
-                                        <TextBlock
-                                            Margin="1,5,1,0"
-                                            FontWeight="SemiBold"
-                                            Text="{Binding Name}"
-                                            TextTrimming="CharacterEllipsis" />
-                                        <TextBlock
-                                            Margin="1,1,1,0"
-                                            FontSize="{DynamicResource CaptionFontSize}"
-                                            Foreground="{DynamicResource TextMutedBrush}"
-                                            Text="{Binding StatusLabel}"
-                                            TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Button>
+                                <Grid
+                                    Margin="0,4,8,4">
+                                    <Button
+                                        Width="172"
+                                        Height="131"
+                                        Padding="5"
+                                        HorizontalContentAlignment="Stretch"
+                                        VerticalContentAlignment="Stretch"
+                                        Click="SelectTile_Click"
+                                        ToolTip="{Binding ToolTip}">
+                                        <Button.Style>
+                                            <Style
+                                                TargetType="Button"
+                                                BasedOn="{StaticResource SecondaryActionStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger
+                                                        Binding="{Binding IsCurrent}"
+                                                        Value="True">
+                                                        <Setter
+                                                            Property="BorderBrush"
+                                                            Value="{DynamicResource AccentBrush}" />
+                                                        <Setter
+                                                            Property="Background"
+                                                            Value="{DynamicResource AccentMutedBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <StackPanel
+                                            Width="160">
+                                            <Border
+                                                Height="79"
+                                                Background="{DynamicResource InkBrush}"
+                                                ClipToBounds="True"
+                                                CornerRadius="5">
+                                                <Grid
+                                                    ClipToBounds="True">
+                                                    <Path
+                                                        Width="24"
+                                                        Height="24"
+                                                        Data="{Binding Icon}"
+                                                        Stretch="Uniform"
+                                                        Stroke="{DynamicResource TextMutedBrush}"
+                                                        StrokeThickness="1.4"
+                                                        StrokeLineJoin="Round" />
+                                                    <Image
+                                                        Source="{Binding Thumbnail}"
+                                                        Stretch="UniformToFill" />
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock
+                                                Margin="1,5,1,0"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding Name}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                Margin="1,1,1,0"
+                                                FontSize="{DynamicResource CaptionFontSize}"
+                                                Foreground="{DynamicResource TextMutedBrush}"
+                                                Text="{Binding StatusLabel}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Button>
+                                    <CheckBox
+                                        Width="26"
+                                        Height="26"
+                                        Margin="0,10,10,0"
+                                        Padding="4"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        AutomationProperties.Name="{DynamicResource I18n.background.favoriteToggle}"
+                                        Background="{x:Static Brushes.Transparent}"
+                                        Click="Favorite_Click"
+                                        IsChecked="{Binding IsFavorite, Mode=OneWay}"
+                                        Style="{StaticResource FormCheckBoxStyle}"
+                                        ToolTip="{DynamicResource I18n.background.favoriteToggle}" />
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

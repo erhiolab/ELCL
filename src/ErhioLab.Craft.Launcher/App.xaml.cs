@@ -9,7 +9,6 @@ using System.Windows.Media;
 using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Logging;
-using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Accounts;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Localization;
@@ -43,13 +42,14 @@ public partial class App
             new JsonStringEnumConverter<LauncherTheme>(), new JsonStringEnumConverter<TitleBarMode>(),
             new JsonStringEnumConverter<VersionListSource>(), new JsonStringEnumConverter<GameProcessPriority>(),
             new JsonStringEnumConverter<GameWindowMode>(), new JsonStringEnumConverter<GameGarbageCollector>(),
-            new JsonStringEnumConverter<MemoryUnitSystem>(), new JsonStringEnumConverter<BackgroundFit>(),
-            new JsonStringEnumConverter<BackgroundPlaybackMode>()
+            new JsonStringEnumConverter<MemoryUnitSystem>()
         }
     };
 
     private static SessionFileLogger? _logger;
-    private static JsonFileStore<LauncherSettings>? _settingsStore;
+    private static readonly JsonSerializerOptions BackupJsonOptions = LauncherSettingsBackup.CreateOptions(SettingsJsonOptions);
+    private static LauncherDataFile<LauncherSettings>? _settingsStore;
+    private static bool _settingsWritable = true;
     private static LauncherAccountStore? _accountStore;
     private static LauncherSkinService? _skinService;
     private static AnalyticsEvents? _analytics;
@@ -67,6 +67,8 @@ public partial class App
 
     /// <summary>当前已加载并应用的设置.</summary>
     internal static LauncherSettings Settings { get; private set; } = new();
+    internal static LauncherBackgroundStore BackgroundStore { get; } = new(Path.Combine(AppContext.BaseDirectory, "ELCL", "background-playback.json"));
+    internal static LauncherBackgroundSettings BackgroundSettings => BackgroundStore.Options;
     internal static LauncherFeatureVisibility FeatureVisibility { get; } = new();
 
     /// <summary>供启动器界面记录操作的本次日志会话.</summary>
@@ -97,7 +99,7 @@ public partial class App
             Directory.CreateDirectory(dataDirectory);
             Directory.CreateDirectory(localGameDirectory);
             _logger = new SessionFileLogger(Path.Combine(dataDirectory, "logs"));
-            _settingsStore = new JsonFileStore<LauncherSettings>(settingsPath, SettingsJsonOptions);
+            _settingsStore = new LauncherDataFile<LauncherSettings>(settingsPath, LauncherDataKind.Settings, SettingsJsonOptions);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -118,20 +120,10 @@ public partial class App
         };
         TaskScheduler.UnobservedTaskException += (_, args) => LogUnhandled("后台任务", args.Exception);
 
-        var settingsLoaded = true;
-        try
+        if (!TryLoadStartupSettings(_settingsStore))
         {
-            Settings = _settingsStore.Load(new LauncherSettings()).Normalize();
-            LocalizationManager.Apply(Settings.Language);
-            Logger.Information("Settings", $"配置已加载, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
-        {
-            // 保留无法解析的配置文件, 只在本次运行中使用默认值.
-            Logger.Error("Settings", "读取配置失败, 本次使用默认设置.", exception);
-            Settings = new LauncherSettings();
-            settingsLoaded = false;
-            LocalizationManager.Apply(Settings.Language);
+            Shutdown(1);
+            return;
         }
 
         LauncherThemeManager.Apply(Settings);
@@ -156,23 +148,18 @@ public partial class App
             return;
         }
 
-        if (settingsLoaded)
+        if (Settings.GameFolders.Count == 0)
         {
+            string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+            GameFolderSetting[] folders =
+            [
+                new(localGameDirectory, LocalizationManager.Get("folder.current"), "folder.current"),
+                new(officialDirectory, LocalizationManager.Get("folder.official"), "folder.official")
+            ];
+            Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
             try
             {
-                bool saveSettings = !File.Exists(settingsPath);
-                if (Settings.GameFolders.Count == 0)
-                {
-                    string officialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
-                    GameFolderSetting[] folders =
-                    [
-                        new(localGameDirectory, LocalizationManager.Get("folder.current"), "folder.current"),
-                        new(officialDirectory, LocalizationManager.Get("folder.official"), "folder.official")
-                    ];
-                    Settings = Settings with { GameFolders = folders, SelectedGameFolderPath = localGameDirectory };
-                    saveSettings = true;
-                }
-                if (saveSettings) _settingsStore.Save(Settings);
+                _settingsStore.Save(Settings);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
@@ -204,6 +191,7 @@ public partial class App
             () => InstallationIdentity.GetOrCreate(Path.Combine(dataDirectory, "installation-id")), Logger);
         _analytics.SetEnabled(AnonymousAnalyticsEnabled);
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
+        BackgroundStore.Load();
         _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
@@ -228,6 +216,7 @@ public partial class App
         LauncherSettings normalized = settings.Normalize();
         try
         {
+            if (!_settingsWritable) throw new IOException(LocalizationManager.Get("settings.localFileUnreadable"));
             _settingsStore!.Save(normalized);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -241,7 +230,6 @@ public partial class App
         bool languageChanged = Settings.Language != normalized.Language;
         bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
-        bool backgroundChanged = Settings.BackgroundOptions != normalized.BackgroundOptions;
         bool hiddenFeaturesChanged = Settings.HiddenFeatures != normalized.HiddenFeatures;
         MainWindow? window = Current.MainWindow as MainWindow;
         if (themeChanged)
@@ -262,7 +250,7 @@ public partial class App
         if (window is not null)
         {
             window.ApplyContentOpacity(Settings.WindowOpacity);
-            if (backgroundChanged || paletteChanged) window.ApplyLauncherBackground(Settings.BackgroundOptions);
+            if (paletteChanged) window.ApplyLauncherBackground(BackgroundSettings);
             if (titleChanged)
             {
                 window.ApplyTitleBar(Settings.TitleBarMode, Settings.TitleBarText ?? string.Empty);
@@ -287,20 +275,48 @@ public partial class App
     /// <summary>将当前生效的启动器配置导出到用户选择的 JSON 文件.</summary>
     internal static void ExportSettings(string path)
     {
-        new JsonFileStore<LauncherSettings>(path, SettingsJsonOptions).Save(Settings);
+        ValidateBackupDestination(path);
+        new LauncherDataFile<LauncherSettingsBackup>(path, LauncherDataKind.SettingsBackup, BackupJsonOptions).Save(new(Settings));
         Logger.Information("Settings", $"配置已导出: {path}");
     }
 
-    /// <summary>验证外部 JSON, 规范化后原子写入当前配置文件, 供重启后读取.</summary>
-    internal static void ImportSettings(string path)
+    internal static LauncherSettingsBackup ReadSettingsBackup(string path)
     {
-        string json = File.ReadAllText(path);
-        LauncherSettings imported = JsonSerializer.Deserialize<LauncherSettings>(json, SettingsJsonOptions)
-            ?? throw new JsonException("配置文件内容不能为 null.");
-        LauncherSettings normalized = imported.Normalize();
-        _settingsStore!.Save(normalized);
-        _ = _settingsStore.Load(new LauncherSettings()).Normalize();
-        Logger.Information("Settings", $"配置已导入并验证: {path}");
+        var backup = new LauncherDataFile<LauncherSettingsBackup>(path, LauncherDataKind.SettingsBackup, BackupJsonOptions).Read();
+        if (backup.Settings is null) throw new JsonException(LocalizationManager.Get("settings.backupInvalidObject"));
+        return backup;
+    }
+
+    internal static void ImportSettings(LauncherSettingsBackup backup)
+    {
+        _settingsStore!.Save(backup.ApplyTo(Settings));
+        // 重启前不让旧会话的延迟保存覆盖刚导入的配置.
+        _settingsWritable = false;
+        Logger.Information("Settings", "启动器配置已导入, 等待重启.");
+    }
+
+    internal static bool UpdateBackgroundSettings(LauncherBackgroundSettings options)
+    {
+        try { BackgroundStore.SaveOptions(options); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Logger.Error("Background", "保存背景配置失败.", error);
+            Notifications.LauncherToasts.Error(LocalizationManager.Get("settings.backgroundSaveFailed"));
+            return false;
+        }
+
+        (Current.MainWindow as MainWindow)?.ApplyLauncherBackground(BackgroundSettings);
+        return true;
+    }
+
+    internal static void ValidateBackupDestination(string path)
+    {
+        string fullPath = Path.GetFullPath(path);
+        string dataDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL");
+        string relative = Path.GetRelativePath(dataDirectory, fullPath);
+        if (!Path.IsPathFullyQualified(relative) && relative != ".."
+            && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            throw new IOException(LocalizationManager.Get("settings.backupInsideData"));
     }
 
     /// <summary>先启动新进程, 成功后退出当前进程.</summary>

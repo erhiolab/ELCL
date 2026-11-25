@@ -546,6 +546,9 @@
     <Style
         TargetType="ComboBox">
         <Setter
+            Property="controls:ComboBoxAssist.SmoothDropDown"
+            Value="True" />
+        <Setter
             Property="Foreground"
             Value="{DynamicResource TextBrush}" />
         <Setter
@@ -653,8 +656,7 @@
                             Placement="Bottom"
                             AllowsTransparency="True"
                             Focusable="False"
-                            IsOpen="{TemplateBinding IsDropDownOpen}"
-                            PopupAnimation="Fade">
+                            IsOpen="{TemplateBinding IsDropDownOpen}">
                             <Border
                                 Background="{DynamicResource PanelBrush}"
                                 BorderBrush="{DynamicResource LineBrush}"
@@ -756,6 +758,7 @@
                                 Background="{DynamicResource InkRaisedBrush}">
                                 <Grid>
                                     <Border
+                                        x:Name="HoverLayer"
                                         Background="{DynamicResource AccentHoverBrush}"
                                         CornerRadius="3"
                                         Style="{StaticResource HoverLayerStyle}" />
@@ -845,6 +848,26 @@
                                 TargetName="Box"
                                 Property="BorderBrush"
                                 Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger
+                            Property="Background"
+                            Value="{x:Static Brushes.Transparent}">
+                            <Setter
+                                TargetName="Box"
+                                Property="Background"
+                                Value="Transparent" />
+                            <Setter
+                                TargetName="HoverLayer"
+                                Property="Background"
+                                Value="Transparent" />
+                            <Setter
+                                TargetName="HoverLayer"
+                                Property="BorderBrush"
+                                Value="{DynamicResource AccentBrush}" />
+                            <Setter
+                                TargetName="HoverLayer"
+                                Property="BorderThickness"
+                                Value="1" />
                         </Trigger>
                         <Trigger
                             Property="IsEnabled"

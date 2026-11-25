@@ -55,12 +55,11 @@ public partial class PersonalizationPage
                 ModTranslationEnabled = true,
                 AccentColor = "#80CEFF",
                 WindowOpacity = 1.0,
-                Background = new LauncherBackgroundSettings(),
                 HiddenFeatures = LauncherHiddenFeatures.Debug,
                 TitleBarMode = TitleBarMode.Default,
                 TitleBarText = "ELCL"
             })
-           )
+           && App.UpdateBackgroundSettings(new LauncherBackgroundSettings { Favorites = App.BackgroundSettings.Favorites }))
         {
             App.Logger.Information("Settings", "个性化设置已重置为默认值.");
         }
@@ -79,7 +78,7 @@ public partial class PersonalizationPage
         DayThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Day;
         NightThemeButton.IsChecked = App.Settings.Theme == LauncherTheme.Night;
         AccentPicker.SetColor(App.Settings.AccentColor);
-        BackgroundEnabledBox.IsChecked = App.Settings.BackgroundOptions.Enabled;
+        BackgroundEnabledBox.IsChecked = App.BackgroundSettings.Enabled;
         LanguageComboBox.SelectedValue = App.Settings.Language;
         MemoryUnitBox.SelectedIndex = Array.IndexOf(MemoryUnitChoices, App.Settings.MemoryUnit);
         ModPresentationBox.SelectedIndex = (int)App.Settings.ModListPresentation;
@@ -96,11 +95,13 @@ public partial class PersonalizationPage
 
     private void BackgroundManagement_Click(object sender, RoutedEventArgs e) => BackgroundManagementRequested?.Invoke();
 
+    private void OpenBackgroundFolder_Click(object sender, RoutedEventArgs e) => MainWindow.OpenLauncherBackgroundFolder();
+
     private void BackgroundEnabled_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializing) return;
-        var options = App.Settings.BackgroundOptions with { Enabled = BackgroundEnabledBox.IsChecked == true };
-        if (options != App.Settings.BackgroundOptions && !App.UpdateSettings(App.Settings with { Background = options })) RefreshControls();
+        var options = App.BackgroundSettings with { Enabled = BackgroundEnabledBox.IsChecked == true };
+        if (options != App.BackgroundSettings && !App.UpdateBackgroundSettings(options)) RefreshControls();
     }
 
     private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

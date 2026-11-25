@@ -31,6 +31,12 @@ public static class LauncherIcons
     /// <summary>启动.</summary>
     public static readonly Geometry Launch = Parse("M 4,2 L 11,6.3 Q 11.8,7 11,7.7 L 4,12 Q 3,12.5 3,11.5 L 3,2.5 Q 3,1.5 4,2 Z");
 
+    /// <summary>跳到下一项.</summary>
+    public static readonly Geometry SkipForward = Parse("M 3,3 L 12,9 L 3,15 Z M 15,3 V 15");
+
+    /// <summary>上一项.</summary>
+    public static readonly Geometry SkipBackward = Parse("M 15,3 L 6,9 L 15,15 Z M 3,3 V 15");
+
     /// <summary>下载.</summary>
     public static readonly Geometry Download = Parse("M 9,2 L 9,12 M 5,8 L 9,12 L 13,8 M 3,14 L 3,16 L 15,16 L 15,14");
 

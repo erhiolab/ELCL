@@ -110,68 +110,85 @@ public partial class OtherSettingsPage
         App.Logger.Information("Privacy", $"匿名统计偏好已保存: enabled={enabled}.");
     }
 
-    private void ExportSettings_Click(object sender, RoutedEventArgs e)
+    private void ExportSettings_Click(object sender, RoutedEventArgs e) => ExportBackup(accounts: false);
+
+    private async void ExportAccounts_Click(object sender, RoutedEventArgs e)
+    {
+        var title = LocalizationManager.Get("settings.accountsExport");
+        if (await LauncherDialogs.ConfirmAsync(title, LocalizationManager.Get("settings.accountsExportWarning"), confirmText: title))
+            ExportBackup(accounts: true);
+    }
+
+    private void ExportBackup(bool accounts)
     {
         SaveFileDialog dialog = new()
         {
-            Title = LocalizationManager.Get("settings.exportDialogTitle"),
-            Filter = LocalizationManager.Get("settings.jsonFileFilter"),
+            Title = LocalizationManager.Get(accounts ? "settings.accountsExport" : "settings.export"),
+            Filter = LocalizationManager.Get("settings.backupFileFilter"),
             DefaultExt = ".json",
             AddExtension = true,
-            FileName = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json"
+            FileName = $"ELCL-{(accounts ? "accounts" : "settings")}-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json"
         };
-        if (dialog.ShowDialog(Window.GetWindow(this)) != true)
-        {
-            return;
-        }
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
 
         try
         {
-            App.ExportSettings(dialog.FileName);
-            LauncherToasts.Success(LocalizationManager.Get("settings.exported"));
+            App.Logger.Information("Settings", $"开始导出{(accounts ? "账户信息" : "启动器配置")}: {dialog.FileName}.");
+            if (accounts)
+            {
+                App.Accounts.ExportBackup(dialog.FileName);
+                App.Logger.Information("Settings", $"账户信息已导出: {dialog.FileName}.");
+            }
+            else App.ExportSettings(dialog.FileName);
+            LauncherToasts.Success(LocalizationManager.Get(accounts ? "settings.accountsExported" : "settings.exported"));
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or SecurityException)
         {
-            App.Logger.Error("Settings", "导出配置失败.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("settings.exportFailed"), exception.Message);
+            App.Logger.Error("Settings", "导出备份失败.", exception);
+            var title = LocalizationManager.Get(accounts ? "settings.accountsExportFailed" : "settings.exportFailed");
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("settings.backupFailure"), title, exception.Message));
         }
     }
 
-    private async void ImportSettings_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            await ImportSettingsAsync();
-        }
-        catch (Exception exception)
-        {
-            App.Logger.Error("Settings", "导入配置时发生未预期的错误.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("settings.importFailed"), exception.Message);
-        }
-    }
+    private async void ImportSettings_Click(object sender, RoutedEventArgs e) => await ImportBackupAsync(accounts: false);
 
-    private async Task ImportSettingsAsync()
+    private async void ImportAccounts_Click(object sender, RoutedEventArgs e) => await ImportBackupAsync(accounts: true);
+
+    private async Task ImportBackupAsync(bool accounts)
     {
         OpenFileDialog dialog = new()
         {
-            Title = LocalizationManager.Get("settings.importDialogTitle"),
-            Filter = LocalizationManager.Get("settings.jsonFileFilter"),
+            Title = LocalizationManager.Get(accounts ? "settings.accountsImport" : "settings.import"),
+            Filter = LocalizationManager.Get("settings.backupFileFilter"),
             DefaultExt = ".json",
             CheckFileExists = true
         };
-        if (dialog.ShowDialog(Window.GetWindow(this)) != true)
-        {
-            return;
-        }
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
 
         try
         {
-            App.ImportSettings(dialog.FileName);
+            App.Logger.Information("Settings", $"开始读取{(accounts ? "账户" : "配置")}备份: {dialog.FileName}.");
+            if (accounts)
+            {
+                var result = App.Accounts.ImportBackup(dialog.FileName);
+                App.Logger.Information("Settings", $"账户备份已处理, 新增 {result.Added} 个, 无法恢复 {result.UnavailableMicrosoft} 个 Microsoft 账户.");
+                var message = result.Added == 0 ? LocalizationManager.Get("settings.accountsNoNew")
+                    : string.Format(LocalizationManager.Get("settings.accountsImported"), result.Added);
+                if (result.UnavailableMicrosoft > 0)
+                    LauncherToasts.Information($"{message} {string.Format(LocalizationManager.Get("settings.accountsUnavailable"), result.UnavailableMicrosoft)}");
+                else LauncherToasts.Success(message);
+                return;
+            }
+
+            var backup = App.ReadSettingsBackup(dialog.FileName);
+            if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("settings.import"), LocalizationManager.Get("settings.importConfirm"))) return;
+            App.ImportSettings(backup);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or SecurityException)
         {
-            App.Logger.Error("Settings", "导入配置失败.", exception);
-            LauncherDialogs.Error(LocalizationManager.Get("settings.importFailed"), string.Format(LocalizationManager.Get("settings.invalidImport"), exception.Message));
+            App.Logger.Error("Settings", "导入备份失败.", exception);
+            var title = LocalizationManager.Get(accounts ? "settings.accountsImportFailed" : "settings.importFailed");
+            LauncherToasts.Error(string.Format(LocalizationManager.Get("settings.backupFailure"), title, exception.Message));
             return;
         }
 

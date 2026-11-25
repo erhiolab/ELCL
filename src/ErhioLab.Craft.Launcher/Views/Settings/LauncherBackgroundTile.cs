@@ -22,6 +22,7 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
     public ImageSource? Thumbnail { get; private set; }
     internal bool ThumbnailResolved { get; private set; }
     public bool IsCurrent => _isDisplayed || _isFixed;
+    public bool IsFavorite { get; private set; }
 
     public string StatusLabel
     {
@@ -60,12 +61,17 @@ public sealed class LauncherBackgroundTile : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusLabel)));
     }
 
-    internal void Refresh(bool isDisplayed, bool isFixed)
+    internal void Refresh(bool isDisplayed, bool isFixed, bool isFavorite)
     {
         var highlighted = IsCurrent;
         _isDisplayed = isDisplayed;
         _isFixed = isFixed;
         if (highlighted != IsCurrent) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCurrent)));
+        if (IsFavorite != isFavorite)
+        {
+            IsFavorite = isFavorite;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFavorite)));
+        }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusLabel)));
     }
 }

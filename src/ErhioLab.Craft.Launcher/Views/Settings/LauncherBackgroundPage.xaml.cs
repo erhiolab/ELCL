@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -20,7 +20,6 @@ namespace ErhioLab.Craft.Launcher.Views.Settings;
 public partial class LauncherBackgroundPage
 {
     private const int GalleryBatchSize = 24;
-    private static readonly int[] IntervalPresets = [10, 15, 30, 60, 120, 300, 600, 1800, 3600];
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private readonly DispatcherTimer _searchTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private MainWindow? _window;
@@ -30,6 +29,8 @@ public partial class LauncherBackgroundPage
     private int _galleryVersion;
     private int _openVersion;
     private bool ShowWallpaper => WallpaperSource?.IsChecked == true;
+    private bool ShowFavorites => FavoriteSource?.IsChecked == true;
+    private bool ShowLocal => !ShowWallpaper && !ShowFavorites;
     private LauncherBackgroundTile[] _sourceTiles = [];
     private LauncherBackgroundTile[] _tiles = [];
     private CancellationTokenSource? _thumbnailCancellation;
@@ -53,16 +54,23 @@ public partial class LauncherBackgroundPage
     {
         _saveTimer.Stop();
         _binding = true;
-        var options = App.Settings.BackgroundOptions;
+        var options = App.BackgroundSettings;
         EnabledBox.IsChecked = options.Enabled;
         PlayInBackgroundBox.IsChecked = options.PlayInBackground;
         FitBox.SelectedIndex = (int)options.Fit;
+        var source = options.ActiveCategory switch
+        {
+            BackgroundCategory.Favorites => FavoriteSource,
+            BackgroundCategory.Wallpaper => WallpaperSource,
+            _ => LocalSource
+        };
+        source.IsChecked = true;
+        bool fixedOnly = options.ActiveCategory == BackgroundCategory.Wallpaper;
+        RandomModeItem.Visibility = SlideModeItem.Visibility = fixedOnly ? Visibility.Collapsed : Visibility.Visible;
+        ModeBox.IsEnabled = !fixedOnly;
         ModeBox.SelectedIndex = (int)options.PlaybackMode;
-        IntervalBox.ItemsSource = IntervalPresets.Append(options.SlideIntervalSeconds).Distinct().Order()
-            .Select(seconds => new KeyValuePair<int, string>(seconds, seconds % 60 == 0
-                ? string.Format(L("minutes"), seconds / 60)
-                : string.Format(L("seconds"), seconds))).ToArray();
-        IntervalBox.SelectedValue = options.SlideIntervalSeconds;
+        AgeFilterReveal.IsExpanded = fixedOnly;
+        if (!IntervalBox.IsKeyboardFocused) IntervalBox.Text = FormatInterval(options.SlideIntervalSeconds);
         IntervalReveal.IsExpanded = options.PlaybackMode == BackgroundPlaybackMode.Slideshow;
         BackgroundOpacitySlider.Value = options.Opacity;
         CardOpacitySlider.Value = options.CardOpacity;
@@ -84,8 +92,6 @@ public partial class LauncherBackgroundPage
 
         LocalizationManager.Changed += Language_Changed;
         RefreshOptions();
-        if (App.Settings.BackgroundOptions.SelectedWallpaperId is not null) WallpaperSource.IsChecked = true;
-        AgeFilterReveal.IsExpanded = ShowWallpaper;
         UpdateFileState();
     }
 
@@ -132,6 +138,8 @@ public partial class LauncherBackgroundPage
     private void Back_Click(object sender, RoutedEventArgs args) => BackRequested?.Invoke();
     private void Next_Click(object sender, RoutedEventArgs args) => _window?.AdvanceLauncherBackground();
 
+    private void Previous_Click(object sender, RoutedEventArgs args) => _window?.PreviousLauncherBackground();
+
     private void LocalFilesChanged()
     {
         if (_galleryReady && !ShowWallpaper) RebuildGallery();
@@ -140,21 +148,24 @@ public partial class LauncherBackgroundPage
 
     private void WallpaperFilesChanged()
     {
-        if (_galleryReady && ShowWallpaper) RebuildGallery();
+        if (_galleryReady && !ShowLocal) RebuildGallery();
         else UpdateFileState();
     }
 
     private void Source_Checked(object sender, RoutedEventArgs args)
     {
-        if (_window is null) return;
-        AgeFilterReveal.IsExpanded = ShowWallpaper;
+        if (_binding || _window is null) return;
+        var category = ReferenceEquals(sender, FavoriteSource) ? BackgroundCategory.Favorites
+            : ReferenceEquals(sender, WallpaperSource) ? BackgroundCategory.Wallpaper : BackgroundCategory.Local;
+        CommitOptions(ReadOptions() with { Category = category });
         if (_galleryReady) LoadCurrentSource(animate: true);
         else UpdateFileState();
     }
 
     private void LoadCurrentSource(bool animate)
     {
-        if (ShowWallpaper && _window is { WallpaperBackgroundLoaded: false }) _ = RefreshWallpaperAsync(notify: false);
+        if (_window is { WallpaperBackgroundLoaded: false } && (ShowWallpaper || ShowFavorites && App.BackgroundSettings.HasWallpaperFavorites))
+            _ = RefreshWallpaperAsync(notify: false);
         RebuildGallery(animate);
     }
 
@@ -172,8 +183,13 @@ public partial class LauncherBackgroundPage
 
     private void RebuildGallery(bool animate = false)
     {
-        _sourceTiles = ((ShowWallpaper ? _window?.WallpaperBackgroundFiles : _window?.BackgroundFiles) ?? [])
-            .Select(file => new LauncherBackgroundTile(file)).ToArray();
+        var local = _window?.BackgroundFiles ?? [];
+        var wallpaper = _window?.WallpaperBackgroundFiles ?? [];
+        var files = App.BackgroundSettings.ResolveCategory(local, wallpaper);
+        var existing = new Dictionary<string, LauncherBackgroundTile>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tile in _sourceTiles) existing.TryAdd(tile.File.FavoriteKey, tile);
+        _sourceTiles = files.Select(file => existing.TryGetValue(file.FavoriteKey, out var tile) && tile.File == file
+            ? tile : new LauncherBackgroundTile(file)).ToArray();
         ApplyGalleryFilters(animate);
     }
 
@@ -269,17 +285,16 @@ public partial class LauncherBackgroundPage
         var wallpapers = _window?.WallpaperBackgroundFiles ?? [];
         var count = _tiles.Length;
         GalleryCard.Header = count == 0 ? L("gallery") : string.Format(L("galleryCount"), count);
-        var options = App.Settings.BackgroundOptions;
+        var options = App.BackgroundSettings;
         var current = options.Enabled ? _window?.DisplayedBackground : null;
-        var wallpaperId = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? options.SelectedWallpaperId : null;
         OptionsReveal.IsExpanded = local.Length + wallpapers.Length > 0;
         OpenFolderButton.Visibility = ShowWallpaper ? Visibility.Collapsed : Visibility.Visible;
-        ClearButton.Visibility = !ShowWallpaper && local.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ClearButton.Visibility = ShowLocal && local.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyText.Text = L(_sourceTiles.Length != 0 ? "noFilterMatches"
-            : !ShowWallpaper ? "emptyLibrary" : !_galleryReady || _refreshingWallpaper ? "wallpaperLoading" : "wallpaperEmpty");
-        NextButton.Visibility = options.PlaybackMode == BackgroundPlaybackMode.Fixed ? Visibility.Collapsed : Visibility.Visible;
-        NextButton.IsEnabled = options.Enabled && local.Length > 1;
+        EmptyText.Text = L(_sourceTiles.Length != 0 ? "noFilterMatches" : ShowLocal ? "emptyLibrary"
+            : _refreshingWallpaper || ShowWallpaper && !_galleryReady ? "wallpaperLoading"
+            : ShowFavorites ? "emptyFavorites" : "wallpaperEmpty");
+        PlaybackNavigation.Visibility = _window?.CanAdvanceLauncherBackground == true ? Visibility.Visible : Visibility.Collapsed;
         CurrentBackgroundDetail.Visibility = current is null ? Visibility.Collapsed : Visibility.Visible;
         if (current is not null)
         {
@@ -290,24 +305,33 @@ public partial class LauncherBackgroundPage
         string? missing = null;
         if (options.Enabled && current is null && options.PlaybackMode == BackgroundPlaybackMode.Fixed)
         {
-            if (wallpaperId is not null && _window is { WallpaperBackgroundLoaded: true } && !wallpapers.Any(file => Same(file.WallpaperId, wallpaperId)))
-                missing = L("wallpaperMissing");
-            else if (wallpaperId is null && options.SelectedRelativePath is { } selected && !local.Any(file => Same(file.RelativePath, selected)))
+            if (ShowWallpaper && _window is { WallpaperBackgroundLoaded: true })
+                missing = options.FixedKey is { } key && !wallpapers.Any(file => Same(file.FavoriteKey, key)) ? L("wallpaperMissing")
+                    : options.FixedKey is null && wallpapers.Length != 0 ? L("chooseWallpaper") : null;
+            else if (ShowLocal && options.SelectedRelativePath is { } selected && !local.Any(file => Same(file.RelativePath, selected)))
                 missing = string.Format(L("fixedMissing"), selected);
+            else if (ShowFavorites && options.FixedKey is { } favoriteKey && !_refreshingWallpaper
+                     && (!options.HasWallpaperFavorites || _window is { WallpaperBackgroundLoaded: true })
+                     && !options.ResolveFavorites(local, wallpapers).Any(file => Same(file.FavoriteKey, favoriteKey)))
+                missing = L("favoriteFixedMissing");
         }
+        else if (options.Enabled && current is null && ShowFavorites && _galleryReady && !_refreshingWallpaper
+                 && (!options.HasWallpaperFavorites || _window is { WallpaperBackgroundLoaded: true })
+                 && options.ResolveFavorites(local, wallpapers).Length == 0)
+            missing = L("favoritePlaybackEmpty");
 
         if (missing is not null) MissingBackgroundLabel.Text = missing;
         MissingBackgroundReveal.IsExpanded = missing is not null;
+        var favorites = options.Favorites.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var tile in _tiles)
         {
             var isCurrent = current is not null && Same(tile.File.Path, current.Path) && Same(tile.File.WallpaperId, current.WallpaperId);
-            var isFixed = options.PlaybackMode == BackgroundPlaybackMode.Fixed && (tile.File.WallpaperId is { } id
-                ? Same(id, wallpaperId) : wallpaperId is null && Same(tile.RelativePath, options.SelectedRelativePath));
-            tile.Refresh(isCurrent, isFixed);
+            var isFixed = options.PlaybackMode == BackgroundPlaybackMode.Fixed && Same(tile.File.FavoriteKey, options.FixedKey);
+            tile.Refresh(isCurrent, isFixed, favorites.Contains(tile.File.FavoriteKey));
         }
     }
 
-    private LauncherBackgroundSettings ReadOptions() => App.Settings.BackgroundOptions with
+    private LauncherBackgroundSettings ReadOptions() => App.BackgroundSettings with
     {
         Enabled = EnabledBox.IsChecked == true,
         PlayInBackground = PlayInBackgroundBox.IsChecked == true,
@@ -316,23 +340,66 @@ public partial class LauncherBackgroundPage
         CardOpacity = (int)CardOpacitySlider.Value,
         NavigationOpacity = (int)NavigationOpacitySlider.Value,
         BlurRadius = (int)BlurSlider.Value,
-        Volume = (int)VolumeSlider.Value,
-        PlaybackMode = (BackgroundPlaybackMode)Math.Max(ModeBox.SelectedIndex, 0),
-        SlideIntervalSeconds = IntervalBox.SelectedValue is int seconds ? seconds : App.Settings.BackgroundOptions.SlideIntervalSeconds
+        Volume = (int)VolumeSlider.Value
     };
 
     private void PlaybackOption_Changed(object sender, RoutedEventArgs args) => SaveOptions();
     private void Fit_Changed(object sender, SelectionChangedEventArgs args) => SaveOptions();
-    private void Interval_Changed(object sender, SelectionChangedEventArgs args) => SaveOptions();
+    private void Interval_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs args) => SaveInterval();
+
+    private void Interval_KeyDown(object sender, KeyEventArgs args)
+    {
+        if (args.Key != Key.Enter) return;
+        SaveInterval();
+        args.Handled = true;
+    }
+
+    private void SaveInterval()
+    {
+        if (_binding || _window is null) return;
+        var previous = App.BackgroundSettings.SlideIntervalSeconds;
+        if (!TryParseInterval(IntervalBox.Text, out int seconds))
+        {
+            IntervalBox.Text = FormatInterval(previous);
+            LauncherToasts.Error(L("intervalInvalid"));
+            return;
+        }
+        if (seconds != previous) CommitOptions(ReadOptions() with { SlideIntervalSeconds = seconds });
+        IntervalBox.Text = FormatInterval(App.BackgroundSettings.SlideIntervalSeconds);
+    }
+
+    private static string FormatInterval(int seconds) => string.Create(CultureInfo.InvariantCulture, $"{seconds / 60:00}:{seconds % 60:00}");
+
+    private static bool TryParseInterval(string input, out int seconds)
+    {
+        var text = input.AsSpan().Trim();
+        int colon = text.IndexOf(':');
+        seconds = 0;
+        if (colon < 0)
+        {
+            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out seconds)) return false;
+        }
+        else
+        {
+            if (!int.TryParse(text[..colon], NumberStyles.None, CultureInfo.InvariantCulture, out int minutes) || minutes > 60
+                || !int.TryParse(text[(colon + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out int remainder) || remainder > 59)
+                return false;
+            seconds = minutes * 60 + remainder;
+        }
+        return seconds is >= LauncherBackgroundSettings.MinimumIntervalSeconds and <= LauncherBackgroundSettings.MaximumIntervalSeconds;
+    }
 
     private void Mode_Changed(object sender, SelectionChangedEventArgs args)
     {
-        if (_binding || _window is not { } window) return;
-        var options = ReadOptions() with { SelectedWallpaperId = null };
-        if (options.PlaybackMode == BackgroundPlaybackMode.Fixed && !window.BackgroundFiles.Any(file => Same(file.RelativePath, options.SelectedRelativePath)))
+        if (_binding || _window is not { } window || ShowWallpaper || ModeBox.SelectedIndex < 0) return;
+        var options = ReadOptions().WithMode((BackgroundPlaybackMode)ModeBox.SelectedIndex);
+        if (options.PlaybackMode == BackgroundPlaybackMode.Fixed)
         {
-            var chosen = window.DisplayedBackground is { WallpaperId: null } current ? current : window.BackgroundFiles.FirstOrDefault();
-            options = options with { SelectedRelativePath = chosen?.RelativePath };
+            var files = options.ResolveCategory(window.BackgroundFiles, window.WallpaperBackgroundFiles);
+            var currentKey = window.DisplayedBackground?.FavoriteKey;
+            var chosen = files.FirstOrDefault(file => Same(file.FavoriteKey, currentKey))
+                ?? files.FirstOrDefault(file => Same(file.FavoriteKey, options.FixedKey)) ?? files.FirstOrDefault();
+            if (chosen is not null) options = options.WithFixedFile(chosen);
         }
 
         CommitOptions(options);
@@ -340,13 +407,26 @@ public partial class LauncherBackgroundPage
 
     private void SelectTile_Click(object sender, RoutedEventArgs args)
     {
-        if (sender is not Button { DataContext: LauncherBackgroundTile tile }) return;
-        CommitOptions(ReadOptions() with
+        if (_window is not { } window || sender is not Button { DataContext: LauncherBackgroundTile tile }) return;
+        var options = ReadOptions();
+        if (options.PlaybackMode == BackgroundPlaybackMode.Fixed) CommitOptions(options.WithFixedFile(tile.File));
+        else window.ShowLauncherBackgroundFile(tile.File);
+    }
+
+    private void Favorite_Click(object sender, RoutedEventArgs args)
+    {
+        if (sender is not CheckBox { DataContext: LauncherBackgroundTile tile } box) return;
+        var options = ReadOptions();
+        var key = tile.File.FavoriteKey;
+        bool add = box.IsChecked == true;
+        var favorites = add ? options.Favorites.Append(key) : options.Favorites.Where(existing => !Same(existing, key));
+        bool saved = CommitOptions(options with { Favorites = favorites.ToArray() });
+        if (saved)
         {
-            PlaybackMode = BackgroundPlaybackMode.Fixed,
-            SelectedRelativePath = tile.File.WallpaperId is null ? tile.RelativePath : App.Settings.BackgroundOptions.SelectedRelativePath,
-            SelectedWallpaperId = tile.File.WallpaperId
-        });
+            App.Logger.Information("Background", $"{(add ? "已加入" : "已取消")}背景收藏: {key}.");
+            if (ShowFavorites) RebuildGallery(animate: true);
+        }
+        else box.SetCurrentValue(CheckBox.IsCheckedProperty, tile.IsFavorite);
     }
 
     private void AppearanceFields_SizeChanged(object sender, SizeChangedEventArgs args)
@@ -371,46 +451,35 @@ public partial class LauncherBackgroundPage
         CommitOptions(ReadOptions());
     }
 
-    private void CommitOptions(LauncherBackgroundSettings options)
+    private bool CommitOptions(LauncherBackgroundSettings options)
     {
-        if (_window is not { } window) return;
+        if (_window is not { } window) return false;
         _saveTimer.Stop();
-        var previous = App.Settings.BackgroundOptions;
-        if (options != previous && !App.UpdateSettings(App.Settings with { Background = options }))
+        var previous = App.BackgroundSettings;
+        bool saved = options == previous || App.UpdateBackgroundSettings(options);
+        if (!saved)
         {
             window.ApplyLauncherBackground(previous);
         }
         else
         {
-            if (options.PlaybackMode != previous.PlaybackMode || options.SelectedRelativePath != previous.SelectedRelativePath
-                || options.SelectedWallpaperId != previous.SelectedWallpaperId)
+            if (options.ActiveCategory != previous.ActiveCategory || options.PlaybackMode != previous.PlaybackMode || options.FixedKey != previous.FixedKey)
             {
-                App.Logger.Information("Background", $"背景模式已设置: {options.PlaybackMode}, 固定素材: {options.SelectedWallpaperId ?? options.SelectedRelativePath}.");
+                App.Logger.Information("Background", $"背景播放已设置: 分类={options.ActiveCategory}, 方式={options.PlaybackMode}, 固定素材={options.FixedKey}.");
             }
 
             if (options.PlayInBackground != previous.PlayInBackground)
                 App.Logger.Information("Background", $"后台播放已设置: {options.PlayInBackground}.");
+            if (options.SlideIntervalSeconds != previous.SlideIntervalSeconds)
+                App.Logger.Information("Background", $"背景切换间隔已设置: {options.SlideIntervalSeconds} 秒.");
         }
 
         RefreshOptions();
         UpdateFileState();
+        return saved;
     }
 
-    private void OpenFolder_Click(object sender, RoutedEventArgs args)
-    {
-        if (_window is null) return;
-        try
-        {
-            var directory = LauncherBackgroundFiles.EnsureDirectory(LauncherBackgroundFiles.DirectoryPath);
-            using var process = Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
-            App.Logger.Information("Background", $"已打开背景目录: {directory}.");
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
-        {
-            App.Logger.Error("Background", "打开背景目录失败.", error);
-            LauncherToasts.Error(L("folderFailed"));
-        }
-    }
+    private void OpenFolder_Click(object sender, RoutedEventArgs args) => MainWindow.OpenLauncherBackgroundFolder();
 
     private async void Refresh_Click(object sender, RoutedEventArgs args)
     {
@@ -420,17 +489,22 @@ public partial class LauncherBackgroundPage
             return;
         }
         if (_window is not { } window) return;
+        bool favorites = ShowFavorites;
         Actions.IsEnabled = false;
         try
         {
-            await window.RefreshLauncherBackgroundAsync();
-            var count = window.BackgroundFiles.Length;
-            LauncherToasts.Information(count == 0 ? L("noFiles") : string.Format(L("refreshed"), count));
+            if (favorites && App.BackgroundSettings.HasWallpaperFavorites)
+                await Task.WhenAll(window.RefreshLauncherBackgroundAsync(), window.RefreshWallpaperBackgroundAsync());
+            else await window.RefreshLauncherBackgroundAsync();
+            var count = favorites
+                ? App.BackgroundSettings.ResolveFavorites(window.BackgroundFiles, window.WallpaperBackgroundFiles).Length
+                : window.BackgroundFiles.Length;
+            LauncherToasts.Information(count == 0 ? L(favorites ? "emptyFavorites" : "noFiles") : string.Format(L("refreshed"), count));
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            App.Logger.Error("Background", "刷新背景目录失败.", error);
-            LauncherToasts.Error(L("refreshFailed"));
+            App.Logger.Error("Background", favorites ? "刷新背景收藏夹失败." : "刷新背景目录失败.", error);
+            LauncherToasts.Error(L(favorites ? "favoriteRefreshFailed" : "refreshFailed"));
         }
         finally
         {
@@ -463,7 +537,7 @@ public partial class LauncherBackgroundPage
 
     private async void Clear_Click(object sender, RoutedEventArgs args)
     {
-        if (ShowWallpaper || _window is not { } window || window.BackgroundFiles.Length == 0) return;
+        if (!ShowLocal || _window is not { } window || window.BackgroundFiles.Length == 0) return;
         var files = window.BackgroundFiles;
         Actions.IsEnabled = false;
         try

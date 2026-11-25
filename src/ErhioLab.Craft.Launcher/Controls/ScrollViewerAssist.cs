@@ -27,14 +27,19 @@ public static class ScrollViewerAssist
         if (inner is null || !Within(inner, host)) inner = DescendantViewer(host);
         if (inner is null || CanScroll(inner, args.Delta)) return;
 
-        ScrollViewer? outer = AncestorViewer(inner, includeSelf: false);
-        while (outer is not null && !CanScroll(outer, args.Delta)) outer = AncestorViewer(outer, includeSelf: false);
-        if (outer is null) return;
+        ForwardMouseWheel(inner, args, includeSelf: false);
+    }
+
+    internal static void ForwardMouseWheel(DependencyObject source, MouseWheelEventArgs args, bool includeSelf = true)
+    {
+        var viewer = AncestorViewer(source, includeSelf);
+        while (viewer is not null && !CanScroll(viewer, args.Delta)) viewer = AncestorViewer(viewer, includeSelf: false);
+        if (viewer is null) return;
         args.Handled = true;
-        outer.RaiseEvent(new MouseWheelEventArgs(args.MouseDevice, args.Timestamp, args.Delta)
+        viewer.RaiseEvent(new MouseWheelEventArgs(args.MouseDevice, args.Timestamp, args.Delta)
         {
             RoutedEvent = Mouse.MouseWheelEvent,
-            Source = outer
+            Source = viewer
         });
     }
 

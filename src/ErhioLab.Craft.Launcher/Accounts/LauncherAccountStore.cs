@@ -2,10 +2,11 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using ErhioLab.Craft.Launcher.Core.Accounts;
-using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Localization;
+using ErhioLab.Craft.Launcher.Settings;
 
 namespace ErhioLab.Craft.Launcher.Accounts;
 
@@ -21,14 +22,16 @@ internal sealed record MicrosoftAccount(
 internal sealed record AccountEntry(string UserName, Guid Uuid, bool IsMicrosoft);
 
 internal sealed record AccountFile(
-    List<OfflineAccount> OfflineAccounts,
+    [property: JsonRequired] List<OfflineAccount> OfflineAccounts,
     Guid? SelectedUuid,
     List<MicrosoftAccount>? MicrosoftAccounts = null);
+
+internal readonly record struct AccountImportResult(int Added, int UnavailableMicrosoft);
 
 /// <summary>账户独立保存在 accounts.json, 不参与启动器设置导入和重置.</summary>
 internal sealed class LauncherAccountStore
 {
-    private readonly JsonFileStore<AccountFile> _store;
+    private readonly LauncherDataFile<AccountFile> _store;
     private AccountFile _data = new([], null);
     private readonly bool _canWrite = true;
 
@@ -47,17 +50,17 @@ internal sealed class LauncherAccountStore
 
     internal LauncherAccountStore(string path)
     {
-        _store = new JsonFileStore<AccountFile>(path, new JsonSerializerOptions { WriteIndented = true });
+        _store = new LauncherDataFile<AccountFile>(path, LauncherDataKind.Accounts);
         try
         {
             AccountFile loaded = _store.Load(new AccountFile([], null));
             if (loaded.OfflineAccounts is null) throw new JsonException("账户列表缺失.");
             List<OfflineAccount> valid = loaded.OfflineAccounts
-                .Where(account => IsValidName(account.UserName) && account.Uuid == OfflinePlayerId.FromName(account.UserName))
+                .Where(IsValidOfflineAccount)
                 .DistinctBy(account => account.Uuid)
                 .ToList();
             List<MicrosoftAccount> microsoft = (loaded.MicrosoftAccounts ?? [])
-                .Where(account => account.Uuid != Guid.Empty && !string.IsNullOrWhiteSpace(account.UserName) && !string.IsNullOrWhiteSpace(account.ProtectedRefreshToken))
+                .Where(account => account is not null && account.Uuid != Guid.Empty && !string.IsNullOrWhiteSpace(account.UserName) && !string.IsNullOrWhiteSpace(account.ProtectedRefreshToken))
                 .DistinctBy(account => account.Uuid)
                 .ToList();
             bool selectedExists = valid.Any(account => account.Uuid == loaded.SelectedUuid) || microsoft.Any(account => account.Uuid == loaded.SelectedUuid);
@@ -71,6 +74,65 @@ internal sealed class LauncherAccountStore
     }
 
     internal static bool IsValidName(string? name) => name is { Length: >= 3 and <= 16 } && name.All(character => char.IsAsciiLetterOrDigit(character) || character == '_');
+
+    private static bool IsValidOfflineAccount(OfflineAccount? account) => account is not null
+        && IsValidName(account.UserName) && account.Uuid == OfflinePlayerId.FromName(account.UserName);
+
+    internal void ExportBackup(string path)
+    {
+        EnsureWritable();
+        App.ValidateBackupDestination(path);
+        // 直接保存 Windows 保护后的凭据, 备份不写明文令牌.
+        new LauncherDataFile<AccountFile>(path, LauncherDataKind.AccountsBackup).Save(_data);
+    }
+
+    internal AccountImportResult ImportBackup(string path)
+    {
+        EnsureWritable();
+        var incoming = new LauncherDataFile<AccountFile>(path, LauncherDataKind.AccountsBackup).Read();
+        if (incoming.OfflineAccounts is null || incoming.OfflineAccounts.Any(account => !IsValidOfflineAccount(account)))
+            throw new JsonException(LocalizationManager.Get("settings.accountsInvalidList"));
+
+        List<OfflineAccount> offline = [.. _data.OfflineAccounts];
+        List<MicrosoftAccount> microsoft = [.. MicrosoftAccounts];
+        var offlineNames = offline.Select(account => account.UserName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var microsoftIds = microsoft.Select(account => account.Uuid).ToHashSet();
+        int unavailable = 0;
+        foreach (var account in incoming.OfflineAccounts)
+        {
+            if (offlineNames.Add(account.UserName)) offline.Add(account);
+        }
+        foreach (var account in incoming.MicrosoftAccounts ?? [])
+        {
+            if (account is not null && microsoftIds.Contains(account.Uuid)) continue;
+            if (!CanRestoreMicrosoftAccount(account))
+            {
+                unavailable++;
+                continue;
+            }
+            microsoft.Add(account!);
+            microsoftIds.Add(account!.Uuid);
+        }
+
+        int added = offline.Count - _data.OfflineAccounts.Count + microsoft.Count - MicrosoftAccounts.Count;
+        Guid? selected = _data.SelectedUuid;
+        if (selected is null && incoming.SelectedUuid is { } uuid && (offline.Any(account => account.Uuid == uuid) || microsoftIds.Contains(uuid)))
+            selected = uuid;
+        if (added != 0 || selected != _data.SelectedUuid) Save(new AccountFile(offline, selected, microsoft));
+        return new AccountImportResult(added, unavailable);
+    }
+
+    private static bool CanRestoreMicrosoftAccount(MicrosoftAccount? account)
+    {
+        if (account is null || account.Uuid == Guid.Empty || string.IsNullOrWhiteSpace(account.UserName)
+            || string.IsNullOrWhiteSpace(account.ProtectedRefreshToken) || string.IsNullOrWhiteSpace(account.ProtectedMinecraftAccessToken)) return false;
+        try
+        {
+            return !string.IsNullOrWhiteSpace(Unprotect(account.ProtectedRefreshToken))
+                && !string.IsNullOrWhiteSpace(Unprotect(account.ProtectedMinecraftAccessToken));
+        }
+        catch (Exception error) when (error is CryptographicException or FormatException) { return false; }
+    }
 
     internal bool TryAdd(string name, out string error)
     {
@@ -138,9 +200,14 @@ internal sealed class LauncherAccountStore
 
     private void Save(AccountFile next)
     {
-        if (!_canWrite) throw new IOException(LocalizationManager.Get("account.fileUnreadable"));
+        EnsureWritable();
         _store.Save(next);
         _data = next;
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void EnsureWritable()
+    {
+        if (!_canWrite) throw new IOException(LocalizationManager.Get("account.fileUnreadable"));
     }
 }

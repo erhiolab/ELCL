@@ -39,10 +39,10 @@ public partial class ToolboxPage
 
     private async void DailyLuck_Click(object sender, RoutedEventArgs e)
     {
-        if (!App.Settings.DailyLuckDisclaimerAccepted)
+        if (!App.DailyLuckDisclaimerAccepted)
         {
             if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("toolbox.dailyLuck"), LocalizationManager.Get("toolbox.luckDisclaimer"))) return;
-            if (!App.UpdateSettings(App.Settings with { DailyLuckDisclaimerAccepted = true })) return;
+            if (!App.AcceptDailyLuckDisclaimer()) return;
         }
         var date = DateOnly.FromDateTime(DateTime.Now);
         int score = ToolboxTools.DailyLuck(date);
