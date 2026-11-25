@@ -19,6 +19,7 @@
     <EmbeddedResource Include="../../web/docs/launcher/terms.md" LogicalName="ErhioLab.Craft.Launcher.Legal.Terms.zh_cn.md" />
     <Resource Include="Assets/Brand/ELCL.ico" />
     <Resource Include="Assets/Brand/ELCL.png" />
+    <Resource Include="Assets/Credits/erhio.png" />
     <Resource Include="Assets/Credits/Pcl.png" />
     <Resource Include="Assets/Credits/PrismLauncher.png" />
     <Resource Include="Assets/Credits/Hmcl.png" />
@@ -32,4 +33,3 @@
     <PackageReference Include="PhotoSauce.NativeCodecs.Libwebp" Version="1.6.0-preview1" />
   </ItemGroup>
 </Project>
-

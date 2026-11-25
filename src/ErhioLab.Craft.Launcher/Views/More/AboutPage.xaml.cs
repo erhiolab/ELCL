@@ -32,7 +32,7 @@ public partial class AboutPage
 
         AboutEntries.ItemsSource = new[]
         {
-            new CreditEntry("EL", LocalizationManager.Get("about.erhai"), LocalizationManager.Get("about.elclDeveloperDescription"), LocalizationManager.Get("about.githubRepository"), "https://github.com/ErhioLab/ELCL"),
+            new CreditEntry("EL", LocalizationManager.Get("about.erhai"), LocalizationManager.Get("about.elclDeveloperDescription"), LocalizationManager.Get("about.githubRepository"), "https://github.com/ErhioLab/ELCL", LoadAvatar("erhio.png")),
             new CreditEntry("EL", "ErhioLab Craft Launcher", string.Format(LocalizationManager.Get("about.launcherVersion"), launcherVersion), AvatarImage: brandIcon),
             new CreditEntry("CO", "ErhioLab Craft Launcher Core", string.Format(LocalizationManager.Get("about.coreVersion"), CoreInfo.Version), AvatarImage: brandIcon)
         };
