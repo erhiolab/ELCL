@@ -1,9 +1,42 @@
 using System.Text.RegularExpressions;
 
+using ErhioLab.Craft.Launcher.Core.Mods;
+
 namespace ErhioLab.Craft.Launcher.Mods;
 
 internal static class ModPresentation
 {
+    internal static string Environment(ModProject project) => project.Environments.Count switch
+    {
+        > 1 => CommunityMods.L("environment.varies"),
+        1 => Environment(project.Environments[0]),
+        _ when project.ClientSide != ModSideRequirement.Unknown || project.ServerSide != ModSideRequirement.Unknown =>
+            string.Format(CommunityMods.L("environment.sides"), SideRequirement(project.ClientSide), SideRequirement(project.ServerSide)),
+        _ => Environment(ModEnvironment.Unknown)
+    };
+
+    internal static string Environment(ModEnvironment environment) => CommunityMods.L(environment switch
+    {
+        ModEnvironment.ClientAndServer => "environment.clientAndServer",
+        ModEnvironment.ClientOnly => "environment.clientOnly",
+        ModEnvironment.ClientOnlyServerOptional => "environment.clientOnlyServerOptional",
+        ModEnvironment.SingleplayerOnly => "environment.singleplayerOnly",
+        ModEnvironment.ServerOnly => "environment.serverOnly",
+        ModEnvironment.ServerOnlyClientOptional => "environment.serverOnlyClientOptional",
+        ModEnvironment.DedicatedServerOnly => "environment.dedicatedServerOnly",
+        ModEnvironment.ClientOrServer => "environment.clientOrServer",
+        ModEnvironment.ClientOrServerPrefersBoth => "environment.clientOrServerPrefersBoth",
+        _ => "environment.unknown"
+    });
+
+    private static string SideRequirement(ModSideRequirement requirement) => CommunityMods.L(requirement switch
+    {
+        ModSideRequirement.Required => "environment.required",
+        ModSideRequirement.Optional => "environment.optional",
+        ModSideRequirement.Unsupported => "environment.unsupported",
+        _ => "environment.unmarked"
+    });
+
     internal static string LoaderName(string loader) => loader.ToLowerInvariant() switch
     {
         "forge" => "Forge", "neoforge" => "NeoForge", "fabric" => "Fabric", "quilt" => "Quilt", "liteloader" => "LiteLoader", _ => loader

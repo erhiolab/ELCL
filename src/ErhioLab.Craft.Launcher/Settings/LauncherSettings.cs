@@ -29,6 +29,9 @@ public sealed record LauncherSettings
     /// <summary>标题栏选择文本模式时显示的内容.</summary>
     public string? TitleBarText { get; init; } = "ELCL";
 
+    /// <summary>是否隐藏标题栏中的管理员模式图标.</summary>
+    public bool HideAdministratorModeIcon { get; init; }
+
     /// <summary>版本列表优先使用官方源, 失败时自动尝试镜像源.</summary>
     public VersionListSource VersionListSource { get; init; } = VersionListSource.OfficialFirst;
 

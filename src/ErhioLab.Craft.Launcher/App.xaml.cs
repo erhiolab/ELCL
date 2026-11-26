@@ -230,6 +230,7 @@ public partial class App
         bool languageChanged = Settings.Language != normalized.Language;
         bool paletteChanged = themeChanged || !string.Equals(Settings.AccentColor, normalized.AccentColor, StringComparison.OrdinalIgnoreCase);
         bool titleChanged = Settings.TitleBarMode != normalized.TitleBarMode || Settings.TitleBarText != normalized.TitleBarText;
+        bool administratorIconChanged = Settings.HideAdministratorModeIcon != normalized.HideAdministratorModeIcon;
         bool hiddenFeaturesChanged = Settings.HiddenFeatures != normalized.HiddenFeatures;
         MainWindow? window = Current.MainWindow as MainWindow;
         if (themeChanged)
@@ -266,6 +267,12 @@ public partial class App
         {
             Logger.Information("Settings", $"已保存功能隐藏选项: {Settings.HiddenFeatures}.");
             FeatureVisibility.NotifyChanged();
+        }
+
+        if (administratorIconChanged)
+        {
+            window?.ApplyAdministratorModeIcon(Settings.HideAdministratorModeIcon);
+            Logger.Information("Settings", $"已保存管理员模式图标隐藏偏好: {Settings.HideAdministratorModeIcon}.");
         }
 
         Logger.Information("Settings", $"设置已更新, 主题: {Settings.Theme}, 主题色: {Settings.AccentColor}, 不透明度: {Settings.WindowOpacity:P0}, 标题栏: {Settings.TitleBarMode}, 内存单位: {Settings.MemoryUnit}, 版本列表源: {Settings.VersionListSource}, 最大连接数: {Settings.DownloadMaxConnections}, 限速: {Settings.DownloadSpeedLimitMiBPerSecond} MiB/s.");

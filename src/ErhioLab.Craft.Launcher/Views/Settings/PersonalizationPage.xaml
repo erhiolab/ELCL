@@ -288,6 +288,16 @@
                             MaxLength="40"
                             TextChanged="TitleTextBox_TextChanged" />
                     </Grid>
+                    <Grid
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
+                        <CheckBox
+                            x:Name="HideAdministratorModeIconBox"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Click="HideAdministratorModeIcon_Click"
+                            Content="{DynamicResource I18n.personalization.hideAdministratorModeIcon}"
+                            Style="{StaticResource FormCheckBoxStyle}" />
+                    </Grid>
                 </StackPanel>
             </controls:LauncherCard>
             <controls:LauncherCard

@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -426,12 +427,12 @@ public partial class LauncherBackgroundPage
             App.Logger.Information("Background", $"{(add ? "已加入" : "已取消")}背景收藏: {key}.");
             if (ShowFavorites) RebuildGallery(animate: true);
         }
-        else box.SetCurrentValue(CheckBox.IsCheckedProperty, tile.IsFavorite);
+        else box.SetCurrentValue(ToggleButton.IsCheckedProperty, tile.IsFavorite);
     }
 
     private void AppearanceFields_SizeChanged(object sender, SizeChangedEventArgs args)
     {
-        if (!args.WidthChanged || sender is not System.Windows.Controls.Primitives.UniformGrid fields) return;
+        if (!args.WidthChanged || sender is not UniformGrid fields) return;
         // 每列保留足够的拖动空间; 窗口变窄时优先减少列数.
         int columns = args.NewSize.Width >= 680 ? 3 : args.NewSize.Width >= 450 ? 2 : 1;
         if (fields.Columns != columns) fields.Columns = columns;

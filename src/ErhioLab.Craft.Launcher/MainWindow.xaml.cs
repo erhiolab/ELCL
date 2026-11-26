@@ -14,6 +14,7 @@ using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.SystemTools;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Views.Launch;
 
@@ -69,6 +70,7 @@ public partial class MainWindow
         TaskManagerPage.GameLogClosed += OnTasksChanged;
         ApplyContentOpacity(App.Settings.WindowOpacity);
         ApplyTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
+        ApplyAdministratorModeIcon(App.Settings.HideAdministratorModeIcon);
 
         _routes = ShellRouteCatalog.Create();
         _versionSelectionPage = new VersionSelectionView();
@@ -191,6 +193,9 @@ public partial class MainWindow
         };
     }
 
+    internal void ApplyAdministratorModeIcon(bool hidden) =>
+        AdministratorModeIcon.Visibility = ToVisibility(!hidden && WindowsProcessPrivileges.IsElevated);
+
     /// <summary>在左下角显示一条不阻塞操作的通知.</summary>
     internal void ShowToast(ToastNotification notification) => ToastHost.Show(notification);
 
@@ -235,7 +240,7 @@ public partial class MainWindow
         ++_secondaryPageTransitionVersion;
         page.IsHitTestVisible = true;
         TaskManagerButton.Visibility = Visibility.Collapsed;
-        TitleBarLabel.Visibility = Visibility.Collapsed;
+        PrimaryTitle.Visibility = Visibility.Collapsed;
         TopNavigationHost.Visibility = Visibility.Collapsed;
         title.Visibility = Visibility.Visible;
         title.BeginAnimation(OpacityProperty, null);
@@ -306,7 +311,7 @@ public partial class MainWindow
             title.BeginAnimation(OpacityProperty, null);
             title.Visibility = Visibility.Collapsed;
             UpdateShellRouteTitle();
-            TitleBarLabel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
+            PrimaryTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             if (TopNavigationHost.Visibility == Visibility.Visible)
                 TopNavigationHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)));
             UpdateTaskManagerButton();
@@ -349,7 +354,7 @@ public partial class MainWindow
     {
         _taskManagerClosing = false;
         TaskManagerButton.Visibility = Visibility.Collapsed;
-        TitleBarLabel.Visibility = Visibility.Collapsed;
+        PrimaryTitle.Visibility = Visibility.Collapsed;
         TopNavigationHost.Visibility = Visibility.Collapsed;
         VersionSelectionTitle.Visibility = Visibility.Collapsed;
         VersionSettingsTitle.Visibility = Visibility.Collapsed;
@@ -470,7 +475,7 @@ public partial class MainWindow
         VersionSelectionTitle.Visibility = showRoute && selecting ? Visibility.Visible : Visibility.Collapsed;
         VersionSettingsTitle.Visibility = showRoute && settings ? Visibility.Visible : Visibility.Collapsed;
         bool showPrimaryTitle = showRoute && !selecting && !settings;
-        TitleBarLabel.Visibility = ToVisibility(showPrimaryTitle);
+        PrimaryTitle.Visibility = ToVisibility(showPrimaryTitle);
         TopNavigationHost.Visibility = ToVisibility(showPrimaryTitle && HasExtraPrimaryPages);
     }
 

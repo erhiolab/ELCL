@@ -181,6 +181,7 @@
 - [`ModRepositoryClient.SearchAsync`](mods.md#modrepositoryclient-searchasync)
 - [`ModSearchRequest.SortOrder` 与 `ModSortOrder`](mods.md#modrepositoryclient-searchasync)
 - [`ModSearchRequest.Kind`、`ModProject.Kind` 与 `ModProjectKind`](mods.md#modrepositoryclient-searchasync)
+- [`ModProject.Environments`、`ModProject.ClientSide`、`ModProject.ServerSide`、`ModFile.Environment`、`ModEnvironment` 与 `ModSideRequirement`](mods.md#mods-运行环境)
 - [`ModRepositoryClient.GetProjectAsync`](mods.md#modrepositoryclient-getprojectasync)
 - [`ModRepositoryClient.GetFileAsync`](mods.md#modrepositoryclient-getfileasync)
 - [`ModRepositoryClient.GetFilesAsync`](mods.md#modrepositoryclient-getfilesasync)

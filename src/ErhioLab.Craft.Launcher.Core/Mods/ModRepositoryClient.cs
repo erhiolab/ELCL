@@ -404,6 +404,28 @@ public sealed partial class ModRepositoryClient
     private static Uri? Url(string? value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == "https" ? uri : null;
     private static readonly string[] KnownLoaders = ["forge", "neoforge", "fabric", "quilt", "liteloader"];
 
+    private static ModEnvironment ReadEnvironment(string value) => value switch
+    {
+        "client_and_server" => ModEnvironment.ClientAndServer,
+        "client_only" => ModEnvironment.ClientOnly,
+        "client_only_server_optional" => ModEnvironment.ClientOnlyServerOptional,
+        "singleplayer_only" => ModEnvironment.SingleplayerOnly,
+        "server_only" => ModEnvironment.ServerOnly,
+        "server_only_client_optional" => ModEnvironment.ServerOnlyClientOptional,
+        "dedicated_server_only" => ModEnvironment.DedicatedServerOnly,
+        "client_or_server" => ModEnvironment.ClientOrServer,
+        "client_or_server_prefers_both" => ModEnvironment.ClientOrServerPrefersBoth,
+        _ => ModEnvironment.Unknown
+    };
+
+    private static ModSideRequirement ReadSideRequirement(string value) => value switch
+    {
+        "required" => ModSideRequirement.Required,
+        "optional" => ModSideRequirement.Optional,
+        "unsupported" => ModSideRequirement.Unsupported,
+        _ => ModSideRequirement.Unknown
+    };
+
     private static string ModrinthKind(ModProjectKind kind) => kind switch
     {
         ModProjectKind.Modpack => "modpack", ModProjectKind.DataPack => "datapack", ModProjectKind.ResourcePack => "resourcepack",
@@ -432,7 +454,13 @@ public sealed partial class ModRepositoryClient
         });
         return new ModProject(ModPlatform.Modrinth, id, slug, Text(row, "title"), Text(row, "description"), new Uri("https://modrinth.com/" + ModrinthKind(kind) + "/" + Escape(slug)),
             Url(Text(row, "icon_url")), Number(row, "downloads"), Date(row, search ? "date_modified" : "updated"), search ? Strings(row, "versions") : Strings(row, "game_versions"),
-            loaders, categories.Except(KnownLoaders).ToArray()) { Kind = kind };
+            loaders, categories.Except(KnownLoaders).ToArray())
+        {
+            Kind = kind,
+            Environments = Strings(row, "environment").Select(ReadEnvironment).Distinct().ToArray(),
+            ClientSide = ReadSideRequirement(Text(row, "client_side")),
+            ServerSide = ReadSideRequirement(Text(row, "server_side"))
+        };
     }
 
     private static ModProject ReadCurseForgeProject(JsonElement row, ModProjectKind? requestedKind = null)
@@ -475,7 +503,10 @@ public sealed partial class ModRepositoryClient
             : [];
         return new ModFile(ModPlatform.Modrinth, Text(row, "project_id"), Text(row, "id"), Text(row, "name"), Text(binary, "filename"),
             Url(Text(binary, "url")), Number(binary, "size"), Text(hashes, "sha1") is { Length: > 0 } sha ? sha : null,
-            Text(hashes, "sha512") is { Length: > 0 } hash ? hash : null, Date(row, "date_published"), Text(row, "version_type"), Strings(row, "game_versions"), Strings(row, "loaders"), dependencies);
+            Text(hashes, "sha512") is { Length: > 0 } hash ? hash : null, Date(row, "date_published"), Text(row, "version_type"), Strings(row, "game_versions"), Strings(row, "loaders"), dependencies)
+        {
+            Environment = ReadEnvironment(Text(row, "environment"))
+        };
     }
 
     private static ModFile ReadCurseForgeFile(JsonElement row, bool allowed)

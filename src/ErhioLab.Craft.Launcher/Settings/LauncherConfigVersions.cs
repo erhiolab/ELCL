@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -22,6 +23,10 @@ internal static class LauncherConfigVersions
 {
     private const string KindProperty = "FileKind";
     private const string VersionProperty = "FormatVersion";
+
+    // 版本 1 是起点. 每个迁移按文件类型和来源版本登记, 只升级一级.
+    private static readonly FrozenDictionary<(LauncherDataKind Kind, int Version), Action<JsonObject>> Migrations =
+        FrozenDictionary<(LauncherDataKind, int), Action<JsonObject>>.Empty;
 
     private static (string Name, int Version, bool AllowUnversioned) Describe(LauncherDataKind kind) => kind switch
     {
@@ -55,7 +60,7 @@ internal static class LauncherConfigVersions
                 throw new JsonException(LocalizationManager.Get("settings.backupWrongKind"));
             if (!hasVersion) throw new LauncherConfigVersionMissingException();
             if (!hasKind) throw new JsonException(LocalizationManager.Get("settings.backupWrongKind"));
-            if (declaredVersion is not JsonValue versionValue || !versionValue.TryGetValue<int>(out version) || version < 1)
+            if (declaredVersion is not JsonValue versionValue || !versionValue.TryGetValue(out version) || version < 1)
                 throw new JsonException(LocalizationManager.Get("settings.backupInvalidVersion"));
         }
 
@@ -65,17 +70,15 @@ internal static class LauncherConfigVersions
         bool changed = version != current;
         while (version < current)
         {
-            UpgradeOneVersion(document, kind, version);
+            if (!Migrations.TryGetValue((kind, version), out var migrate))
+                throw new JsonException(string.Format(LocalizationManager.Get("settings.backupUnsupportedVersion"), version));
+            migrate(document);
             document[VersionProperty] = ++version;
         }
 
         if (changed) document[KindProperty] = name;
         return changed;
     }
-
-    // 版本 1 是起点. 以后每个分支只负责从指定版本升一级, 不跨版本也不降级.
-    private static void UpgradeOneVersion(JsonObject document, LauncherDataKind kind, int version) =>
-        throw new JsonException(string.Format(LocalizationManager.Get("settings.backupUnsupportedVersion"), version));
 }
 
 internal sealed class LauncherDataFile<T>(string path, LauncherDataKind kind, JsonSerializerOptions? options = null) where T : class

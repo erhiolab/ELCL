@@ -81,7 +81,7 @@ public partial class MainWindow
     private void RefreshVersionSettingsTitle()
     {
         if (_versionSettingsPage.Version is { } version)
-            VersionSettingsTitleText.Text = string.Format(LocalizationManager.Get("versionSettings.title"), version.GameVersion ?? version.Id);
+            VersionSettingsTitleText.Text = string.Format(LocalizationManager.Get("versionSettings.title"), version.Id);
     }
 
     private void CloseVersionSettings_Click(object sender, RoutedEventArgs e)

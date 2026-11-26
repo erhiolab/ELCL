@@ -57,7 +57,8 @@ public partial class PersonalizationPage
                 WindowOpacity = 1.0,
                 HiddenFeatures = LauncherHiddenFeatures.Debug,
                 TitleBarMode = TitleBarMode.Default,
-                TitleBarText = "ELCL"
+                TitleBarText = "ELCL",
+                HideAdministratorModeIcon = false
             })
            && App.UpdateBackgroundSettings(new LauncherBackgroundSettings { Favorites = App.BackgroundSettings.Favorites }))
         {
@@ -88,6 +89,7 @@ public partial class PersonalizationPage
         CustomTitleButton.IsChecked = App.Settings.TitleBarMode == TitleBarMode.Text;
         TitleTextBox.Text = App.Settings.TitleBarText ?? string.Empty;
         TitleTextRow.Visibility = App.Settings.TitleBarMode == TitleBarMode.Text ? Visibility.Visible : Visibility.Collapsed;
+        HideAdministratorModeIconBox.IsChecked = App.Settings.HideAdministratorModeIcon;
         _initializing = false;
         App.PreviewWindowOpacity(App.Settings.WindowOpacity);
         App.PreviewTitleBar(App.Settings.TitleBarMode, App.Settings.TitleBarText ?? string.Empty);
@@ -262,6 +264,13 @@ public partial class PersonalizationPage
         }
 
         TitleTextRow.Visibility = mode == TitleBarMode.Text ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void HideAdministratorModeIcon_Click(object sender, RoutedEventArgs e)
+    {
+        bool hidden = HideAdministratorModeIconBox.IsChecked == true;
+        if (!App.UpdateSettings(App.Settings with { HideAdministratorModeIcon = hidden }))
+            HideAdministratorModeIconBox.IsChecked = App.Settings.HideAdministratorModeIcon;
     }
 
     private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e)

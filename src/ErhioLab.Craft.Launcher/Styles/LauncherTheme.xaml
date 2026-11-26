@@ -11,7 +11,7 @@
     <SolidColorBrush
         x:Key="InkBrush"
         Color="#FF0B0D12" />
-    <!-- 标题栏/侧栏及公告容器的抬高背景色. -->
+    <!-- 标题栏和侧栏的抬高背景色. -->
     <SolidColorBrush
         x:Key="InkRaisedBrush"
         Color="#FF10131A" />

@@ -72,16 +72,44 @@
                         Width="150" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock
-                    x:Name="TitleBarLabel"
+                <Grid
+                    x:Name="PrimaryTitle"
                     Grid.Column="0"
                     Margin="20,0,0,0"
-                    VerticalAlignment="Center"
-                    FontFamily="{StaticResource DisplayFont}"
-                    FontSize="15"
-                    FontWeight="Bold"
-                    TextTrimming="CharacterEllipsis"
-                    Text="ELCL" />
+                    VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            Width="Auto" />
+                        <ColumnDefinition
+                            Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        x:Name="AdministratorModeIcon"
+                        Width="15"
+                        Height="16"
+                        Margin="0,0,7,0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{DynamicResource I18n.app.administratorMode}"
+                        Background="Transparent"
+                        ToolTip="{DynamicResource I18n.app.administratorMode}"
+                        Visibility="Collapsed">
+                        <Path
+                            Data="{x:Static icons:LauncherIcons.Shield}"
+                            Stroke="{DynamicResource TextBrush}"
+                            StrokeThickness="1.5"
+                            StrokeLineJoin="Round"
+                            Stretch="Uniform" />
+                    </Border>
+                    <TextBlock
+                        x:Name="TitleBarLabel"
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource DisplayFont}"
+                        FontSize="15"
+                        FontWeight="Bold"
+                        TextTrimming="CharacterEllipsis"
+                        Text="ELCL" />
+                </Grid>
 
                 <StackPanel
                     x:Name="TaskTitle"
@@ -150,7 +178,8 @@
                 <Grid
                     x:Name="VersionSettingsTitle"
                     Grid.Column="0"
-                    Margin="18,0,0,0"
+                    Grid.ColumnSpan="2"
+                    Margin="18,0,12,0"
                     VerticalAlignment="Center"
                     Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
@@ -183,7 +212,8 @@
                         VerticalAlignment="Center"
                         FontSize="14"
                         FontWeight="SemiBold"
-                        TextTrimming="CharacterEllipsis" />
+                        TextTrimming="CharacterEllipsis"
+                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                 </Grid>
 
                 <StackPanel

@@ -215,7 +215,7 @@ public partial class VersionWorldsPage
     {
         if (_version is not { } version) return;
         int? choice = await LauncherDialogs.ChooseAsync(L("import"), L("importSourcePrompt"), L("importFolder"), L("importZip"));
-        var owner = Window.GetWindow(this);
+        if (Window.GetWindow(this) is not { } owner) return;
         string[] sources = choice switch
         {
             0 when SelectWorldFolder(owner) is { } folder => [folder],

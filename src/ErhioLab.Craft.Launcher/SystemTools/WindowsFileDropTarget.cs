@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Text;
 using System.Windows;
 using System.Windows.Interop;
@@ -17,11 +16,6 @@ internal sealed class WindowsFileDropTarget : IDisposable
     private const int WmCopyGlobalData = 0x0049;
     private const int FileCountLimit = 4096;
     private static readonly ConditionalWeakTable<HwndSource, Registration> Registrations = new();
-    private static readonly Lazy<bool> IsElevated = new(() =>
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
-    });
 
     private readonly FrameworkElement _target;
     private readonly Func<string[], bool> _acceptsFiles;
@@ -35,7 +29,7 @@ internal sealed class WindowsFileDropTarget : IDisposable
 
     internal static WindowsFileDropTarget Attach(FrameworkElement target, Func<string[], bool> acceptsFiles,
         Action<string[]> filesDropped, Action<Exception> failed, Func<Window, bool> isActiveRoute) =>
-        new(target, acceptsFiles, filesDropped, failed, isActiveRoute, IsElevated.Value);
+        new(target, acceptsFiles, filesDropped, failed, isActiveRoute, WindowsProcessPrivileges.IsElevated);
 
     private WindowsFileDropTarget(FrameworkElement target, Func<string[], bool> acceptsFiles, Action<string[]> filesDropped,
         Action<Exception> failed, Func<Window, bool> isActiveRoute, bool useNative)

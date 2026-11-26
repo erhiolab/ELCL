@@ -30,6 +30,30 @@ public enum ModProjectKind
     ShaderPack
 }
 
+/// <summary>上游为一个 Mods 版本声明的运行环境.</summary>
+public enum ModEnvironment
+{
+    Unknown,
+    ClientAndServer,
+    ClientOnly,
+    ClientOnlyServerOptional,
+    SingleplayerOnly,
+    ServerOnly,
+    ServerOnlyClientOptional,
+    DedicatedServerOnly,
+    ClientOrServer,
+    ClientOrServerPrefersBoth
+}
+
+/// <summary>上游旧版元数据对客户端或服务端的安装要求.</summary>
+public enum ModSideRequirement
+{
+    Unknown,
+    Required,
+    Optional,
+    Unsupported
+}
+
 public sealed record ModCategory(string Id, string ModrinthTag, int? CurseForgeId = null);
 
 public sealed record ModSearchRequest(
@@ -63,6 +87,9 @@ public sealed record ModProject(
 )
 {
     public ModProjectKind Kind { get; init; }
+    public IReadOnlyList<ModEnvironment> Environments { get; init; } = [];
+    public ModSideRequirement ClientSide { get; init; }
+    public ModSideRequirement ServerSide { get; init; }
 }
 
 public sealed record ModSearchResult(IReadOnlyList<ModProject> Projects, long Total, bool HasMore, IReadOnlyList<ModPlatform> FailedPlatforms)
@@ -87,7 +114,10 @@ public sealed record ModFile(
     IReadOnlyList<string> GameVersions,
     IReadOnlyList<string> Loaders,
     IReadOnlyList<ModDependency> RequiredDependencies
-);
+)
+{
+    public ModEnvironment Environment { get; init; }
+}
 
 public sealed record ModFilePage(IReadOnlyList<ModFile> Files, bool HasMore);
 

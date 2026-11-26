@@ -47,6 +47,11 @@ public partial class ModDetailsPage
         WikiButton.DataContext = row;
         ProjectCard.ShowSummary = false;
         DescriptionText.Text = row.Summary;
+        if (row.Project.Kind == ModProjectKind.Mod)
+        {
+            EnvironmentText.Text = string.Format(CommunityMods.L("environment.label"), ModPresentation.Environment(row.Project));
+            EnvironmentText.Visibility = Visibility.Visible;
+        }
         GameVersionBox.SetVersions((context.GameVersion is null ? [] : new[] { context.GameVersion }).Concat(row.Project.GameVersions.OrderDescending(ModPresentation.VersionOrder)), context.GameVersion);
         _lastVersion = GameVersionBox.Version ?? "";
         LoaderPair.IsExpanded = CommunityResourceCatalog.HasLoaderFilter(_row.Project.Kind) && GameVersionBox.Version is not null;
@@ -478,5 +483,13 @@ public sealed class ModFileRow(ModFile file, string? gameVersion = null, string?
 
     public string ReleaseLabel => CommunityMods.L("release." + File.ReleaseType);
     public string DownloadHint => CommunityMods.L(CanDownload ? "download" : "downloadUnavailable");
-    public string Metadata => $"{CommunityMods.L("release." + File.ReleaseType)} · {File.Published?.ToLocalTime():yyyy-MM-dd} · {DataSizeFormatter.Format(File.Size, App.Settings.MemoryUnit, "0.##", minimumPower: 0)} · {File.FileName}";
+    public string Metadata
+    {
+        get
+        {
+            string environment = kind == ModProjectKind.Mod && File.Environment != ModEnvironment.Unknown
+                ? ModPresentation.Environment(File.Environment) + " · " : string.Empty;
+            return $"{environment}{ReleaseLabel} · {File.Published?.ToLocalTime():yyyy-MM-dd} · {DataSizeFormatter.Format(File.Size, App.Settings.MemoryUnit, "0.##", minimumPower: 0)} · {File.FileName}";
+        }
+    }
 }

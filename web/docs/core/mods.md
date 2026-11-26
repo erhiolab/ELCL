@@ -98,11 +98,14 @@ using var http = new HttpClient();
 var client = new ModRepositoryClient(http);
 ModProject project = await client.GetProjectAsync(ModPlatform.Modrinth, "sodium");
 Console.WriteLine(project.Website);
+Console.WriteLine(string.Join(", ", project.Environments));
 ```
 
 返回 `ModProject`，包含名称、简介、图标地址、下载量、更新时间、已知游戏版本和加载器。`Kind` 表示资源类别，`Website` 指向对应类别的项目页。Modrinth 项目可同时发布 JAR 与数据包；要查这类项目的数据包文件，使用数据包搜索返回的项目，或把 `Kind` 设为 `DataPack`。CurseForge 的已知版本来自上游最新文件索引，不代表全部历史版本。
 
 项目不存在时抛出状态为 404 的 `HttpRequestException`；不会创建本地文件。
+
+Modrinth 的搜索结果和项目详情都会保留上游给出的运行环境。如何选用版本标注，见 [Mods 运行环境](#mods-运行环境)。
 
 ## ModRepositoryClient.GetFileAsync
 
@@ -121,6 +124,8 @@ Console.WriteLine(file.FileName);
 `platform` 必须是 `CurseForge` 或 `Modrinth`，不能使用 `All`；`projectId`、`fileId` 均必填，使用平台提供的准确 ID，`cancellationToken` 可取消请求。返回 `ModFile`，包含文件名、下载地址、校验信息、适用版本与声明的前置。
 
 Modrinth 优先选取声明为主文件的 JAR、ZIP 或 MRPACK。文件与项目或文件 ID 不匹配，或者 Modrinth 版本没有这些文件时，抛出 `InvalidDataException`；空 ID 或不支持的平台值会抛出参数异常。CurseForge 官方查询需要调用方提供 API Key。没有下载地址时，调用方应保留不可下载状态，不能猜测下载地址。
+
+`ModFile.Environment` 是这个发布版本的声明。`GetFileAsync`、`GetFilesAsync` 和 `GetAllFilesAsync` 都会读取它，不需要额外请求。
 
 ## ModRepositoryClient.GetFilesAsync
 
@@ -442,13 +447,23 @@ LocalModManager.Delete(@"D:\Minecraft\mods", @"D:\Minecraft\mods\example.jar.dis
 
 | 类型 | 主要信息 |
 | --- | --- |
-| `ModProject` | 平台、项目 ID、slug、名称、简介、来源网页、图标 URL、下载量、时间、已知版本、加载器、分类及第三方下载许可。 |
-| `ModFile` | 平台、项目与文件 ID、显示名、实际文件名、下载 URL、大小、SHA-1／SHA-512、发布时间、发布类型、游戏版本、加载器和必需依赖。 |
+| `ModProject` | 平台、项目 ID、slug、名称、简介、来源网页、图标 URL、下载量、时间、已知版本、加载器、分类、第三方下载许可及运行环境。 |
+| `ModFile` | 平台、项目与文件 ID、显示名、实际文件名、下载 URL、大小、SHA-1／SHA-512、发布时间、发布类型、游戏版本、加载器、必需依赖及运行环境。 |
 | `ModDownloadItem` | 依赖计划中的项目与明确文件。 |
 | `LocalModInfo` | 路径、文件名、名称、版本、描述、Mods ID、加载器、启用状态、指纹、图标及解析错误。 |
 | `McModTranslation` | 已核实的中英文名称、百科词条 URL，以及能读到的两个平台 slug。 |
 
 `ModFile.ReleaseType` 为 `release`、`beta` 或 `alpha`。上游没有提供的信息可能为空，不应根据文件名猜造发布日期或项目身份。
+
+## Mods 运行环境
+
+| 属性 | 用法 |
+| --- | --- |
+| `ModProject.Environments` | 项目发布过的不同 `ModEnvironment`，不是每个文件都支持的环境。列表为空时，可以查看旧字段。 |
+| `ModProject.ClientSide`、`ModProject.ServerSide` | 旧版项目字段，分别以 `ModSideRequirement` 表示必需、可选、不支持或未知。 |
+| `ModFile.Environment` | Modrinth 某个发布版本的环境。查看特定文件时以此为准，不把项目级标注当成文件已经确认的能力。 |
+
+`ModEnvironment` 区分两端必需、仅客户端、客户端必需且服务端可选、仅单人、仅服务端、服务端必需且客户端可选、仅独立服务端、任一端均可，以及任一端均可但建议双端安装。缺失或无法识别的单值为 `Unknown`。CurseForge 在当前接口中没有提供这项数据，项目列表为空、两端和文件均为 `Unknown`。这些字段只提供元数据，不改变下载或兼容性判断。
 
 ## 错误处理
 

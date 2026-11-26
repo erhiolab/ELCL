@@ -194,6 +194,12 @@
                         TextWrapping="Wrap"
                         Foreground="{DynamicResource TextMutedBrush}"
                         Margin="0,4,0,12" />
+                    <TextBlock
+                        x:Name="EnvironmentText"
+                        TextWrapping="Wrap"
+                        Foreground="{DynamicResource TextMutedBrush}"
+                        Margin="0,0,0,12"
+                        Visibility="Collapsed" />
                     <WrapPanel>
                         <Button
                             Content="{DynamicResource I18n.mods.openSource}"
@@ -216,50 +222,54 @@
                 </StackPanel>
             </Border>
         </StackPanel>
-        <Grid
+        <Border
             Grid.Row="1"
-            Margin="0,14,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition
-                    Width="*" />
-                <ColumnDefinition
-                    Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <controls:AnimatedFilterPair
-                x:Name="LoaderPair"
-                Margin="0,0,12,0">
-                <StackPanel>
-                    <TextBlock
-                        Text="{DynamicResource I18n.mods.gameVersion}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        FontSize="{DynamicResource CaptionFontSize}"
-                        Margin="0,0,0,6" />
-                    <controls:GameVersionComboBox
-                        x:Name="GameVersionBox"
-                        SelectionChanged="Version_Changed"
-                        LostKeyboardFocus="Version_LostFocus"
-                        KeyDown="Version_KeyDown" />
-                </StackPanel>
-                <StackPanel>
-                    <TextBlock
-                        Text="{DynamicResource I18n.mods.loader}"
-                        Foreground="{DynamicResource TextMutedBrush}"
-                        FontSize="{DynamicResource CaptionFontSize}"
-                        Margin="0,0,0,6" />
-                    <ComboBox
-                        x:Name="LoaderBox"
-                        Style="{StaticResource FormComboBoxStyle}"
-                        SelectionChanged="Loader_Changed" />
-                </StackPanel>
-            </controls:AnimatedFilterPair>
-            <Button
-                Grid.Column="1"
-                VerticalAlignment="Bottom"
-                Height="34"
-                Content="{DynamicResource I18n.mods.refresh}"
-                Style="{StaticResource CompactActionButtonStyle}"
-                Click="Refresh_Click" />
-        </Grid>
+            Margin="0,14,0,14"
+            Padding="18,12"
+            Style="{StaticResource PanelCardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                        Width="*" />
+                    <ColumnDefinition
+                        Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <controls:AnimatedFilterPair
+                    x:Name="LoaderPair"
+                    Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock
+                            Text="{DynamicResource I18n.mods.gameVersion}"
+                            Foreground="{DynamicResource TextBrush}"
+                            FontSize="{DynamicResource CaptionFontSize}"
+                            Margin="0,0,0,6" />
+                        <controls:GameVersionComboBox
+                            x:Name="GameVersionBox"
+                            SelectionChanged="Version_Changed"
+                            LostKeyboardFocus="Version_LostFocus"
+                            KeyDown="Version_KeyDown" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock
+                            Text="{DynamicResource I18n.mods.loader}"
+                            Foreground="{DynamicResource TextBrush}"
+                            FontSize="{DynamicResource CaptionFontSize}"
+                            Margin="0,0,0,6" />
+                        <ComboBox
+                            x:Name="LoaderBox"
+                            Style="{StaticResource FormComboBoxStyle}"
+                            SelectionChanged="Loader_Changed" />
+                    </StackPanel>
+                </controls:AnimatedFilterPair>
+                <Button
+                    Grid.Column="1"
+                    VerticalAlignment="Bottom"
+                    Height="34"
+                    Content="{DynamicResource I18n.mods.refresh}"
+                    Style="{StaticResource CompactActionButtonStyle}"
+                    Click="Refresh_Click" />
+            </Grid>
+        </Border>
         <Grid
             Grid.Row="2">
             <ListBox

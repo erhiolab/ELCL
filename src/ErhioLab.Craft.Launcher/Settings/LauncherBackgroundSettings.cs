@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 using ErhioLab.Craft.Launcher.SystemTools;
 
@@ -48,7 +49,8 @@ public sealed record LauncherBackgroundSettings
     public string? SelectedWallpaperId { get; init; }
     public string? SelectedFavoriteKey { get; init; }
     public int SlideIntervalSeconds { get; init; } = 60;
-    public string[] Favorites { get; init; } = [];
+    [AllowNull]
+    public string[] Favorites { get; init => field = value ?? []; } = [];
 
     internal BackgroundCategory ActiveCategory => Category is { } category && Enum.IsDefined(category) ? category
         : LocalPlaybackMode == BackgroundPlaybackMode.Fixed && HasValidWallpaperId ? BackgroundCategory.Wallpaper : BackgroundCategory.Local;
@@ -101,7 +103,7 @@ public sealed record LauncherBackgroundSettings
 
     private string[] NormalizeFavorites()
     {
-        var source = Favorites ?? [];
+        var source = Favorites;
         var normalized = source.Select(LauncherBackgroundFiles.NormalizeFavoriteKey).OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         return source.SequenceEqual(normalized) ? source : normalized;

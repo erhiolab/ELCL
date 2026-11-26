@@ -100,6 +100,9 @@ public static class LauncherIcons
     /// <summary>提示信息.</summary>
     public static readonly Geometry Info = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 9,8 L 9,13 M 9,5 L 9,5.2");
 
+    /// <summary>盾牌.</summary>
+    public static readonly Geometry Shield = Parse("M 9,1.5 C 7,3 5,3.7 2.8,4 V 8.4 C 2.8,12.1 5.1,14.9 9,16.5 C 12.9,14.9 15.2,12.1 15.2,8.4 V 4 C 13,3.7 11,3 9,1.5 Z");
+
     /// <summary>错误.</summary>
     public static readonly Geometry Error = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 6.5,6.5 L 11.5,11.5 M 11.5,6.5 L 6.5,11.5");
 

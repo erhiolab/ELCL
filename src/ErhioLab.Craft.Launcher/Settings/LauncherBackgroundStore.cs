@@ -16,24 +16,34 @@ internal sealed class LauncherBackgroundStore(string path)
         Converters = { new JsonStringEnumConverter<BackgroundFit>(), new JsonStringEnumConverter<BackgroundPlaybackMode>() }
     });
 
-    private readonly object _gate = new();
-    private volatile LauncherBackgroundData _data = new(new LauncherBackgroundSettings(), new BackgroundSlideshowPosition());
+    private readonly Lock _gate = new();
+    private LauncherBackgroundData _data = new(new LauncherBackgroundSettings(), new BackgroundSlideshowPosition());
     private bool _canWrite = true;
 
-    internal LauncherBackgroundSettings Options => _data.Options!;
-    internal BackgroundSlideshowPosition Position => _data.Position!;
+    // 读者获取完整快照, 不必等待磁盘写入. 加载与保存仍通过同一把锁串行执行.
+    private LauncherBackgroundData Snapshot
+    {
+        get => Volatile.Read(ref _data);
+        set => Volatile.Write(ref _data, value);
+    }
+
+    internal LauncherBackgroundSettings Options => Snapshot.Options!;
+    internal BackgroundSlideshowPosition Position => Snapshot.Position!;
 
     internal void Load()
     {
-        try
+        lock (_gate)
         {
-            var data = _file.Load(_data);
-            _data = new(data.Options?.Normalize() ?? new LauncherBackgroundSettings(), data.Position ?? new BackgroundSlideshowPosition());
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or SecurityException)
-        {
-            _canWrite = false;
-            App.Logger.Error("Background", "读取背景配置失败, 本次使用默认值并保留原文件.", error);
+            try
+            {
+                var data = _file.Load(Snapshot);
+                Snapshot = new LauncherBackgroundData(data.Options?.Normalize() ?? new LauncherBackgroundSettings(), data.Position ?? new BackgroundSlideshowPosition());
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or SecurityException)
+            {
+                _canWrite = false;
+                App.Logger.Error("Background", "读取背景配置失败, 本次使用默认值并保留原文件.", error);
+            }
         }
     }
 
@@ -42,7 +52,8 @@ internal sealed class LauncherBackgroundStore(string path)
         lock (_gate)
         {
             var normalized = options.Normalize();
-            if (normalized != _data.Options) Save(_data with { Options = normalized });
+            var current = Snapshot;
+            if (normalized != current.Options) Save(current with { Options = normalized });
         }
     }
 
@@ -50,7 +61,8 @@ internal sealed class LauncherBackgroundStore(string path)
     {
         lock (_gate)
         {
-            if (position != _data.Position) Save(_data with { Position = position });
+            var current = Snapshot;
+            if (position != current.Position) Save(current with { Position = position });
         }
     }
 
@@ -58,6 +70,6 @@ internal sealed class LauncherBackgroundStore(string path)
     {
         if (!_canWrite) throw new IOException(LocalizationManager.Get("settings.localFileUnreadable"));
         _file.Save(data);
-        _data = data;
+        Snapshot = data;
     }
 }
