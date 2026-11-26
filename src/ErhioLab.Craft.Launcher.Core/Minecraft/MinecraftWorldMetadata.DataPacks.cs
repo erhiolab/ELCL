@@ -104,7 +104,7 @@ internal sealed partial class MinecraftWorldMetadata
     {
         // NBT 字符串使用 Java 修改版 UTF-8, 包括空字符和成对的 UTF-16 代理项.
         int length = value.Sum(c => c is >= (char)1 and <= (char)0x7F ? 1 : c <= 0x7FF ? 2 : 3);
-        if (length > ushort.MaxValue) throw new InvalidDataException("数据包标识的编码超过 NBT 字符串长度限制.");
+        if (length > ushort.MaxValue) throw new InvalidDataException("文本编码超过 NBT 字符串长度限制.");
         Span<byte> prefix = stackalloc byte[2];
         BinaryPrimitives.WriteUInt16BigEndian(prefix, (ushort)length);
         output.Write(prefix);

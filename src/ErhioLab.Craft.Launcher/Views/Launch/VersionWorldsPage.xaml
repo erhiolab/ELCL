@@ -6,6 +6,8 @@
     xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
     xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
     Background="{DynamicResource PageSurfaceBrush}"
+    IsHitTestVisibleChanged="DropTarget_Changed"
+    IsVisibleChanged="DropTarget_Changed"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <Grid
@@ -21,12 +23,24 @@
         <controls:LauncherCard
             Margin="0,0,0,14"
             Header="{DynamicResource I18n.worlds.title}">
-            <WrapPanel>
-                <Button
-                    Click="OpenSaves_Click"
-                    Content="{DynamicResource I18n.worlds.openSaves}"
-                    Style="{StaticResource CompactActionButtonStyle}" />
-            </WrapPanel>
+            <StackPanel>
+                <TextBlock
+                    Text="{DynamicResource I18n.worlds.importHint}"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextWrapping="Wrap"
+                    Margin="0,0,0,12" />
+                <WrapPanel>
+                    <Button
+                        Margin="0,0,8,0"
+                        Click="ImportWorld_Click"
+                        Content="{DynamicResource I18n.worlds.import}"
+                        Style="{StaticResource CompactActionButtonStyle}" />
+                    <Button
+                        Click="OpenSaves_Click"
+                        Content="{DynamicResource I18n.worlds.openSaves}"
+                        Style="{StaticResource CompactActionButtonStyle}" />
+                </WrapPanel>
+            </StackPanel>
         </controls:LauncherCard>
         <Border
             x:Name="WorldListCard"

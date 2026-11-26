@@ -1,5 +1,3 @@
-using System.IO.Compression;
-
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
 public sealed record MinecraftWorldDataPackSelection(IReadOnlyList<string> Enabled, IReadOnlyList<string> Disabled);
@@ -24,14 +22,6 @@ public static partial class LocalMinecraftWorldManager
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (names.Length == 0) return;
-            string world = Full(worldDirectory);
-            string path = Path.Combine(world, "level.dat");
-            EnsureNoLinks(path);
-            using var worldLock = CheckWorldStopped(world);
-            var original = new FileInfo(path);
-            long bytes = original.Length;
-            DateTime modified = original.LastWriteTimeUtc;
-            var document = MinecraftWorldMetadata.OpenPackSelection(path, cancellationToken);
             string[] ids = names.Select(name => "file/" + name).ToArray();
             var edited = ids.ToHashSet(StringComparer.Ordinal);
 
@@ -44,26 +34,13 @@ public static partial class LocalMinecraftWorldManager
                 return result;
             }
 
-            var newSelection = new MinecraftWorldDataPackSelection(Rewrite(document.Selection.Enabled, true), Rewrite(document.Selection.Disabled, false));
-            if (newSelection.Enabled.SequenceEqual(document.Selection.Enabled) && newSelection.Disabled.SequenceEqual(document.Selection.Disabled)) return;
-            string temporary = Temporary(world) + ".part";
-            try
+            EditLevelDat(Full(worldDirectory), path =>
             {
-                using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                using (var gzip = new GZipStream(file, CompressionLevel.Fastest))
-                    document.Write(gzip, newSelection);
-                cancellationToken.ThrowIfCancellationRequested();
-                EnsureNoLinks(path);
-                original.Refresh();
-                if (original.Length != bytes || original.LastWriteTimeUtc != modified)
-                    throw new IOException("世界的存档信息已经变化, 请刷新后再试.");
-                File.Replace(temporary, path, null);
-            }
-            finally
-            {
-                EnsureNoLinks(temporary);
-                File.Delete(temporary);
-            }
+                var document = MinecraftWorldMetadata.OpenPackSelection(path, cancellationToken);
+                var newSelection = new MinecraftWorldDataPackSelection(Rewrite(document.Selection.Enabled, true), Rewrite(document.Selection.Disabled, false));
+                return newSelection.Enabled.SequenceEqual(document.Selection.Enabled) && newSelection.Disabled.SequenceEqual(document.Selection.Disabled)
+                    ? null : output => document.Write(output, newSelection);
+            }, cancellationToken);
         }, cancellationToken);
     }
 

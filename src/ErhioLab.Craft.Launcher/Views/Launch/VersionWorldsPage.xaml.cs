@@ -15,6 +15,7 @@ using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Mods;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.SystemTools;
 using ErhioLab.Craft.Launcher.Tasks;
 
 using Microsoft.Win32;
@@ -25,6 +26,7 @@ public partial class VersionWorldsPage
 {
     private LocalMinecraftVersion? _version;
     private CancellationTokenSource? _scan;
+    private WindowsFileDropTarget? _windowsDrop;
     private int _revision;
     private int _backupRequest;
     private WorldRow? _backupWorld;
@@ -39,6 +41,7 @@ public partial class VersionWorldsPage
         SelectionBar.DeleteRequested += () => WithSelectedWorld(row => _ = DeleteAsync(row));
         SelectionBar.DeselectRequested += () => WorldList.SelectedItem = null;
         SelectionBar.AddAction("worlds.quickPlay", () => WithSelectedWorld(row => _ = EnterWorldAsync(row)));
+        SelectionBar.AddAction("worlds.rename", () => WithSelectedWorld(row => _ = RenameAsync(row)));
         SelectionBar.AddAction("community.dataPacks", () => WithSelectedWorld(row => DataPacksRequested?.Invoke(row.World)));
         SelectionBar.AddAction("worlds.copySeed", () => WithSelectedWorld(CopySeed), enabled: () => WorldList.SelectedItem is WorldRow { World.Seed: not null });
         SelectionBar.AddAction("worlds.backup", () => WithSelectedWorld(row => _ = BackupAsync(row)));
@@ -70,16 +73,38 @@ public partial class VersionWorldsPage
         DetailsReveal.IsExpanded = false;
     }
 
-    private async void Page_Loaded(object sender, RoutedEventArgs e) => await RefreshAsync();
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateDropTarget();
+        await RefreshAsync();
+    }
 
     private void Page_Unloaded(object sender, RoutedEventArgs e)
     {
+        _windowsDrop?.Dispose();
+        _windowsDrop = null;
         _scan?.Cancel();
         CloseBackups();
         DetailsReveal.IsExpanded = false;
     }
 
-    internal async Task RefreshAsync()
+    private void DropTarget_Changed(object sender, DependencyPropertyChangedEventArgs e) => UpdateDropTarget();
+
+    private void UpdateDropTarget()
+    {
+        if (!IsLoaded || !IsVisible || !IsHitTestVisible)
+        {
+            _windowsDrop?.Dispose();
+            _windowsDrop = null;
+            return;
+        }
+
+        _windowsDrop ??= WindowsFileDropTarget.Attach(this, AcceptWorldZips, FilesDropped, DropFailed, MainWindow.IsVersionFileDropAllowed);
+    }
+
+    internal Task RefreshAsync() => RefreshAsync(null);
+
+    private async Task RefreshAsync(string? selectFolder)
     {
         if (_version is not { } version) return;
         _scan?.Cancel();
@@ -94,9 +119,10 @@ public partial class VersionWorldsPage
             var worlds = await LocalMinecraftWorldManager.ScanAsync(saves, token);
             var rows = await Task.Run(() => worlds.Select(world => new WorldRow(world, ModIconDecoder.Decode(world.Icon))).ToArray(), token);
             token.ThrowIfCancellationRequested();
-            string? previous = (WorldList.SelectedItem as WorldRow)?.FolderName;
+            string? previous = selectFolder ?? (WorldList.SelectedItem as WorldRow)?.FolderName;
             WorldList.ItemsSource = rows;
             WorldList.SelectedItem = rows.FirstOrDefault(row => string.Equals(previous, row.FolderName, StringComparison.OrdinalIgnoreCase));
+            if (selectFolder is not null && WorldList.SelectedItem is { } selected) WorldList.ScrollIntoView(selected);
             if (rows.Length == 0) Status("empty");
             else ListStatus.Visibility = Visibility.Collapsed;
             foreach (var world in worlds.Where(world => world.MetadataError is not null))
@@ -183,6 +209,98 @@ public partial class VersionWorldsPage
     private void OpenSaves_Click(object sender, RoutedEventArgs e)
     {
         if (_version is { } version) OpenFolder(Saves(version));
+    }
+
+    private async void ImportWorld_Click(object sender, RoutedEventArgs e)
+    {
+        if (_version is not { } version) return;
+        int? choice = await LauncherDialogs.ChooseAsync(L("import"), L("importSourcePrompt"), L("importFolder"), L("importZip"));
+        var owner = Window.GetWindow(this);
+        string[] sources = choice switch
+        {
+            0 when SelectWorldFolder(owner) is { } folder => [folder],
+            1 => SelectWorldZips(owner),
+            _ => []
+        };
+        if (sources.Length > 0) await ImportWorldsAsync(version, sources, zipOnly: choice == 1);
+    }
+
+    private static bool AcceptWorldZips(string[] files) => files.Length > 0
+        && files.All(path => string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase));
+
+    private void FilesDropped(string[] files)
+    {
+        if (_version is not { } version) return;
+        if (AcceptWorldZips(files)) _ = ImportWorldsAsync(version, files, zipOnly: true);
+        else LauncherToasts.Error(L("importZipOnly"));
+    }
+
+    private static void DropFailed(Exception error)
+    {
+        App.Logger.Error("Worlds", "无法接收世界 ZIP 拖放.", error);
+        LauncherToasts.Error(L("dropFailed"));
+    }
+
+    private async Task ImportWorldsAsync(LocalMinecraftVersion version, string[] sources, bool zipOnly)
+    {
+        string? importedFolder = null;
+        string subject = sources.Length == 1 ? Path.GetFileName(sources[0]) : string.Format(L("importZipCount"), sources.Length);
+        await RunTaskAsync(version, subject, "import", async context =>
+        {
+            var token = context.CancellationToken;
+            int failed = 0;
+            for (int index = 0; index < sources.Length; index++)
+            {
+                token.ThrowIfCancellationRequested();
+                string source = sources[index];
+                App.Logger.Information("Worlds", $"开始导入世界: {source}, 版本目录={version.FolderPath}.");
+                try
+                {
+                    if (zipOnly && (!string.Equals(Path.GetExtension(source), ".zip", StringComparison.OrdinalIgnoreCase) || Directory.Exists(source)))
+                        throw new InvalidDataException(L("importZipOnly"));
+
+                    string importedDirectory = await LocalMinecraftWorldManager.ImportAsync(Saves(version), source, token);
+                    importedFolder = Path.GetFileName(importedDirectory);
+                    App.Logger.Information("Worlds", $"世界已导入: {importedDirectory}.");
+                }
+                catch (Exception error) when (sources.Length > 1 && IsFileError(error))
+                {
+                    failed++;
+                    App.Logger.Error("Worlds", $"无法导入世界: {source}.", error);
+                }
+
+                context.ReportProgress((index + 1) * 100d / sources.Length);
+            }
+
+            if (failed > 0) throw new IOException(string.Format(L("importBatchFailed"), sources.Length - failed, failed));
+        }, () => importedFolder);
+    }
+
+    private static string? SelectWorldFolder(Window owner)
+    {
+        var picker = new OpenFolderDialog { Title = L("importFolder"), Multiselect = false };
+        return picker.ShowDialog(owner) == true ? picker.FolderName : null;
+    }
+
+    private static string[] SelectWorldZips(Window owner)
+    {
+        var picker = new OpenFileDialog { Title = L("importZip"), Filter = L("importZipFilter"), DefaultExt = ".zip", CheckFileExists = true, Multiselect = true };
+        return picker.ShowDialog(owner) == true ? picker.FileNames : [];
+    }
+
+    private async Task RenameAsync(WorldRow row)
+    {
+        if (_version is not { } version) return;
+        string? name = await LauncherDialogs.InputAsync(L("rename"), L("renamePrompt"), row.Name,
+            value => value.Length is 0 or > 128 || value.Any(char.IsControl) ? L("invalidName") : null);
+        if (name is null || name == row.Name) return;
+        bool completed = await RunOperationAsync(version, row, "rename", async token =>
+        {
+            App.Logger.Information("Worlds", $"开始重命名世界: {row.World.DirectoryPath}.");
+            await LocalMinecraftWorldManager.RenameAsync(row.World.DirectoryPath, name, token);
+            App.Logger.Information("Worlds", $"世界已重命名: {row.World.DirectoryPath}.");
+        });
+        if (completed && IsLoaded && ReferenceEquals(version, _version)) await RefreshAsync(row.FolderName);
     }
 
     private void RevealWorld_Click(object sender, RoutedEventArgs e)
@@ -350,7 +468,12 @@ public partial class VersionWorldsPage
             Backups(version), row.FolderName, choice.Backup.FileName, picker.FileName, overwrite, token));
     }
 
-    private async Task<bool> RunOperationAsync(LocalMinecraftVersion version, WorldRow row, string operation, Func<CancellationToken, Task> execute)
+    private Task<bool> RunOperationAsync(LocalMinecraftVersion version, WorldRow row, string operation, Func<CancellationToken, Task> execute) => RunOperationAsync(version, row.World.Name, operation, execute);
+
+    private Task<bool> RunOperationAsync(LocalMinecraftVersion version, string subject, string operation, Func<CancellationToken, Task> execute) =>
+        RunTaskAsync(version, subject, operation, context => execute(context.CancellationToken));
+
+    private async Task<bool> RunTaskAsync(LocalMinecraftVersion version, string subject, string operation, Func<LauncherTaskContext, Task> execute, Func<string?>? refreshSelection = null)
     {
         if (!ReferenceEquals(_version, version)) return false;
         if (App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, version.FolderPath, StringComparison.OrdinalIgnoreCase)))
@@ -360,11 +483,12 @@ public partial class VersionWorldsPage
         }
 
         string label = L(operation);
-        string title = string.Format(L("taskTitle"), label, row.World.Name);
+        string title = string.Format(L("taskTitle"), label, subject);
         LauncherToasts.Information(string.Format(L("started"), title));
-        var task = App.Tasks.Start(title, [new LauncherTaskStage(label, context => execute(context.CancellationToken))], version.FolderPath);
+        var task = App.Tasks.Start(title, [new LauncherTaskStage(label, execute)], version.FolderPath);
         await task.Completion;
-        if (task.Status != LauncherTaskStatus.Completed && IsLoaded && ReferenceEquals(version, _version)) await RefreshAsync();
+        if ((task.Status != LauncherTaskStatus.Completed || refreshSelection is not null) && IsLoaded && ReferenceEquals(version, _version))
+            await RefreshAsync(refreshSelection?.Invoke());
         return task.Status == LauncherTaskStatus.Completed;
     }
 

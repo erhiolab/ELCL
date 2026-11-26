@@ -3,7 +3,7 @@ using System.IO.Compression;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
-/// <summary>扫描 Java 版世界, 并在调用方指定的目录中备份、还原和删除存档.</summary>
+/// <summary>扫描和管理调用方指定目录中的 Java 版世界及其备份.</summary>
 public static partial class LocalMinecraftWorldManager
 {
     private const string WorkingPrefix = ".elcl-world-op-";
@@ -272,10 +272,19 @@ public static partial class LocalMinecraftWorldManager
         return world with { Size = size, Icon = icon };
     }
 
-    private static async Task ExtractAsync(string source, string destination, CancellationToken token)
+    private static async Task ExtractAsync(string source, string destination, CancellationToken token, long? sizeLimit = null)
     {
         using var archive = ZipFile.OpenRead(source);
         if (archive.Entries.Count > EntryLimit) throw new InvalidDataException("备份 ZIP 条目过多.");
+        if (sizeLimit is { } remaining)
+        {
+            foreach (var entry in archive.Entries)
+            {
+                token.ThrowIfCancellationRequested();
+                if (entry.Length < 0 || entry.Length > remaining) throw new InvalidDataException("ZIP 解压总大小超过 64 GiB, 无法导入.");
+                remaining -= entry.Length;
+            }
+        }
         byte[] buffer = new byte[81920];
         foreach (var entry in archive.Entries)
         {

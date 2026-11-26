@@ -26,6 +26,37 @@ foreach (var world in await LocalMinecraftWorldManager.ScanAsync(saves))
 
 扫描跳过链接目录；根目录无法访问或是链接时抛出 `IOException` 或 `UnauthorizedAccessException`，取消时抛出 `OperationCanceledException`。
 
+## LocalMinecraftWorldManager.ImportAsync
+
+传入目标世界根目录、已有 Java 版世界的目录或 ZIP 路径，以及可选的取消令牌。返回新世界目录的完整路径。ZIP 可以是 `BackupAsync` 或 `ExportBackupAsync` 生成的备份，也可以是普通世界 ZIP；世界文件必须位于 ZIP 根目录或一层子目录，且只能包含一个世界。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+
+// 将准备好的 world-backup.zip 放在当前目录，在游戏退出后执行。
+string saves = Path.Combine(Environment.CurrentDirectory, "saves");
+string source = Path.Combine(Environment.CurrentDirectory, "world-backup.zip");
+if (File.Exists(source))
+    Console.WriteLine(await LocalMinecraftWorldManager.ImportAsync(saves, source));
+```
+
+导入复制而不移动源文件，不复制会话锁。同名时给新目录加编号，不覆盖已有世界。文件先写入临时目录，验证世界信息后才就位。ZIP 最多允许 50 万个条目和 64 GiB 解压数据；越界文件名、链接、CRC 错误、多世界 ZIP 或无法读取的世界信息会导致导入失败。路径、权限或世界锁出错时抛出对应异常；取消和检查失败不会留下未完成的世界条目。导入不转换世界格式，也不检查与目标游戏版本的兼容性。
+
+## LocalMinecraftWorldManager.RenameAsync
+
+传入单个世界目录、显示名称和可选的取消令牌。不返回数据。名称去除首尾空白后必须为 1～128 个 UTF-16 代码单元，不允许控制字符。操作仅更新当前 `level.dat` 的 `Data.LevelName`，不改目录名、`level.dat_old`、其他 NBT 标签或世界备份。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Minecraft;
+
+// 在游戏退出后执行。My World 是世界当前的文件夹名，不是显示名称。
+string world = Path.Combine(Environment.CurrentDirectory, "saves", "My World");
+if (File.Exists(Path.Combine(world, "level.dat")))
+    await LocalMinecraftWorldManager.RenameAsync(world, "新的世界名称");
+```
+
+当前世界缺少或无法读取 `level.dat` 时，不会修改上一份元数据。名称无效时抛出 `ArgumentException`；世界被占用、文件无效或读写失败时抛出对应异常。写入使用原子替换，取消在替换前生效。
+
 ## LocalMinecraftWorldManager.ListBackupsAsync
 
 传入备份根目录与世界文件夹名，返回该世界的 ZIP 备份，按文件修改时间倒序排列。每项包含 `FileName`、`CreatedAt` 和 `Size`；此方法不打开 ZIP 校验内容，也不修改文件。没有备份时返回空列表。

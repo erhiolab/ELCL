@@ -208,6 +208,8 @@
 ## 本地世界与备份
 
 - [`LocalMinecraftWorldManager.ScanAsync`](local-worlds.md#localminecraftworldmanager-scanasync)
+- [`LocalMinecraftWorldManager.ImportAsync`](local-worlds.md#localminecraftworldmanager-importasync)
+- [`LocalMinecraftWorldManager.RenameAsync`](local-worlds.md#localminecraftworldmanager-renameasync)
 - [`LocalMinecraftWorldManager.ListBackupsAsync`](local-worlds.md#localminecraftworldmanager-listbackupsasync)
 - [`LocalMinecraftWorldManager.BackupAsync`](local-worlds.md#localminecraftworldmanager-backupasync)
 - [`LocalMinecraftWorldManager.DeleteBackupAsync`](local-worlds.md#localminecraftworldmanager-deletebackupasync)
