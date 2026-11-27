@@ -4,6 +4,8 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Threading.Channels;
 
+using static ErhioLab.Craft.Launcher.Core.Downloads.DownloadHttpPolicy;
+
 namespace ErhioLab.Craft.Launcher.Core.Downloads;
 
 /// <summary>按入队顺序执行下载任务, 并在单个任务内并发下载文件及分段.</summary>
@@ -11,7 +13,6 @@ public sealed partial class DownloadManager : IAsyncDisposable
 {
     private const long MinimumSegmentSize = 2 * 1024 * 1024;
     private const int MaximumSegmentsPerFile = 4;
-    private const int MaximumAttemptsPerSource = 3;
     private const int MaximumParallelFiles = 32;
     private readonly HttpClient _httpClient;
 
@@ -44,14 +45,14 @@ public sealed partial class DownloadManager : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(options);
         Validate(request);
-        if (options.MaxConnections is < 1 or > 256 || options.SpeedLimitBytesPerSecond < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "线程数须为 1-256, 速度限制不能为负数.");
-        }
+        options.Validate();
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         // 入队时复制调用方的列表, 避免排队期间修改来源或目标文件.
-        request = new DownloadTaskRequest(request.Name, request.Files.Select(file => file with { Sources = file.Sources.ToArray() }).ToArray());
+        request = new DownloadTaskRequest(request.Name, request.Files.Select(file => file with
+        {
+            Sources = file.Sources.ToArray(), ReusablePaths = file.ReusablePaths.ToArray()
+        }).ToArray());
         Guid id = Guid.NewGuid();
         CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         TaskCompletionSource<DownloadResult> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -160,12 +161,18 @@ public sealed partial class DownloadManager : IAsyncDisposable
         string destination = Path.GetFullPath(file.DestinationPath);
         string directory = Path.GetDirectoryName(destination)!;
         Directory.CreateDirectory(directory);
+        if (!options.ForceRedownload && await TryReuseAsync(file, destination, cancellationToken).ConfigureAwait(false) is { } reused)
+        {
+            state.RegisterLength(reused, file.ExpectedSize);
+            state.ReuseBytes(reused);
+            return;
+        }
         List<Exception> failures = [];
         bool lengthRegistered = false;
 
         foreach (Uri source in file.Sources)
         {
-            for (int attempt = 0; attempt < MaximumAttemptsPerSource; attempt++)
+            for (int attempt = 0; attempt <= options.MaxRetries; attempt++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string temporary = Path.Combine(directory, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.part");
@@ -174,7 +181,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                 {
                     // 分段连接失败后改用普通 GET, 避免持续触发同一站点的连接限制.
                     FileProbe probe = attempt == 0 && options.MaxConnections > 1 && file.ExpectedSize is not <= MinimumSegmentSize
-                        ? await ProbeWithConnectionAsync(source, connections, cancellationToken).ConfigureAwait(false)
+                        ? await ProbeWithConnectionAsync(source, connections, options.HttpTimeout, cancellationToken).ConfigureAwait(false)
                         : new FileProbe(file.ExpectedSize, false);
                     if (!lengthRegistered)
                     {
@@ -191,7 +198,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                     {
                         await TransferAsync(source, temporary, probe, options.MaxConnections,
                             connections, limiter, state, file.DestinationPath,
-                            attemptBytes.Add, cancellationToken).ConfigureAwait(false);
+                            attemptBytes.Add, options.HttpTimeout, cancellationToken).ConfigureAwait(false);
                     }
                     catch (RangeUnsupportedException)
                     {
@@ -199,7 +206,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                         File.Delete(temporary);
                         await TransferAsync(source, temporary, new FileProbe(null, false), 1,
                             connections, limiter, state, file.DestinationPath,
-                            attemptBytes.Add, cancellationToken).ConfigureAwait(false);
+                            attemptBytes.Add, options.HttpTimeout, cancellationToken).ConfigureAwait(false);
                     }
 
                     if (file.ExpectedSize is { } requiredSize && new FileInfo(temporary).Length != requiredSize)
@@ -227,7 +234,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                 catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or OperationCanceledException)
                 {
                     state.RevertBytes(attemptBytes.Take());
-                    if (attempt + 1 < MaximumAttemptsPerSource && RetryDelay(error, attempt) is { } delay)
+                    if (attempt < options.MaxRetries && RetryDelay(error, attempt) is { } delay)
                     {
                         await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                         continue;
@@ -249,10 +256,47 @@ public sealed partial class DownloadManager : IAsyncDisposable
         throw new AggregateException($"所有来源都无法下载 {Path.GetFileName(destination)}.", failures);
     }
 
-    private async Task<FileProbe> ProbeAsync(Uri source, CancellationToken token)
+    private static async Task<long?> TryReuseAsync(DownloadFileRequest file, string destination, CancellationToken token)
+    {
+        if (file.ExpectedSha1 is not { } sha1) return null;
+        foreach (string candidate in file.ReusablePaths)
+        {
+            token.ThrowIfCancellationRequested();
+            if (string.Equals(Path.GetFullPath(candidate), destination, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
+            string temporary = destination + $".{Guid.NewGuid():N}.part";
+            try
+            {
+                long length;
+                await using (var input = File.OpenRead(candidate))
+                {
+                    if (file.ExpectedSize is { } size && input.Length != size) continue;
+                    await using var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 65536, FileOptions.Asynchronous);
+                    await input.CopyToAsync(output, token).ConfigureAwait(false);
+                    length = output.Length;
+                    if (file.ExpectedSize is { } requiredSize && length != requiredSize) continue;
+                    output.Position = 0;
+                    string actual = Convert.ToHexString(await SHA1.HashDataAsync(output, token).ConfigureAwait(false));
+                    if (!actual.Equals(sha1, StringComparison.OrdinalIgnoreCase)) continue;
+                }
+
+                token.ThrowIfCancellationRequested();
+                File.Move(temporary, destination, overwrite: true);
+                return length;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* 候选失效时继续尝试或改为下载. */ }
+            finally
+            {
+                try { File.Delete(temporary); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* 不因清理失败阻止备用来源. */ }
+            }
+        }
+        return null;
+    }
+
+    private async Task<FileProbe> ProbeAsync(Uri source, TimeSpan timeout, CancellationToken token)
     {
         using (HttpRequestMessage head = new(HttpMethod.Head, source))
-        using (HttpResponseMessage response = await SendAsync(head, "head", token).ConfigureAwait(false))
+        using (HttpResponseMessage response = await SendAsync(head, "head", timeout, token).ConfigureAwait(false))
         {
             if (IsBackoffStatus(response.StatusCode)) throw HttpFailure(head, response);
             // 拒绝 HEAD 的来源可能允许普通 GET; 不再为同一文件尝试 Range 探测.
@@ -266,7 +310,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
 
         using HttpRequestMessage probe = new(HttpMethod.Get, source);
         probe.Headers.Range = new RangeHeaderValue(0, 0);
-        using HttpResponseMessage ranged = await SendAsync(probe, "range-probe", token).ConfigureAwait(false);
+        using HttpResponseMessage ranged = await SendAsync(probe, "range-probe", timeout, token).ConfigureAwait(false);
         if (IsBackoffStatus(ranged.StatusCode)) throw HttpFailure(probe, ranged);
         ContentRangeHeaderValue? range = ranged.Content.Headers.ContentRange;
         if (ranged.StatusCode == HttpStatusCode.PartialContent && range is { From: 0, To: 0, Length: > 0 } && IsByteRange(range))
@@ -275,28 +319,17 @@ public sealed partial class DownloadManager : IAsyncDisposable
         return new FileProbe(ranged.StatusCode == HttpStatusCode.OK ? ranged.Content.Headers.ContentLength : null, false);
     }
 
-    private async Task<FileProbe> ProbeWithConnectionAsync(Uri source, SemaphoreSlim connections, CancellationToken token)
+    private async Task<FileProbe> ProbeWithConnectionAsync(Uri source, SemaphoreSlim connections, TimeSpan timeout, CancellationToken token)
     {
         await connections.WaitAsync(token).ConfigureAwait(false);
-        try { return await ProbeAsync(source, token).ConfigureAwait(false); }
+        try { return await ProbeAsync(source, timeout, token).ConfigureAwait(false); }
         finally { connections.Release(); }
     }
-
-    private static bool IsTransient(Exception error) => error switch
-    {
-        HttpRequestException { StatusCode: null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
-            or HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
-            or HttpStatusCode.GatewayTimeout } => true,
-        HttpRequestException => false,
-        OperationCanceledException => true,
-        IOException => true,
-        _ => false
-    };
 
     private async Task TransferAsync(
         Uri source, string temporary, FileProbe probe, int maxConnections,
         SemaphoreSlim connections, SpeedLimiter limiter, DownloadState state,
-        string filePath, Action<int> recordBytes, CancellationToken token)
+        string filePath, Action<int> recordBytes, TimeSpan timeout, CancellationToken token)
     {
         await using FileStream output = new(temporary, FileMode.CreateNew, FileAccess.ReadWrite,
             FileShare.Read, 64 * 1024, FileOptions.Asynchronous | FileOptions.RandomAccess);
@@ -309,7 +342,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
             Task[] segments = Enumerable.Range(0, count).Select(index => TransferSegmentAsync(
                 source, output.SafeFileHandle, index * segmentSize,
                 Math.Min(length - 1, (index + 1L) * segmentSize - 1),
-                length, connections, limiter, state, filePath, recordBytes, token)
+                length, connections, limiter, state, filePath, recordBytes, timeout, token)
             ).ToArray();
             var transfer = Task.WhenAll(segments);
             try { await transfer.ConfigureAwait(false); }
@@ -330,7 +363,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
             try
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, source);
-                using HttpResponseMessage response = await SendAsync(request, "body", token).ConfigureAwait(false);
+                using HttpResponseMessage response = await SendAsync(request, "body", timeout, token).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) throw HttpFailure(request, response);
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
@@ -338,8 +371,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                     throw new InvalidDataException("服务器未返回完整文件.");
                 }
 
-                await using Stream input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
-                await CopyAsync(input, output, null, limiter, state, filePath, recordBytes, token).ConfigureAwait(false);
+                await CopyAsync(request, response, "body", output, null, limiter, state, filePath, recordBytes, timeout, token).ConfigureAwait(false);
                 if (response.Content.Headers.ContentLength is { } expected && output.Length != expected)
                 {
                     throw new InvalidDataException("下载长度与响应头不符.");
@@ -357,14 +389,14 @@ public sealed partial class DownloadManager : IAsyncDisposable
     private async Task TransferSegmentAsync(
         Uri source, Microsoft.Win32.SafeHandles.SafeFileHandle output, long from, long to, long total,
         SemaphoreSlim connections, SpeedLimiter limiter, DownloadState state, string filePath,
-        Action<int> recordBytes, CancellationToken token)
+        Action<int> recordBytes, TimeSpan timeout, CancellationToken token)
     {
         await connections.WaitAsync(token).ConfigureAwait(false);
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, source);
             request.Headers.Range = new RangeHeaderValue(from, to);
-            using HttpResponseMessage response = await SendAsync(request, "segment", token).ConfigureAwait(false);
+            using HttpResponseMessage response = await SendAsync(request, "segment", timeout, token).ConfigureAwait(false);
             if (response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Forbidden or HttpStatusCode.MethodNotAllowed or HttpStatusCode.RequestedRangeNotSatisfiable)
             {
                 if (response.IsSuccessStatusCode) ReportHttp(request, "segment", response, "Range ignored; using full GET.");
@@ -380,8 +412,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                 throw new RangeUnsupportedException();
             }
 
-            await using Stream input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
-            await CopyAsync(input, null, (output, from, to - from + 1), limiter, state, filePath, recordBytes, token).ConfigureAwait(false);
+            await CopyAsync(request, response, "segment", null, (output, from, to - from + 1), limiter, state, filePath, recordBytes, timeout, token).ConfigureAwait(false);
         }
         finally
         {
@@ -389,10 +420,31 @@ public sealed partial class DownloadManager : IAsyncDisposable
         }
     }
 
-    private static async Task CopyAsync(
-        Stream input, Stream? output,
+    private async Task CopyAsync(
+        HttpRequestMessage request, HttpResponseMessage response, string phase, Stream? output,
         (Microsoft.Win32.SafeHandles.SafeFileHandle Handle, long Offset, long Length)? segment,
-        SpeedLimiter limiter, DownloadState state, string filePath, Action<int> recordBytes, CancellationToken token)
+        SpeedLimiter limiter, DownloadState state, string filePath, Action<int> recordBytes, TimeSpan timeout, CancellationToken token)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(timeout);
+        try
+        {
+            await using Stream input = await response.Content.ReadAsStreamAsync(deadline.Token).ConfigureAwait(false);
+            deadline.CancelAfter(Timeout.InfiniteTimeSpan);
+            await CopyBodyAsync(input, output, segment, limiter, state, filePath, recordBytes, deadline, timeout, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested && deadline.IsCancellationRequested)
+        {
+            const string detail = "HTTP response body read timed out.";
+            ReportHttp(request, phase, response, detail);
+            throw new HttpRequestException(HttpRequestError.Unknown, detail);
+        }
+    }
+
+    private static async Task CopyBodyAsync(Stream input, Stream? output,
+        (Microsoft.Win32.SafeHandles.SafeFileHandle Handle, long Offset, long Length)? segment,
+        SpeedLimiter limiter, DownloadState state, string filePath, Action<int> recordBytes,
+        CancellationTokenSource deadline, TimeSpan timeout, CancellationToken token)
     {
         byte[] buffer = new byte[limiter.BufferSize];
         long copied = 0;
@@ -400,7 +452,9 @@ public sealed partial class DownloadManager : IAsyncDisposable
         {
             int wanted = segment is null ? buffer.Length : (int)Math.Min(buffer.Length, segment.Value.Length - copied);
             await limiter.WaitAsync(wanted, token).ConfigureAwait(false);
-            int read = await input.ReadAsync(buffer.AsMemory(0, wanted), token).ConfigureAwait(false);
+            deadline.CancelAfter(timeout);
+            int read = await input.ReadAsync(buffer.AsMemory(0, wanted), deadline.Token).ConfigureAwait(false);
+            deadline.CancelAfter(Timeout.InfiniteTimeSpan);
             if (read == 0)
             {
                 break;
@@ -440,10 +494,11 @@ public sealed partial class DownloadManager : IAsyncDisposable
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(file.DestinationPath);
             ArgumentNullException.ThrowIfNull(file.Sources);
+            ArgumentNullException.ThrowIfNull(file.ReusablePaths);
             if (!destinations.Add(Path.GetFullPath(file.DestinationPath)) ||
                 file.Sources.Count == 0 ||
                 file.Sources.Any(uri => uri is not { Scheme: "https" or "http" }) ||
-                file.ExpectedSize is < 0 ||
+                file.ReusablePaths.Any(string.IsNullOrWhiteSpace) || file.ExpectedSize is < 0 ||
                 file.ExpectedSha1 is { } hash && (hash.Length != 40 || !hash.All(Uri.IsHexDigit))
                )
             {
@@ -489,6 +544,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
     {
         private readonly object _sync = new();
         private long _bytes;
+        private long _reusedBytes;
         private long _totalBytes = task.Request.Files.Sum(file => file.ExpectedSize ?? 0);
         private int _unknownFiles = task.Request.Files.Count(file => file.ExpectedSize is null);
         private int _completedFiles;
@@ -518,6 +574,8 @@ public sealed partial class DownloadManager : IAsyncDisposable
             Report(DownloadTaskStatus.Running, force: true);
         }
 
+        internal void ReuseBytes(long count) => Interlocked.Add(ref _reusedBytes, count);
+
         internal void CompleteFile(string file)
         {
             Interlocked.Increment(ref _completedFiles);
@@ -545,7 +603,7 @@ public sealed partial class DownloadManager : IAsyncDisposable
                 snapshot = new DownloadProgress(task.Id, task.Request.Name, status,
                     _completedFiles, task.Request.Files.Count, Math.Max(0, Interlocked.Read(ref _bytes)),
                     _unknownFiles == 0 ? _totalBytes : null,
-                    _currentFile);
+                    _currentFile) { BytesReused = Interlocked.Read(ref _reusedBytes) };
             }
 
             ReportSafely(task.Progress, snapshot);

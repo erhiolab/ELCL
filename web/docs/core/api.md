@@ -10,6 +10,7 @@
 
 - [`DownloadManager` 构造方法与 HTTP 诊断](downloader.md#downloadmanager-constructor)
 - [`DownloadManager.Enqueue`](downloader.md#downloadmanager-enqueue)
+- [`DownloadHttpPolicy.ExecuteAsync`](downloader.md#downloadhttppolicy-executeasync)
 - [`DownloadTaskHandle.Cancel`](downloader.md#downloadtaskhandle-cancel)
 - [`DownloadManager.DisposeAsync`](downloader.md#downloadmanager-disposeasync)
 
@@ -26,6 +27,7 @@
 [阅读本篇](java-downloads.md)
 
 - [`JavaDistributionClient.GetMajorVersionsAsync`](java-downloads.md#javadistributionclient-getmajorversionsasync)
+- [`JavaDistributionClient` 构造方法](java-downloads.md#javadistributionclient-constructor)
 - [`JavaDistributionClient.GetVersionsAsync`](java-downloads.md#javadistributionclient-getversionsasync)
 - [`JavaDistributionClient.GetPackageAsync`](java-downloads.md#javadistributionclient-getpackageasync)
 
@@ -66,6 +68,7 @@
 [阅读本篇](loader-installation.md)
 
 - [`MinecraftLoaderInstaller.DefaultVersionName`](loader-installation.md#minecraftloaderinstaller-defaultversionname)
+- [`MinecraftLoaderInstaller` 构造方法](loader-installation.md#minecraftloaderinstaller-constructor)
 - [`MinecraftLoaderInstaller.ValidateSelections`](loader-installation.md#minecraftloaderinstaller-validateselections)
 - [`MinecraftLoaderInstaller.PrepareAsync`](loader-installation.md#minecraftloaderinstaller-prepareasync)
 - [`MinecraftLoaderInstaller.RunProcessorsAsync`](loader-installation.md#minecraftloaderinstaller-runprocessorsasync)
@@ -125,6 +128,7 @@
 [阅读本篇](skins.md)
 
 - [`MinecraftSkinClient.GetActiveSkinAsync`](skins.md#minecraftskinclient-getactiveskinasync)
+- [`MinecraftSkinClient` 构造方法](skins.md#minecraftskinclient-constructor)
 - [`MinecraftSkinClient.GetAppearanceAsync`](skins.md#minecraftskinclient-getappearanceasync)
 - [`MinecraftSkinClient.DownloadSkinAsync`](skins.md#minecraftskinclient-downloadskinasync)
 - [`MinecraftSkinClient.DownloadCapeAsync`](skins.md#minecraftskinclient-downloadcapeasync)

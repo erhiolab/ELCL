@@ -9,11 +9,13 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using ErhioLab.Craft.Launcher.Caching;
+using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Mods;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Tasks;
 
 namespace ErhioLab.Craft.Launcher.Mods;
 
@@ -42,6 +44,7 @@ internal sealed record ModBrowserContext(string? GameVersion, string? Loader, st
 internal static class CommunityMods
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(25) };
+    private static readonly HttpClient IconHttp = new() { Timeout = Timeout.InfiniteTimeSpan };
     private static readonly SemaphoreSlim Enrichment = new(3);
     private static readonly ConcurrentDictionary<string, Task<McModTranslation?>> Translations = new();
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> Images = new();
@@ -198,22 +201,8 @@ internal static class CommunityMods
                 catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { /* 已回收的图标重新下载. */ }
             }
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            request.Headers.UserAgent.ParseAdd("ELCL/" + Core.CoreInfo.Version);
-            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
-            if (response.Content.Headers.ContentLength > 4 * 1024 * 1024) return null;
-            await using var input = await response.Content.ReadAsStreamAsync();
-            using var output = new MemoryStream();
-            byte[] buffer = new byte[16384];
-            int count;
-            while ((count = await input.ReadAsync(buffer)) > 0)
-            {
-                if (output.Length + count > 4 * 1024 * 1024) return null;
-                output.Write(buffer, 0, count);
-            }
-
-            var image = Decode(output.ToArray());
+            byte[]? bytes = await DownloadHttpPolicy.ExecuteAsync(token => FetchIconAsync(uri, token), LauncherDownloadPolicy.Capture());
+            var image = Decode(bytes);
             if (image is BitmapSource bitmap)
             {
                 var encoder = new PngBitmapEncoder();
@@ -234,6 +223,25 @@ internal static class CommunityMods
             App.Logger.Error("Mods", $"Mods 图标暂不可用: {uri.Host}.", error);
             return null;
         }
+    }
+
+    private static async Task<byte[]?> FetchIconAsync(Uri uri, CancellationToken token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        request.Headers.UserAgent.ParseAdd("ELCL/" + Core.CoreInfo.Version);
+        using var response = await IconHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > 4 * 1024 * 1024) return null;
+        await using var input = await response.Content.ReadAsStreamAsync(token);
+        using var output = new MemoryStream();
+        byte[] buffer = new byte[16384];
+        int count;
+        while ((count = await input.ReadAsync(buffer, token)) > 0)
+        {
+            if (output.Length + count > 4 * 1024 * 1024) return null;
+            output.Write(buffer, 0, count);
+        }
+        return output.ToArray();
     }
 
     internal static ImageSource? Decode(byte[]? bytes) => ModIconDecoder.Decode(bytes);

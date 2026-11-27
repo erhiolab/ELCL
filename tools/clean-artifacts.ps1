@@ -70,7 +70,7 @@ function Test-ProtectedPath([string] $Path) {
 }
 
 function Measure-DisposableTree([IO.DirectoryInfo] $Directory, [datetime] $Cutoff) {
-    # 不跟随子目录链接, 发现游戏数据、数据库或非生成源码时整项跳过.
+    # 不跟随子目录链接, 发现游戏数据/数据库或非生成源码时整项跳过.
     $pending = New-Object 'System.Collections.Generic.Stack[IO.DirectoryInfo]'
     $pending.Push($Directory)
     [long] $bytes = 0

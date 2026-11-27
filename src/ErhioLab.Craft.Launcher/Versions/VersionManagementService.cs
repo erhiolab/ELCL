@@ -1,7 +1,6 @@
 using System.IO;
 using System.Windows;
 
-using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Launching;
@@ -122,19 +121,20 @@ internal static class VersionManagementService
         RequireIdle(version);
         if (!version.IsValid) throw new InvalidOperationException(L("versionSettings.invalidVersion"));
         var source = App.Settings.FileDownloadSource == VersionListSource.OfficialFirst ? MinecraftManifestSource.Official : MinecraftManifestSource.Mirror;
-        var options = new DownloadOptions(App.Settings.DownloadMaxConnections, (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        var options = LauncherDownloadPolicy.Capture();
+        MinecraftLaunchVersion? launch = null;
         MinecraftLaunchFilePlan? plan = null;
         string name = Path.GetFileName(version.FolderPath);
         return App.Tasks.Start(string.Format(L("versionSettings.repairTask"), name),
         [
             new LauncherTaskStage(L("gameLaunch.version"), async context =>
             {
-                var launch = await MinecraftLaunchVersion.LoadAsync(gameDirectory, version.JsonPath,
+                launch = await MinecraftLaunchVersion.LoadAsync(gameDirectory, version.JsonPath,
                     (id, token) => Application.Current.Dispatcher.InvokeAsync(() => GameLaunchService.FetchParentAsync(id, source, options, context, token)).Task.Unwrap(), context.CancellationToken);
                 plan = MinecraftLaunchFiles.Plan(launch, source);
                 context.ConfigureStageWeights([1, Math.Max(1, plan.Files.Sum(LauncherTaskContext.EstimatedSize)), 64L * 1024 * 1024]);
             }),
-            new LauncherTaskStage(L("gameLaunch.files"), context => GameLaunchService.VerifyAndDownloadAsync(plan!.Files, options, context, name)),
+            new LauncherTaskStage(L("gameLaunch.files"), context => GameLaunchService.VerifyAndDownloadAsync(plan!.Files, options, context, name, reuseVersion: launch)),
             new LauncherTaskStage(L("gameLaunch.assets"), async context =>
             {
                 string index = await File.ReadAllTextAsync(plan!.AssetIndex.DestinationPath, context.CancellationToken);

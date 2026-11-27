@@ -6,15 +6,16 @@
 
 核心返回版本、下载地址和校验信息，不决定安装目录，也不解压、执行 Java 或保存应用设置。
 
-## `JavaDistributionClient` 构造方法
+## `JavaDistributionClient` 构造方法 {#javadistributionclient-constructor}
 
-传入你自己的 `HttpClient`。连接、代理和超时由调用方管理；核心不会释放它。以下示例共用这段初始化代码。
+传入你自己的 `HttpClient`，可再传入 `DownloadOptions`。构造时不发请求，核心也不会释放客户端。目录、包详情和校验文件的重试和超时由选项决定，省略时为 2 次重试、单次 30 秒。HTTP 客户端本身的超时仍然有效。以下示例共用这段初始化代码。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Java;
+using ErhioLab.Craft.Launcher.Core.Downloads;
 
 using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(35) };
-var client = new JavaDistributionClient(http);
+var client = new JavaDistributionClient(http, new DownloadOptions { MaxRetries = 2 });
 JavaPlatform platform = JavaPlatform.Current;
 CancellationToken cancellationToken = default;
 ```

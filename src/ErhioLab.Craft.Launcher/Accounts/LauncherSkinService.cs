@@ -8,6 +8,7 @@ using System.Windows.Media.Imaging;
 
 using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Accounts;
+using ErhioLab.Craft.Launcher.Tasks;
 
 namespace ErhioLab.Craft.Launcher.Accounts;
 
@@ -18,6 +19,7 @@ internal sealed class LauncherSkinService(LauncherCache cache)
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private static readonly MinecraftSkinClient SkinClient = new(HttpClient);
+    private static readonly HttpClient TextureHttp = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly Dictionary<Guid, SkinAvatar> _avatars = [];
     private readonly HashSet<Guid> _refreshing = [];
     private readonly ConcurrentDictionary<string, Lazy<Task<byte[]>>> _capeRequests = new(StringComparer.OrdinalIgnoreCase);
@@ -73,7 +75,8 @@ internal sealed class LauncherSkinService(LauncherCache cache)
                 var shared = await ReadCapeAsync(path, cape);
                 if (shared is not null) return shared;
                 string legacy = Path.Combine(cache.Capes, uuid.ToString("N"), Path.GetFileName(path));
-                byte[] png = await ReadCapeAsync(legacy, cape) ?? await ReadCapeAsync(path, cape) ?? await SkinClient.DownloadCapeAsync(cape);
+                byte[] png = await ReadCapeAsync(legacy, cape) ?? await ReadCapeAsync(path, cape)
+                    ?? await new MinecraftSkinClient(TextureHttp, LauncherDownloadPolicy.Capture()).DownloadCapeAsync(cape);
                 if (!IsValidCape(png)) throw new InvalidDataException("披风图片尺寸无效.");
                 try { await LauncherCache.WriteAsync(path, png); }
                 catch (Exception error) when (CacheFileTree.IsFileSystemError(error))
@@ -181,7 +184,7 @@ internal sealed class LauncherSkinService(LauncherCache cache)
                 return;
             }
 
-            byte[] bytes = await SkinClient.DownloadSkinAsync(skin);
+            byte[] bytes = await new MinecraftSkinClient(TextureHttp, LauncherDownloadPolicy.Capture()).DownloadSkinAsync(skin);
             await StoreSkinAsync(uuid, bytes);
             App.Logger.Information("Skins", $"已缓存 Microsoft 账户皮肤: {uuid:N}.");
         }

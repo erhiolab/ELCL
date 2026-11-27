@@ -6,10 +6,10 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.SystemTools;
+using ErhioLab.Craft.Launcher.Tasks;
 
 using Microsoft.Win32;
 
@@ -201,8 +201,7 @@ public partial class ToolboxPage
             return;
         }
 
-        DownloadOptions options = new(App.Settings.DownloadMaxConnections,
-            (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        var options = LauncherDownloadPolicy.Capture();
         try
         {
             App.Tasks.StartCustomDownload(destination, url, options);

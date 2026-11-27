@@ -14,7 +14,7 @@ public sealed record MinecraftServerAddress
 
     private MinecraftServerAddress(string host, int port, bool hasExplicitPort) => (Host, Port, HasExplicitPort) = (host, port, hasExplicitPort);
 
-    /// <summary>解析域名、IP、host:port 或带方括号的 IPv6 地址.</summary>
+    /// <summary>解析域名/IP/host:port 或带方括号的 IPv6 地址.</summary>
     public static bool TryParse(string? value, [NotNullWhen(true)] out MinecraftServerAddress? address)
     {
         address = null;

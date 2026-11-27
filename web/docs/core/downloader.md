@@ -50,7 +50,7 @@ var progress = new Progress<DownloadProgress>(value =>
     Console.WriteLine($"{value.Status}：{value.BytesReceived}/{value.TotalBytes}"));
 
 var handle = manager.Enqueue(request,
-    new DownloadOptions(MaxConnections: 8, SpeedLimitBytesPerSecond: 0),
+    new DownloadOptions(MaxConnections: 8) { MaxRetries = 2, HttpTimeoutSeconds = 30 },
     progress, cancellationToken);
 
 DownloadResult result = await handle.Completion;
@@ -63,8 +63,12 @@ DownloadResult result = await handle.Completion;
 | `DownloadTaskRequest.Name`、`Files` | 任务名与文件集合。目标路径不能重复。 |
 | `DownloadFileRequest.DestinationPath`、`Sources` | 目标文件和按优先级排列的候选 URL。 |
 | `ExpectedSize`、`ExpectedSha1` | 可选的长度与 SHA-1，完成后用于校验。 |
+| `ReusablePaths` | 可选，调用方允许复制的本地候选。提供 SHA-1 时才会复用，大小或哈希不符则继续尝试其他候选或联网。 |
 | `DownloadOptions.MaxConnections` | 单个任务共享的连接上限，1～256，默认 8。 |
 | `SpeedLimitBytesPerSecond` | 整个任务的字节／秒速率上限，0 不限制。 |
+| `MaxRetries` | 每个来源首次尝试之外的最大重试次数，0～10，默认 2。 |
+| `HttpTimeoutSeconds` | 等待 HTTP 响应头或下一段数据的时限，1～600 秒，默认 30。限速、排队和磁盘写入不计入网络等待。 |
+| `ForceRedownload` | 默认 `false`。开启后忽略 `ReusablePaths`，从网络下载。 |
 | `progress`、`cancellationToken` | 可选，状态回调和取消令牌。 |
 
 各文件共享连接预算；当前单任务最多并行 32 个文件，单个文件最多 4 段。单连接和已知不超过 2 MiB 的文件直接发送普通 GET。来源拒绝探测或不支持分段时，尝试用普通 GET 下载完整文件。
@@ -72,6 +76,23 @@ DownloadResult result = await handle.Completion;
 普通 GET 返回 403、404 等不可重试状态时，直接尝试下一来源。连接错误、429 或部分 5xx 状态有限重试；429 和 503 会遵守有效的 `Retry-After`，若要求等待超过 30 秒，本次跳过该来源。所有来源失败时抛出包含各来源错误的 `AggregateException`。
 
 文件先写临时文件，校验后替换目标；取消或失败不会撤销已完成的其他文件。不会自动跳过已有文件，需要时先用[完整性检查](vanilla-installation.md#minecraftvanilladownloadplanner-missingfilesasync)。
+
+`HttpClient` 自身的超时仍然有效，若要完全由任务选项控制，可在初始化客户端时设置 `Timeout = Timeout.InfiniteTimeSpan`。
+
+## `DownloadHttpPolicy.ExecuteAsync` {#downloadhttppolicy-executeasync}
+
+执行不进入文件队列的短 HTTP 下载。传入可重复执行的异步操作、`DownloadOptions` 和可选取消令牌；每次尝试都会给操作传入新的令牌。针对一个来源执行，不自动换源，不应用文件限速或本地复用。超时按每次操作的总时长计算，适合小文件，不用于持续传输的大包。
+
+```csharp
+using ErhioLab.Craft.Launcher.Core.Downloads;
+
+using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+byte[] data = await DownloadHttpPolicy.ExecuteAsync(
+    token => http.GetByteArrayAsync(new Uri("https://example.com/index.json"), token),
+    new DownloadOptions { MaxRetries = 1, HttpTimeoutSeconds = 10 });
+```
+
+返回操作的结果。耗尽重试后抛出最后一次异常，超时以 `HttpRequestException` 报告。参数越界抛出 `ArgumentOutOfRangeException`；调用方取消时不重试。每次尝试都可能发出网络请求，不用于重复提交会改变服务端状态的操作。
 
 ## `DownloadTaskHandle.Cancel` {#downloadtaskhandle-cancel}
 
@@ -97,6 +118,7 @@ await manager.DisposeAsync();
 | `CompletedFiles`、`TotalFiles` | 已完成与总文件数。 |
 | `BytesReceived`、`TotalBytes` | 本次累计字节与总大小；长度无法确定时总大小为空。 |
 | `CurrentFile` | 最近报告进度的文件，不代表只下载这一项。 |
+| `BytesReused` | 从验证通过的本地文件复制的字节数。计算完成度可与 `BytesReceived` 相加，网络速度只使用 `BytesReceived`。 |
 
 切换来源或重试时字节值可能回退；不要把它当成永久递增的已安装容量。实时速度可由相邻采样的字节差与时间差计算，核心没有速度字段。
 

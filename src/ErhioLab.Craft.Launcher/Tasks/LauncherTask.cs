@@ -175,12 +175,12 @@ internal sealed class LauncherTaskContext(LauncherTask task, LauncherTaskStage s
         task.RemainingFiles = Math.Max(0, progress.TotalFiles - progress.CompletedFiles);
         if (_plannedTotalBytes > 0)
         {
-            stage.Progress = Math.Clamp((_alreadyCompleteBytes + progress.BytesReceived) * 100.0 / _plannedTotalBytes, 0, 99.9);
+            stage.Progress = Math.Clamp((_alreadyCompleteBytes + progress.BytesReceived + progress.BytesReused) * 100.0 / _plannedTotalBytes, 0, 99.9);
             task.RefreshProgress();
         }
         else if (progress.TotalBytes is > 0 and var total)
         {
-            stage.Progress = Math.Clamp(progress.BytesReceived * 100.0 / total, 0, 99.9);
+            stage.Progress = Math.Clamp((progress.BytesReceived + progress.BytesReused) * 100.0 / total, 0, 99.9);
             task.RefreshProgress();
         }
 

@@ -23,7 +23,7 @@ internal sealed class LauncherTaskManager
     private static readonly HttpClient InstallerHttp = new(new HttpClientHandler
     {
         SslProtocols = System.Security.Authentication.SslProtocols.Tls12
-    }) { Timeout = TimeSpan.FromSeconds(35) };
+    }) { Timeout = Timeout.InfiniteTimeSpan };
     static LauncherTaskManager() => InstallerHttp.DefaultRequestHeaders.UserAgent.ParseAdd("ELCL/" + Core.CoreInfo.Version);
 
     public ObservableCollection<LauncherTask> Tasks { get; } = [];
@@ -62,7 +62,7 @@ internal sealed class LauncherTaskManager
         bool folderCreated = false;
         bool clientAdded = false;
         bool versionWritten = false;
-        var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp);
+        var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp, options);
         string workDirectory = LauncherCache.Shared.Workspace("loader-install");
         DownloadOptions downloadOptions = options;
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> execute) =>
@@ -105,6 +105,8 @@ internal sealed class LauncherTaskManager
                 bool clientExisted = File.Exists(clientPath);
                 DownloadFileRequest[] allFiles = [plan!.Client];
                 IReadOnlyList<DownloadFileRequest> files = await MinecraftVanillaDownloadPlanner.MissingFilesAsync(allFiles, context.CancellationToken);
+                if (files.Count > 0)
+                    files = [await LauncherDownloadPolicy.FindClientCandidatesAsync(plan.Client, gameDirectory, version.Id, options, context.CancellationToken)];
                 context.ConfigureDownloadPlan(allFiles, files);
                 if (files.Count > 0) await context.DownloadAsync(new DownloadTaskRequest(installedName, files), downloadOptions);
                 clientAdded = !clientExisted && files.Count > 0;

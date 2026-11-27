@@ -4,7 +4,7 @@
 
 支持 Forge、NeoForge、Fabric、Quilt、LiteLoader 与 OptiFine。安装分为准备计划、下载依赖、执行处理器、写入版本四步，不能只写完 JSON 就宣布成功。
 
-## 示例准备
+## `MinecraftLoaderInstaller` 构造方法 {#minecraftloaderinstaller-constructor}
 
 先按[原版安装计划](vanilla-installation.md)准备原版 JSON 和客户端 JAR。推荐把 JSON 放进工作目录，JAR 直接下载到最终安装名目录，避免额外留一个原版实例。
 
@@ -18,7 +18,8 @@ using ErhioLab.Craft.Launcher.Core.Minecraft;
 
 using var http = new HttpClient();
 await using var downloads = new DownloadManager(http);
-var installer = new MinecraftLoaderInstaller(http);
+var options = new DownloadOptions { MaxRetries = 2, HttpTimeoutSeconds = 30 };
+var installer = new MinecraftLoaderInstaller(http, options);
 CancellationToken cancellationToken = default;
 string gameDirectory = Path.GetFullPath(".minecraft");
 string workDirectory = Path.GetFullPath("work/loader-install");
@@ -32,6 +33,8 @@ var selections = new[]
     new MinecraftLoaderSelection(MinecraftLoaderKind.NeoForge, catalog.Versions.First())
 };
 ```
+
+构造方法只保留调用方的 HTTP 客户端及选项，不发出请求，也不接管客户端生命周期。省略选项时，加载器元数据请求默认最多重试 1 次、单次 30 秒。选项影响安装元数据下载和文件地址解析；安装包与依赖由 `download` 回调按自己的选项提交。
 
 ## `MinecraftLoaderInstaller.DefaultVersionName` {#minecraftloaderinstaller-defaultversionname}
 
@@ -66,7 +69,7 @@ async Task DownloadFiles(IReadOnlyList<DownloadFileRequest> files, CancellationT
     var missing = await MinecraftVanillaDownloadPlanner.MissingFilesAsync(unique, token);
     if (missing.Count > 0)
         await downloads.Enqueue(new DownloadTaskRequest(name, missing),
-            new DownloadOptions(8), cancellationToken: token).Completion;
+            options, cancellationToken: token).Completion;
 }
 
 var plan = await installer.PrepareAsync("1.21.1", name, selections,

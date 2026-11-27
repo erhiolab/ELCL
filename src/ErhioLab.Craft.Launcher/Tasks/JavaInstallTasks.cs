@@ -12,7 +12,7 @@ namespace ErhioLab.Craft.Launcher.Tasks;
 /// <summary>由任务管理器组织 Java 下载/校验/解压/登记, 安装内容只写入本次创建的目录.</summary>
 internal sealed class JavaInstallTasks
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(35) };
+    private static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly JavaDownloadVersion _version;
     private readonly string _work;
     private readonly string _runtime;
@@ -47,7 +47,7 @@ internal sealed class JavaInstallTasks
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> execute) => new(L(key), execute) { LocalizedName = () => L(key) };
         var task = App.Tasks.Start(string.Format(L("javaDownload.task"), version.Distribution, version.Version),
         [
-            Stage("javaDownload.prepare", operation.PrepareAsync),
+            Stage("javaDownload.prepare", context => operation.PrepareAsync(options, context)),
             Stage("javaDownload.downloadFiles", context => context.DownloadAsync(new DownloadTaskRequest(version.Name, operation._files), options)),
             Stage("javaDownload.deploy", operation.DeployAsync),
             Stage("javaDownload.verify", operation.VerifyAndRegisterAsync)
@@ -57,9 +57,9 @@ internal sealed class JavaInstallTasks
         return task;
     }
 
-    private async Task PrepareAsync(LauncherTaskContext context)
+    private async Task PrepareAsync(DownloadOptions options, LauncherTaskContext context)
     {
-        var package = await new JavaDistributionClient(Http).GetPackageAsync(_version, context.CancellationToken);
+        var package = await new JavaDistributionClient(Http, options).GetPackageAsync(_version, context.CancellationToken);
         _package = package;
         Directory.CreateDirectory(_runtime);
         if (_version.Format == JavaDownloadFormat.Manifest)

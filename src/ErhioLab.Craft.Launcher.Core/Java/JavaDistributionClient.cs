@@ -4,11 +4,16 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
+using ErhioLab.Craft.Launcher.Core.Downloads;
+
 namespace ErhioLab.Craft.Launcher.Core.Java;
 
 /// <summary>查询 Java 发行方.</summary>
-public sealed partial class JavaDistributionClient(HttpClient httpClient)
+public sealed partial class JavaDistributionClient(HttpClient httpClient, DownloadOptions downloadOptions)
 {
+    /// <summary>使用默认的 Java 发行方元数据下载策略.</summary>
+    public JavaDistributionClient(HttpClient httpClient) : this(httpClient, new DownloadOptions()) { }
+
     private readonly HttpClient _http = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     private const string MojangCatalog = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
     private const string AzulPackages = "https://api.azul.com/metadata/v1/zulu/packages/";
@@ -140,30 +145,15 @@ public sealed partial class JavaDistributionClient(HttpClient httpClient)
 
     private async Task<JsonDocument> JsonAsync(string url, CancellationToken token) => JsonDocument.Parse(await BytesAsync(new Uri(url), token).ConfigureAwait(false));
 
-    private async Task<byte[]> BytesAsync(Uri url, CancellationToken token)
-    {
-        for (int attempt = 0;; attempt++)
-        {
-            try
-            {
-                return await ReadBytesAsync(url, token).ConfigureAwait(false);
-            }
-            catch (Exception error) when (attempt < 2 && !token.IsCancellationRequested && IsTransient(error))
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(250 * (attempt + 1)), token).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private static bool IsTransient(Exception error) => error is IOException or TaskCanceledException
-                                                        || error is HttpRequestException request && (request.StatusCode is null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests || (int)request.StatusCode >= 500);
+    private Task<byte[]> BytesAsync(Uri url, CancellationToken token) =>
+        DownloadHttpPolicy.ExecuteAsync(cancellation => ReadBytesAsync(url, cancellation), downloadOptions, token);
 
     private async Task<byte[]> ReadBytesAsync(Uri url, CancellationToken token)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         if (_http.DefaultRequestHeaders.UserAgent.Count == 0) request.Headers.UserAgent.ParseAdd("ELCLC/" + CoreInfo.Version);
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode) throw DownloadHttpPolicy.HttpFailure(request, response);
         const int maximum = 32 * 1024 * 1024;
         if (response.Content.Headers.ContentLength > maximum) throw new InvalidDataException("Java 元数据过大.");
         await using var input = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);

@@ -56,7 +56,7 @@ public partial class App
     private static LauncherSkinService? _skinService;
     private static AnalyticsEvents? _analytics;
     private readonly CancellationTokenSource _cacheMaintenance = new();
-    private static readonly HttpClient DownloadHttpClient = new();
+    private static readonly HttpClient DownloadHttpClient = new() { Timeout = Timeout.InfiniteTimeSpan };
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient, diagnostic =>
     {
         string headers = string.Join(", ", diagnostic.ResponseHeaders.Select(header => $"{header.Key}={header.Value}"));

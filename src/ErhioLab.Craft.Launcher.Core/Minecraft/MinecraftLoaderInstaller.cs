@@ -9,8 +9,11 @@ using ErhioLab.Craft.Launcher.Core.Downloads;
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 
 /// <summary>安装加载器; 网络/下载队列/工作目录和 Java 进程均由调用方提供.</summary>
-public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient)
+public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient, DownloadOptions downloadOptions)
 {
+    /// <summary>使用默认的加载器元数据下载策略.</summary>
+    public MinecraftLoaderInstaller(HttpClient httpClient) : this(httpClient, new DownloadOptions { MaxRetries = 1 }) { }
+
     private const string Mirror = "https://bmclapi2.bangbang93.com/";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -166,7 +169,9 @@ public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient)
         string official = "https://dl.liteloader.com/versions/" + relative;
         try
         {
-            official = await ResolveLiteLoaderArtifactAsync(new Uri(official), token).ConfigureAwait(false);
+            Uri initialUri = new(official);
+            official = await DownloadHttpPolicy.ExecuteAsync(cancellation => ResolveLiteLoaderArtifactAsync(initialUri, cancellation),
+                downloadOptions, token).ConfigureAwait(false);
             plan.Log?.Invoke("LiteLoader 官方文件地址: " + official);
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException && !token.IsCancellationRequested)
@@ -210,7 +215,7 @@ public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient)
                 continue;
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode) throw DownloadHttpPolicy.HttpFailure(request, response);
             return current.AbsoluteUri;
         }
 
@@ -281,20 +286,21 @@ public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient)
         var failures = new List<Exception>();
         foreach (var uri in Ordered(official, mirror, source).Distinct())
         {
-            for (int attempt = 0; attempt < 2; attempt++)
+            try
             {
-                try
+                return await DownloadHttpPolicy.ExecuteAsync(async cancellation =>
                 {
-                    string json = await httpClient.GetStringAsync(uri, token).ConfigureAwait(false);
+                    using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                    using var response = await httpClient.SendAsync(request, cancellation).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode) throw DownloadHttpPolicy.HttpFailure(request, response);
+                    string json = await response.Content.ReadAsStringAsync(cancellation).ConfigureAwait(false);
                     using var document = JsonDocument.Parse(json);
                     return json;
-                }
-                catch (Exception error) when (error is HttpRequestException or TaskCanceledException or JsonException && !token.IsCancellationRequested)
-                {
-                    failures.Add(new HttpRequestException("安装元数据来源失败: " + uri, error));
-                    if (error is HttpRequestException { StatusCode: HttpStatusCode.NotFound }) break;
-                    if (attempt == 0) await Task.Delay(250, token).ConfigureAwait(false);
-                }
+                }, downloadOptions, token).ConfigureAwait(false);
+            }
+            catch (Exception error) when (error is HttpRequestException or IOException or JsonException && !token.IsCancellationRequested)
+            {
+                failures.Add(new HttpRequestException("安装元数据来源失败: " + uri, error));
             }
         }
 

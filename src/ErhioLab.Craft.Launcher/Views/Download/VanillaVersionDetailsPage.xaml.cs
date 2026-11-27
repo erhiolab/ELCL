@@ -10,10 +10,10 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
-using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Tasks;
 
 namespace ErhioLab.Craft.Launcher.Views.Download;
 
@@ -419,8 +419,7 @@ public partial class VanillaVersionDetailsPage
         {
             MinecraftManifestSource preferred = App.Settings.FileDownloadSource == VersionListSource.MirrorFirst
                 ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
-            DownloadOptions options = new(App.Settings.DownloadMaxConnections,
-                (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+            var options = LauncherDownloadPolicy.Capture();
             var loaders = SelectedLoaders();
             App.Tasks.StartMinecraftInstall(_version, name, gameDirectory, preferred, options, loaders);
             App.Logger.Information("Download", $"已创建游戏安装任务: {_version.Id} -> {name}, 加载器={string.Join(",", loaders.Select(loader => loader.Kind + ":" + loader.Version.Version))}, 游戏目录: {gameDirectory}.");

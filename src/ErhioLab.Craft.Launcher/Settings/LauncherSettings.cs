@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Settings;
@@ -51,6 +52,9 @@ public sealed record LauncherSettings
 
     /// <summary>下载任务的速度上限, 单位为 MiB/s; 0 表示不限速.</summary>
     public double DownloadSpeedLimitMiBPerSecond { get; init; }
+    public int DownloadMaxRetries { get; init; } = DownloadOptions.DefaultMaxRetries;
+    public int DownloadHttpTimeoutSeconds { get; init; } = DownloadOptions.DefaultHttpTimeoutSeconds;
+    public bool ForceRedownload { get; init; }
 
     /// <summary>游戏进程优先级.</summary>
     public GameProcessPriority GamePriority { get; init; } = GameProcessPriority.Normal;
@@ -149,6 +153,8 @@ public sealed record LauncherSettings
             ModListPresentation = Enum.IsDefined(ModListPresentation) ? ModListPresentation : ModListPresentation.NameFirst,
             DownloadMaxConnections = Math.Clamp(DownloadMaxConnections, 1, 256),
             DownloadSpeedLimitMiBPerSecond = double.IsFinite(DownloadSpeedLimitMiBPerSecond) ? Math.Clamp(DownloadSpeedLimitMiBPerSecond, 0, 1024) : 0,
+            DownloadMaxRetries = Math.Clamp(DownloadMaxRetries, 0, DownloadOptions.MaximumRetries),
+            DownloadHttpTimeoutSeconds = Math.Clamp(DownloadHttpTimeoutSeconds, 1, DownloadOptions.MaximumHttpTimeoutSeconds),
             GamePriority = Enum.IsDefined(GamePriority) ? GamePriority : GameProcessPriority.Normal,
             WindowMode = Enum.IsDefined(WindowMode) ? WindowMode : GameWindowMode.Default,
             GameWindowWidth = Math.Clamp(GameWindowWidth, 1, 16384),

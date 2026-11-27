@@ -4,21 +4,24 @@
 
 读取官方玩家档案，下载原始 PNG，或修改这个账户的外观。不生成头像或三维模型，不决定缓存目录。
 
-## 创建 `MinecraftSkinClient`
+## 创建 `MinecraftSkinClient` {#minecraftskinclient-constructor}
 
 以下示例共用 HTTP 客户端和有效的 Minecraft 访问令牌，不是 Microsoft 刷新令牌。
 
 ```csharp
 using ErhioLab.Craft.Launcher.Core.Accounts;
+using ErhioLab.Craft.Launcher.Core.Downloads;
 
 using var http = new HttpClient();
-var client = new MinecraftSkinClient(http);
+var client = new MinecraftSkinClient(http, new DownloadOptions { HttpTimeoutSeconds = 20 });
 string accessToken = Environment.GetEnvironmentVariable("MY_MINECRAFT_TOKEN")
     ?? throw new InvalidOperationException("请先通过登录 API 获取有效会话。");
 CancellationToken cancellationToken = default;
 ```
 
 生产应用通常从自己保存的[登录会话](microsoft-auth.md)读取令牌，示例环境变量不是核心约定。
+
+构造方法不会发出请求或释放传入的客户端。可选的 `DownloadOptions` 只作用于皮肤和披风 PNG 下载，不改变档案查询、皮肤上传或披风切换。省略选项时，每个下载默认最多重试 2 次、单次 30 秒。
 
 ## `MinecraftSkinClient.GetActiveSkinAsync` {#minecraftskinclient-getactiveskinasync}
 

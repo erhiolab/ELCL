@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 
-using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Java;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
@@ -18,8 +17,8 @@ namespace ErhioLab.Craft.Launcher.Views.Download;
 
 public partial class JavaDownloadPage
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(35) };
-    private readonly JavaDistributionClient _client = new(Http);
+    private static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan };
+    private static JavaDistributionClient Client => new(Http, LauncherDownloadPolicy.Capture());
     private readonly JavaPlatform _platform = JavaPlatform.Current;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly ObservableCollection<JavaDownloadRow> _rows = [];
@@ -85,7 +84,7 @@ public partial class JavaDownloadPage
             {
                 try
                 {
-                    var majors = await _client.GetMajorVersionsAsync(provider.Distribution, _platform, _lifetime.Token);
+                    var majors = await Client.GetMajorVersionsAsync(provider.Distribution, _platform, _lifetime.Token);
                     provider.Majors = majors;
                     provider.Failed = false;
                     App.Logger.Information("Java", $"Java 主版本目录获取完成: {provider.Distribution}, {majors.Count} 项.");
@@ -177,7 +176,7 @@ public partial class JavaDownloadPage
 
             int requestedPage = append ? _page + 1 : 0;
             App.Logger.Information("Java", $"获取 Java 版本: {provider.Distribution}, Java {major.Major}, 页={requestedPage}, 设备={_platform}.");
-            var result = await _client.GetVersionsAsync(provider.Distribution, major.Major, _platform, requestedPage, 10, cancellation.Token);
+            var result = await Client.GetVersionsAsync(provider.Distribution, major.Major, _platform, requestedPage, 10, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             var keys = _rows.Select(row => row.Version.DownloadUri).ToHashSet();
             foreach (var version in result.Versions)
@@ -227,8 +226,7 @@ public partial class JavaDownloadPage
         _lastDirectory = dialog.FolderName;
         try
         {
-            JavaInstallTasks.Start(row.Version, dialog.FolderName, new DownloadOptions(App.Settings.DownloadMaxConnections,
-                (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024)));
+            JavaInstallTasks.Start(row.Version, dialog.FolderName, LauncherDownloadPolicy.Capture());
             LauncherToasts.Information(L("javaDownload.taskCreated"));
         }
         catch (Exception error)

@@ -47,7 +47,7 @@ internal static class CommunityArchiveTasks
         if (App.Tasks.Tasks.Any(task => task.IsActive && string.Equals(task.TargetPath, destination, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException(CommunityResourceCatalog.L("downloadBusy"));
         string temporary = Path.Combine(Path.GetDirectoryName(destination)!, ".elcl-resource-" + Guid.NewGuid().ToString("N"));
-        var options = new DownloadOptions(App.Settings.DownloadMaxConnections, (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        var options = LauncherDownloadPolicy.Capture();
         var source = CommunityMods.Source;
         string Title() => string.Format(CommunityResourceCatalog.L("task"), project.Name);
         string StageName() => CommunityResourceCatalog.L("downloadArchive");

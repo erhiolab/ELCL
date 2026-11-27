@@ -7,14 +7,15 @@ namespace ErhioLab.Craft.Launcher.Core.Downloads;
 
 public sealed partial class DownloadManager
 {
-    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
     private readonly Action<DownloadHttpDiagnostic>? _httpDiagnostic;
 
-    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, string phase, CancellationToken token)
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, string phase, TimeSpan timeout, CancellationToken token)
     {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(timeout);
         try
         {
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) ReportHttp(request, phase, response, null);
             return response;
         }
@@ -70,31 +71,4 @@ public sealed partial class DownloadManager
 
     private static bool IsByteRange(ContentRangeHeaderValue? range) => string.Equals(range?.Unit, "bytes", StringComparison.OrdinalIgnoreCase);
 
-    private static bool IsBackoffStatus(HttpStatusCode status) => status is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable;
-
-    private static DownloadHttpException HttpFailure(HttpRequestMessage request, HttpResponseMessage response)
-    {
-        var retry = response.Headers.RetryAfter;
-        TimeSpan? delay = retry?.Delta ?? (retry?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
-        return new DownloadHttpException($"{request.Method} HTTP {(int)response.StatusCode} ({response.StatusCode}).", response.StatusCode, delay);
-    }
-
-    private static TimeSpan? RetryDelay(Exception error, int attempt)
-    {
-        if (!IsTransient(error)) return null;
-        TimeSpan fallback = TimeSpan.FromMilliseconds((error is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests } ? 1000 : 600) * (attempt + 1));
-        if (error is DownloadHttpException { StatusCode: { } status, RetryAfter: { } hint } && IsBackoffStatus(status))
-        {
-            // 过长的等待交给下一来源, 而不是在 Retry-After 到期前重试.
-            if (hint > MaxRetryDelay) return null;
-            if (hint > fallback) return hint;
-        }
-
-        return fallback;
-    }
-
-    private sealed class DownloadHttpException(string message, HttpStatusCode status, TimeSpan? retryAfter) : HttpRequestException(message, null, status)
-    {
-        internal TimeSpan? RetryAfter { get; } = retryAfter;
-    }
 }

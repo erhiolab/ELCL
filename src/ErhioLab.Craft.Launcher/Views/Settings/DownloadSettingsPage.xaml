@@ -176,6 +176,68 @@
             </controls:LauncherCard>
             <controls:LauncherCard
                 Margin="{StaticResource FormSectionSpacing}"
+                Header="{DynamicResource I18n.downloadSettings.policy}">
+                <StackPanel>
+                    <Grid
+                        Style="{StaticResource FormSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.downloadSettings.retryLimit}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.retryLimitHint}" />
+                        <TextBox
+                            x:Name="RetryLimitBox"
+                            Grid.Column="1"
+                            AutomationProperties.Name="{DynamicResource I18n.downloadSettings.retryLimit}"
+                            MaxLength="2"
+                            Style="{StaticResource FormTextBoxStyle}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.retryLimitHint}"
+                            PreviewTextInput="IntegerBox_PreviewTextInput"
+                            DataObject.Pasting="IntegerBox_Pasting"
+                            LostFocus="DownloadValueBox_LostFocus"
+                            KeyDown="DownloadValueBox_KeyDown" />
+                    </Grid>
+                    <Grid
+                        Style="{StaticResource FormFollowingSettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                Width="155" />
+                            <ColumnDefinition
+                                Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{DynamicResource I18n.downloadSettings.httpTimeout}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.httpTimeoutHint}" />
+                        <TextBox
+                            x:Name="HttpTimeoutBox"
+                            Grid.Column="1"
+                            AutomationProperties.Name="{DynamicResource I18n.downloadSettings.httpTimeout}"
+                            MaxLength="3"
+                            Style="{StaticResource FormTextBoxStyle}"
+                            ToolTip="{DynamicResource I18n.downloadSettings.httpTimeoutHint}"
+                            PreviewTextInput="IntegerBox_PreviewTextInput"
+                            DataObject.Pasting="IntegerBox_Pasting"
+                            LostFocus="DownloadValueBox_LostFocus"
+                            KeyDown="DownloadValueBox_KeyDown" />
+                    </Grid>
+                    <CheckBox
+                        x:Name="ForceRedownloadBox"
+                        Margin="{StaticResource FormSectionSpacing}"
+                        Content="{DynamicResource I18n.downloadSettings.forceRedownload}"
+                        Style="{StaticResource FormCheckBoxStyle}"
+                        ToolTip="{DynamicResource I18n.downloadSettings.forceRedownloadHint}"
+                        Checked="ForceRedownloadBox_Changed"
+                        Unchecked="ForceRedownloadBox_Changed" />
+                </StackPanel>
+            </controls:LauncherCard>
+            <controls:LauncherCard
+                Margin="{StaticResource FormSectionSpacing}"
                 Header="{DynamicResource I18n.mods.communitySettings}">
                 <StackPanel>
                     <Grid

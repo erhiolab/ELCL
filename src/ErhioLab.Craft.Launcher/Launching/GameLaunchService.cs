@@ -129,7 +129,7 @@ internal sealed class GameLaunchService
         string? exportRuntime = exportPath is null ? null : Path.Combine(versionDirectory, "ELCL", "export-runtime", runId);
         List<LauncherCache.RuntimeCacheLease> runtimeLeases = [];
         MinecraftManifestSource source = settings.FileDownloadSource == VersionListSource.OfficialFirst ? MinecraftManifestSource.Official : MinecraftManifestSource.Mirror;
-        DownloadOptions downloads = new(settings.DownloadMaxConnections, (long)(settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        DownloadOptions downloads = LauncherDownloadPolicy.Capture(settings);
         MinecraftLaunchVersion? version = null;
         MinecraftLaunchFilePlan? files = null;
         MinecraftLaunchOptions? options = null;
@@ -231,7 +231,7 @@ internal sealed class GameLaunchService
                 {
                     var environment = MinecraftLaunchEnvironment.Current with { Architecture = JavaArchitecture(java!) };
                     files = MinecraftLaunchFiles.Plan(version!, source, environment);
-                    await VerifyAndDownloadAsync(files.Files, downloads, task, name, settings.SkipFileVerification);
+                    await VerifyAndDownloadAsync(files.Files, downloads, task, name, settings.SkipFileVerification, version);
                 }),
                 Stage("gameLaunch.assets", async task =>
                 {
@@ -438,11 +438,18 @@ internal sealed class GameLaunchService
     }
 
     internal static async Task VerifyAndDownloadAsync(IReadOnlyList<DownloadFileRequest> all, DownloadOptions options,
-        LauncherTaskContext task, string name, bool skipVerification = false)
+        LauncherTaskContext task, string name, bool skipVerification = false, MinecraftLaunchVersion? reuseVersion = null)
     {
         var missing = await FindRequiredDownloadsAsync(all, skipVerification, task.CancellationToken);
         if (missing.FirstOrDefault(file => file.Sources.Count == 0) is { } local)
             throw new FileNotFoundException(string.Format(L("gameLaunch.localLibraryMissing"), local.DestinationPath));
+        if (reuseVersion is not null && !options.ForceRedownload
+            && missing.FirstOrDefault(file => string.Equals(file.DestinationPath, reuseVersion.ClientJarPath, StringComparison.OrdinalIgnoreCase)) is { } client)
+        {
+            var reusable = await LauncherDownloadPolicy.FindClientCandidatesAsync(client, reuseVersion.GameDirectory,
+                reuseVersion.GameVersion, options, task.CancellationToken);
+            missing = missing.Select(file => ReferenceEquals(file, client) ? reusable : file).ToArray();
+        }
         task.ConfigureDownloadPlan(all, missing, preserveStageWeight: true);
         App.Logger.Information("Launch", $"文件检查完成: 跳过已有文件校验={skipVerification}, 总数={all.Count}, 需补全={missing.Count}.");
         if (missing.Count > 0) await task.DownloadAsync(new DownloadTaskRequest(name, missing), options);

@@ -38,7 +38,7 @@ internal static class ModpackInstallTasks
         LauncherSettings settings = App.Settings;
         var source = settings.FileDownloadSource == VersionListSource.MirrorFirst ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
         var community = settings.CommunityDownloadSource == VersionListSource.MirrorFirst ? CommunitySource.MirrorFirst : CommunitySource.OfficialFirst;
-        var options = new DownloadOptions(settings.DownloadMaxConnections, (long)(settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        var options = LauncherDownloadPolicy.Capture(settings);
         IReadOnlyList<ModpackDownload> downloads = [];
         MinecraftInstallOperation? operation = null;
         bool ownsDirectory = false;

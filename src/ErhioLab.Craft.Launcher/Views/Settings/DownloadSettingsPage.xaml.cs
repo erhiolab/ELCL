@@ -3,13 +3,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
+using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Localization;
 
 namespace ErhioLab.Craft.Launcher.Views.Settings;
 
-/// <summary>保存版本来源/连接数与速度上限的下载设置页面.</summary>
+/// <summary>保存下载来源/传输策略及社区资源的设置页面.</summary>
 public partial class DownloadSettingsPage
 {
     private bool _initializing = true;
@@ -33,7 +34,10 @@ public partial class DownloadSettingsPage
                 ModFileNameFormat = ModFileNameFormat.Original,
                 DownloadMaxConnections = 8,
                 ZeroDownloadThreadsEggShown = false,
-                DownloadSpeedLimitMiBPerSecond = 0
+                DownloadSpeedLimitMiBPerSecond = 0,
+                DownloadMaxRetries = DownloadOptions.DefaultMaxRetries,
+                DownloadHttpTimeoutSeconds = DownloadOptions.DefaultHttpTimeoutSeconds,
+                ForceRedownload = false
             }))
         {
             _zeroThreadEasterEggShown = false;
@@ -56,6 +60,9 @@ public partial class DownloadSettingsPage
         ThreadCountSlider.Value = App.Settings.DownloadMaxConnections;
         ThreadCountText.Text = App.Settings.DownloadMaxConnections.ToString(CultureInfo.InvariantCulture);
         SpeedLimitBox.Text = App.Settings.DownloadSpeedLimitMiBPerSecond.ToString("0.##", CultureInfo.InvariantCulture);
+        RetryLimitBox.Text = App.Settings.DownloadMaxRetries.ToString(CultureInfo.InvariantCulture);
+        HttpTimeoutBox.Text = App.Settings.DownloadHttpTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
+        ForceRedownloadBox.IsChecked = App.Settings.ForceRedownload;
         _initializing = false;
     }
 
@@ -105,9 +112,10 @@ public partial class DownloadSettingsPage
 
     private void DownloadValueBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter)
+        if (e.Key == Key.Enter && sender is TextBox box)
         {
-            Keyboard.ClearFocus();
+            ApplyDownloadValue(box);
+            e.Handled = true;
         }
     }
 
@@ -158,16 +166,38 @@ public partial class DownloadSettingsPage
 
     private void DownloadValueBox_LostFocus(object sender, RoutedEventArgs e)
     {
-        if (_initializing)
-        {
-            return;
-        }
+        if (sender is TextBox box) ApplyDownloadValue(box);
+    }
 
-        if (ReferenceEquals(sender, SpeedLimitBox) && (double.TryParse(SpeedLimitBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double speed) || double.TryParse(SpeedLimitBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out speed)))
-        {
-            App.UpdateSettings(App.Settings with { DownloadSpeedLimitMiBPerSecond = speed });
-        }
+    private void ApplyDownloadValue(TextBox box)
+    {
+        if (_initializing) return;
+        var current = App.Settings;
+        var settings = current;
+        if (ReferenceEquals(box, SpeedLimitBox)
+            && (double.TryParse(box.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double speed)
+                || double.TryParse(box.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out speed)))
+            settings = current with { DownloadSpeedLimitMiBPerSecond = speed };
+        else if (int.TryParse(box.Text, NumberStyles.None, CultureInfo.InvariantCulture, out int value))
+            settings = ReferenceEquals(box, RetryLimitBox)
+                ? current with { DownloadMaxRetries = value }
+                : ReferenceEquals(box, HttpTimeoutBox) ? current with { DownloadHttpTimeoutSeconds = value } : current;
 
+        if (settings != current) App.UpdateSettings(settings);
         RefreshControls();
+    }
+
+    private void IntegerBox_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
+        e.Handled = !e.Text.All(char.IsAsciiDigit);
+
+    private void IntegerBox_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !text.All(char.IsAsciiDigit)) e.CancelCommand();
+    }
+
+    private void ForceRedownloadBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        if (!App.UpdateSettings(App.Settings with { ForceRedownload = ForceRedownloadBox.IsChecked == true })) RefreshControls();
     }
 }

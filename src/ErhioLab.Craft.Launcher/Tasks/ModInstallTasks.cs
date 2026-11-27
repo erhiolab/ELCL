@@ -20,7 +20,7 @@ internal static class ModInstallTasks
         List<DownloadFileRequest> files = [];
         Dictionary<string, ModFile> downloads = [];
         var source = CommunityMods.Source;
-        var options = new DownloadOptions(App.Settings.DownloadMaxConnections, (long)(App.Settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
+        var options = LauncherDownloadPolicy.Capture();
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> action) => new(CommunityMods.L(key), action) { LocalizedName = () => CommunityMods.L(key) };
         return App.Tasks.Start(string.Format(CommunityMods.L("installTask"), project.Name),
         [

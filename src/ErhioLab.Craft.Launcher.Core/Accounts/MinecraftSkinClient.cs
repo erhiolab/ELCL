@@ -2,6 +2,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
+using ErhioLab.Craft.Launcher.Core.Downloads;
+
 namespace ErhioLab.Craft.Launcher.Core.Accounts;
 
 /// <summary>Minecraft 档案中当前启用的皮肤.</summary>
@@ -14,8 +16,11 @@ public sealed record MinecraftPlayerCape(string Id, string Alias, Uri Url, bool 
 public sealed record MinecraftPlayerAppearance(MinecraftPlayerSkin? ActiveSkin, IReadOnlyList<MinecraftPlayerCape> Capes);
 
 /// <summary>读取 Minecraft 档案中的皮肤与披风, 并发送外观修改请求; 缓存位置由调用方决定.</summary>
-public sealed class MinecraftSkinClient(HttpClient httpClient)
+public sealed class MinecraftSkinClient(HttpClient httpClient, DownloadOptions downloadOptions)
 {
+    /// <summary>使用默认的材质下载策略读取档案和下载皮肤/披风.</summary>
+    public MinecraftSkinClient(HttpClient httpClient) : this(httpClient, new DownloadOptions()) { }
+
     private const int MaximumTextureBytes = 2 * 1024 * 1024;
     private static readonly Uri ProfileUrl = new("https://api.minecraftservices.com/minecraft/profile");
     private static ReadOnlySpan<byte> PngSignature => [137, 80, 78, 71, 13, 10, 26, 10];
@@ -137,12 +142,17 @@ public sealed class MinecraftSkinClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<byte[]> DownloadTextureAsync(Uri uri, CancellationToken cancellationToken)
+    private Task<byte[]> DownloadTextureAsync(Uri uri, CancellationToken cancellationToken)
     {
         if (uri.Scheme != Uri.UriSchemeHttps) throw new ArgumentException("材质地址必须使用 HTTPS.", nameof(uri));
-        using HttpResponseMessage response = await SendWithRetryAsync(() => new HttpRequestMessage(HttpMethod.Get, uri),
-            cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        return DownloadHttpPolicy.ExecuteAsync(token => ReadTextureAsync(uri, token), downloadOptions, cancellationToken);
+    }
+
+    private async Task<byte[]> ReadTextureAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) throw DownloadHttpPolicy.HttpFailure(request, response);
         if (response.Content.Headers.ContentLength is > MaximumTextureBytes) throw new InvalidDataException("材质文件超过大小限制.");
 
         await using Stream input = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
