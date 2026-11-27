@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 
@@ -126,7 +127,7 @@ public sealed class MinecraftVersionCatalogClient
                 !seenIds.Add(id) ||
                 !Uri.TryCreate(url, UriKind.Absolute, out Uri? metadataUrl) ||
                 metadataUrl.Scheme != Uri.UriSchemeHttps ||
-                !DateTimeOffset.TryParse(releaseTime, out DateTimeOffset published)
+                !DateTimeOffset.TryParse(releaseTime, CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTimeOffset published)
             )
             {
                 continue;

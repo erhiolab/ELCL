@@ -31,6 +31,8 @@ public sealed record LauncherBackgroundSettings
     internal const int MinimumIntervalSeconds = 10;
     internal const int MaximumIntervalSeconds = 3600;
 
+    private FavoriteKeys _favoriteKeys = FavoriteKeys.Empty;
+
     public bool Enabled { get; init; } = true;
     public bool PlayInBackground { get; init; }
     public BackgroundFit Fit { get; init; }
@@ -50,7 +52,15 @@ public sealed record LauncherBackgroundSettings
     public string? SelectedFavoriteKey { get; init; }
     public int SlideIntervalSeconds { get; init; } = 60;
     [AllowNull]
-    public string[] Favorites { get; init => field = value ?? []; } = [];
+    public string[] Favorites
+    {
+        get => _favoriteKeys.Values;
+        init
+        {
+            if (ReferenceEquals(value, _favoriteKeys.Values)) return;
+            _favoriteKeys = value is { Length: > 0 } ? new FavoriteKeys(value) : FavoriteKeys.Empty;
+        }
+    }
 
     internal BackgroundCategory ActiveCategory => Category is { } category && Enum.IsDefined(category) ? category
         : LocalPlaybackMode == BackgroundPlaybackMode.Fixed && HasValidWallpaperId ? BackgroundCategory.Wallpaper : BackgroundCategory.Local;
@@ -126,4 +136,23 @@ public sealed record LauncherBackgroundSettings
         SlideIntervalSeconds = Math.Clamp(SlideIntervalSeconds, MinimumIntervalSeconds, MaximumIntervalSeconds),
         Favorites = NormalizeFavorites()
     };
+
+    // 配置比较按收藏内容及顺序进行, 保存格式仍是字符串数组.
+    private sealed class FavoriteKeys(string[] values) : IEquatable<FavoriteKeys>
+    {
+        internal static FavoriteKeys Empty { get; } = new([]);
+        internal string[] Values { get; } = values;
+
+        public bool Equals(FavoriteKeys? other) => other is not null
+            && (ReferenceEquals(Values, other.Values) || Values.SequenceEqual(other.Values, StringComparer.Ordinal));
+
+        public override bool Equals(object? obj) => obj is FavoriteKeys other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            foreach (var key in Values) hash.Add(key, StringComparer.Ordinal);
+            return hash.ToHashCode();
+        }
+    }
 }

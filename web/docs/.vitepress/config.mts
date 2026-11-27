@@ -94,6 +94,7 @@ export default defineConfig({
                         { text: "社区资源与 Mods", link: "/core/mods" },
                         { text: "本地资源包、光影包和数据包", link: "/core/local-packs" },
                         { text: "本地世界与备份", link: "/core/local-worlds" },
+                        { text: "服务器列表与状态", link: "/core/servers" },
                         { text: "整合包导入", link: "/core/modpacks" },
                         { text: "整合包导出", link: "/core/modpack-export" }
                     ]

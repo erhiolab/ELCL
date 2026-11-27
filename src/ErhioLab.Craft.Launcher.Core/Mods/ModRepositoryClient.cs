@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 
@@ -400,7 +401,8 @@ public sealed partial class ModRepositoryClient
         return value.TryGetDouble(out var approximate) && double.IsFinite(approximate) && approximate is >= 0 and < long.MaxValue ? (long)approximate : 0;
     }
 
-    private static DateTimeOffset? Date(JsonElement root, string key) => DateTimeOffset.TryParse(Text(root, key), out var value) ? value : null;
+    private static DateTimeOffset? Date(JsonElement root, string key) =>
+        DateTimeOffset.TryParse(Text(root, key), CultureInfo.CurrentCulture, DateTimeStyles.None, out var value) ? value : null;
     private static Uri? Url(string? value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == "https" ? uri : null;
     private static readonly string[] KnownLoaders = ["forge", "neoforge", "fabric", "quilt", "liteloader"];
 

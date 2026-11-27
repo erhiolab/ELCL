@@ -34,6 +34,7 @@ public partial class VersionSettingsView
     private readonly VersionPacksPage _resourcePacksPage;
     private readonly VersionPacksPage _shaderPacksPage;
     private readonly VersionWorldsPage _worldsPage;
+    private readonly VersionServersPage _serversPage;
     private readonly VersionPacksPage _dataPacksPage;
     private readonly VersionExportPage _exportPage;
     private readonly AnimatedPageHost _pageHost;
@@ -53,6 +54,7 @@ public partial class VersionSettingsView
         _resourcePacksPage = new VersionPacksPage(MinecraftPackKind.ResourcePack);
         _shaderPacksPage = new VersionPacksPage(MinecraftPackKind.ShaderPack);
         _worldsPage = new VersionWorldsPage();
+        _serversPage = new VersionServersPage();
         _dataPacksPage = new VersionPacksPage(MinecraftPackKind.DataPack);
         _exportPage = new VersionExportPage();
         _modsPage.BrowseRequested += context => OpenCommunityBrowser(ModProjectKind.Mod, context, _modsPage);
@@ -69,6 +71,8 @@ public partial class VersionSettingsView
         };
         _worldsPage.QuickPlayRequested += world => Version is { } version
             ? App.GameLauncher.StartWorldAsync(_gameDirectory, version, world) : Task.CompletedTask;
+        _serversPage.JoinRequested += address => Version is { } version
+            ? App.GameLauncher.StartServerAsync(_gameDirectory, version, address) : Task.CompletedTask;
         _dataPacksPage.BackRequested += () => CloseModPage();
         Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
         LocalizationManager.Changed += (_, _) => RefreshSummary();
@@ -114,6 +118,7 @@ public partial class VersionSettingsView
         Add("community.shaderPacks", LauncherIcons.DayTheme, _shaderPacksPage, _shaderPacksPage.RefreshAsync);
         Add("worlds.title", LauncherIcons.Globe, _worldsPage, () => ReferenceEquals(_pageHost.CurrentPage, _dataPacksPage)
             ? _dataPacksPage.RefreshAsync() : _worldsPage.RefreshAsync());
+        Add("servers.title", LauncherIcons.Server, _serversPage, _serversPage.RefreshAsync);
         Add("versionLogs.title", LauncherIcons.Document, _logsPage, () => _logsPage.RefreshAsync(notify: true));
         Add("packExport.title", LauncherIcons.Toolbox, _exportPage, _exportPage.RefreshAsync, "packExport.rescan");
 
@@ -154,6 +159,7 @@ public partial class VersionSettingsView
         _resourcePacksPage.SetContext(_gameDirectory, version);
         _shaderPacksPage.SetContext(_gameDirectory, version);
         _worldsPage.SetVersion(version);
+        _serversPage.SetVersion(version);
         _modHistory.Clear();
         RefreshSidebar();
         _logsPage.SetVersionDirectory(version.FolderPath);

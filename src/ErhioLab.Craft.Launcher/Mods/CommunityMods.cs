@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -293,8 +294,8 @@ public sealed class ModProjectRow : INotifyPropertyChanged
         ? CommunityMods.L("anyLoader") : string.Join(" / ", Project.Loaders.OrderBy(ModPresentation.LoaderOrder).Select(ModPresentation.LoaderName));
     public string PlatformText => Project.Platform.ToString();
 
-    public string DownloadCountText => Project.Downloads >= 100000000 ? string.Format(CommunityMods.L("downloadsHundredMillion"), Project.Downloads / 100000000.0)
-        : Project.Downloads >= 10000 ? string.Format(CommunityMods.L("downloadsTenThousand"), Project.Downloads / 10000.0) : Project.Downloads.ToString("N0");
+    public string DownloadCountText => Project.Downloads >= 100000000 ? string.Format(CultureInfo.CurrentCulture, CommunityMods.L("downloadsHundredMillion"), Project.Downloads / 100000000.0)
+        : Project.Downloads >= 10000 ? string.Format(CultureInfo.CurrentCulture, CommunityMods.L("downloadsTenThousand"), Project.Downloads / 10000.0) : Project.Downloads.ToString("N0", CultureInfo.CurrentCulture);
 
     public string UpdatedText
     {
@@ -305,11 +306,11 @@ public sealed class ModProjectRow : INotifyPropertyChanged
             return age.TotalMinutes < 1 ? CommunityMods.L("updatedNow")
                 : age.TotalHours < 1 ? string.Format(CommunityMods.L("updatedMinutes"), (int)age.TotalMinutes)
                 : age.TotalDays < 1 ? string.Format(CommunityMods.L("updatedHours"), (int)age.TotalHours)
-                : age.TotalDays < 365 ? string.Format(CommunityMods.L("updatedDays"), (int)age.TotalDays) : updated.ToLocalTime().ToString("yyyy-MM-dd");
+                : age.TotalDays < 365 ? string.Format(CommunityMods.L("updatedDays"), (int)age.TotalDays) : updated.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.CurrentCulture);
         }
     }
 
-    public string UpdatedToolTip => Project.Updated?.ToLocalTime().ToString("g") ?? CommunityMods.L("updatedUnknown");
+    public string UpdatedToolTip => Project.Updated?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? CommunityMods.L("updatedUnknown");
     public string Metadata => $"{Project.Platform} · {string.Format(CommunityMods.L("downloads"), Project.Downloads)}";
     public ImageSource? Icon { get; private set; }
     public event PropertyChangedEventHandler? PropertyChanged;

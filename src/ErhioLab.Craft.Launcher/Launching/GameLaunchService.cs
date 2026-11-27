@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -61,7 +62,20 @@ internal sealed class GameLaunchService
     internal Task ExportScriptAsync(string gameDirectory, LocalMinecraftVersion version, string path) =>
         PrepareAsync(App.Settings with { SelectedGameFolderPath = gameDirectory, SelectedVersionPath = version.FolderPath, SelectedVersionId = version.Id }, Path.GetFullPath(path));
 
-    private async Task PrepareAsync(LauncherSettings settings, string? exportPath = null, string? quickPlayWorld = null)
+    internal Task StartServerAsync(string gameDirectory, LocalMinecraftVersion version, MinecraftServerAddress address)
+    {
+        if (!version.IsValid)
+        {
+            LauncherToasts.Error(L("servers.joinUnavailable"));
+            return Task.CompletedTask;
+        }
+
+        App.Logger.Information("Servers", $"请求进入服务器: {address}, 版本={version.Id}.");
+        return PrepareAsync(App.Settings with { SelectedGameFolderPath = gameDirectory, SelectedVersionPath = version.FolderPath, SelectedVersionId = version.Id },
+            quickPlayServer: address);
+    }
+
+    private async Task PrepareAsync(LauncherSettings settings, string? exportPath = null, string? quickPlayWorld = null, MinecraftServerAddress? quickPlayServer = null)
     {
         AccountEntry? account = App.Accounts.SelectedAccount;
         if (account is null && exportPath is null)
@@ -112,7 +126,7 @@ internal sealed class GameLaunchService
         string name = settings.SelectedVersionId ?? Path.GetFileName(versionDirectory);
         // Java 清单与通用设置分别取快照, 运行中的任务不受后续排序或导入配置影响.
         IReadOnlyList<LauncherJavaInstallation> javaCandidates = App.JavaCatalog.Installations.ToArray();
-        string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8];
+        string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.CurrentCulture) + "-" + Guid.NewGuid().ToString("N")[..8];
         string runDirectory = exportPath is null
             ? Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId)
             : Path.Combine(versionDirectory, "ELCL", "export-runtime", runId);
@@ -256,7 +270,7 @@ internal sealed class GameLaunchService
                         Java = java!, Context = context, WorkingDirectory = versionDirectory, NativesDirectory = natives,
                         AccessToken = accessToken, IsMicrosoftAccount = exportPath is null && account.IsMicrosoft, ClientId = ServiceConfiguration.MicrosoftClientId,
                         MemoryMiB = memory, GarbageCollector = (MinecraftGarbageCollector)settings.GarbageCollector,
-                        JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments, QuickPlayWorld = quickPlayWorld,
+                        JvmArguments = settings.JvmArguments, GameArguments = settings.GameArguments, QuickPlayWorld = quickPlayWorld, QuickPlayServer = quickPlayServer,
                         WindowWidth = width, WindowHeight = height, Fullscreen = settings.WindowMode == GameWindowMode.Fullscreen,
                         JavaWrapperPath = wrapper, LwjglAgentPath = agent,
                         Environment = MinecraftLaunchEnvironment.Current with { Architecture = JavaArchitecture(java!) }

@@ -141,6 +141,7 @@ var start = MinecraftLaunchBuilder.CreateStartInfo(version, files, options);
 | `MemoryMiB` | 最大堆内存，至少 128 MiB。 |
 | `JvmArguments`、`GameArguments` | 用户附加参数，支持模板。 |
 | `QuickPlayWorld` | 可选的世界文件夹名，位于工作目录的 `saves` 下。为空值（`null`）表示正常启动。 |
+| `QuickPlayServer` | 可选的 `MinecraftServerAddress`，让游戏启动后直接连接 Java 版服务器。不能与 `QuickPlayWorld` 同时设置。 |
 | `GarbageCollector` | ZGC、分代 ZGC、标准／调优 G1 或自定义。 |
 | `Fullscreen`、`WindowWidth`、`WindowHeight` | 游戏参数支持的窗口选项。 |
 | `JavaWrapperPath`、`LwjglAgentPath` | 调用方准备的兼容补丁路径，默认不传。 |
@@ -149,6 +150,8 @@ var start = MinecraftLaunchBuilder.CreateStartInfo(version, files, options);
 内存参数由 `MemoryMiB` 统一生成；GC 按所选策略与 Java 能力处理。未知模板标记会抛出异常，避免生成无效命令。
 
 `QuickPlayWorld` 只接受单个文件夹名称，不接受路径。指定后会用它替代其他快速进入目标。无效名称抛出 `ArgumentException`，版本不支持时抛出 `NotSupportedException`。核心只生成参数，不检查世界是否存在或正在使用；在设置该选项前请确认目标世界可用。
+
+设置 `QuickPlayServer` 前，先用 [`MinecraftServerAddress.TryParse`](servers.md#minecraftserveraddress-tryparse) 解析地址。版本声明了多人快速进入参数时，`CreateStartInfo` 生成 `--quickPlayMultiplayer`；否则生成旧版的 `--server` 和 `--port`，是否生效取决于客户端。只准备参数，不会连接服务器或验证登录状态。
 
 返回值已重定向 stdout 和 stderr。真正运行它时要持续读取两个流，并自行处理取消、退出码、优先级和窗口；不要把含令牌的完整参数写入日志。
 

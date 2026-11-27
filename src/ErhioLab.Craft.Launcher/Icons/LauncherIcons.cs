@@ -118,6 +118,12 @@ public static class LauncherIcons
     /// <summary>网站和网络来源.</summary>
     public static readonly Geometry Globe = Parse("M 9,2 A 7,7 0 1 1 9,16 A 7,7 0 1 1 9,2 M 2,9 H 16 M 9,2 C 4,6 4,12 9,16 M 9,2 C 14,6 14,12 9,16");
 
+    /// <summary>服务器.</summary>
+    public static readonly Geometry Server = Parse("M 3,2.5 H 15 Q 16,2.5 16,3.5 V 6.5 Q 16,7.5 15,7.5 H 3 Q 2,7.5 2,6.5 V 3.5 Q 2,2.5 3,2.5 Z M 3,10.5 H 15 Q 16,10.5 16,11.5 V 14.5 Q 16,15.5 15,15.5 H 3 Q 2,15.5 2,14.5 V 11.5 Q 2,10.5 3,10.5 Z M 5,5 H 5.25 M 5,13 H 5.25");
+
+    /// <summary>编辑.</summary>
+    public static readonly Geometry Edit = Parse("M 3,15 L 4,11 L 12.5,2.5 Q 13.5,1.5 14.5,2.5 L 15.5,3.5 Q 16.5,4.5 15.5,5.5 L 7,14 L 3,15 Z M 11,4 L 14,7");
+
     /// <summary>实验性版本.</summary>
     public static readonly Geometry Experimental = Parse("M 10,2 L 16,8 M 11,3 L 3,11 A 3,3 0 0 0 7,15 L 15,7 M 6,8 L 10,12 M 4,12 L 7,12");
 

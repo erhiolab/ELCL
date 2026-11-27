@@ -285,7 +285,7 @@ public partial class LaunchSettingsPage
         var gameUnit = DataSizeFormatter.SelectUnit(gameBytes, unit);
         UsedMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryUsedValue"),
             DataSizeFormatter.Format(memory.UsedBytes, unit), DataSizeFormatter.Format(memory.TotalBytes, unit));
-        GameMemoryText.Text = string.Format(LocalizationManager.Get("launchSettings.memoryGameValue"), gameUnit.Convert(gameBytes), gameUnit.Symbol);
+        GameMemoryText.Text = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("launchSettings.memoryGameValue"), gameUnit.Convert(gameBytes), gameUnit.Symbol);
     }
 
     private void MemoryUsageBar_FirstBoundaryChanged(object? sender, EventArgs e) => PositionGameMemoryLabels();

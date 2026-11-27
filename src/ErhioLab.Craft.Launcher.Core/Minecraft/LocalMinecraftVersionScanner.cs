@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace ErhioLab.Craft.Launcher.Core.Minecraft;
@@ -45,7 +46,7 @@ public static class LocalMinecraftVersionScanner
                     : string.Empty;
                 DateTimeOffset? releaseTime = null;
                 if (root.TryGetProperty("releaseTime", out JsonElement timeElement) && timeElement.ValueKind == JsonValueKind.String &&
-                    DateTimeOffset.TryParse(timeElement.GetString(), out DateTimeOffset parsedTime))
+                    DateTimeOffset.TryParse(timeElement.GetString(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTimeOffset parsedTime))
                 {
                     releaseTime = parsedTime;
                 }

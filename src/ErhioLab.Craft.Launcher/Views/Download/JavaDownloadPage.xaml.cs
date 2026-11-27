@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -259,7 +260,7 @@ internal sealed record JavaDownloadRow(JavaDownloadVersion Version)
 
     public string Description => string.Join(" · ", new[]
     {
-        Version.ReleasedAt?.ToLocalTime().ToString("d"),
+        Version.ReleasedAt?.ToLocalTime().ToString("d", CultureInfo.CurrentCulture),
         Version.Format == JavaDownloadFormat.Manifest || Version.ReleasedAt is null ? Version.Name : null,
         Version.Size is { } size && Version.Format != JavaDownloadFormat.Manifest ? DataSizeFormatter.Format(size, App.Settings.MemoryUnit, "0.##", 0) : null,
         Version.Platform.Architecture.ToString()

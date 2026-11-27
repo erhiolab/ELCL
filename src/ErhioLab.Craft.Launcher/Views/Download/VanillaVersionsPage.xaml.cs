@@ -1,6 +1,7 @@
 using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http;
 using System.IO;
 using System.Text.Json;
@@ -402,7 +403,7 @@ public partial class VanillaVersionsPage
         internal VersionRow(MinecraftVersion version, string? label)
         {
             Version = version;
-            Description = string.Format(LocalizationManager.Get("versions.description"), label ?? KindName(version.Kind), version.ReleaseTime.ToLocalTime());
+            Description = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("versions.description"), label ?? KindName(version.Kind), version.ReleaseTime.ToLocalTime());
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

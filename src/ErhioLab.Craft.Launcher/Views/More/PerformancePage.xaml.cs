@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
@@ -76,7 +77,7 @@ public partial class PerformancePage
     private void RefreshLanguage()
     {
         _initializing = true;
-        IntervalBox.ItemsSource = Intervals.Select(ms => string.Format(L("performance.refreshEvery"), ms / 1000d)).ToArray();
+        IntervalBox.ItemsSource = Intervals.Select(ms => string.Format(CultureInfo.CurrentCulture, L("performance.refreshEvery"), ms / 1000d)).ToArray();
         IntervalBox.SelectedIndex = Array.IndexOf(Intervals, App.Settings.PerformanceRefreshMilliseconds);
         _initializing = false;
         RefreshHardwareText();
@@ -118,7 +119,7 @@ public partial class PerformancePage
         string Capacity(double bytes)
         {
             var displayUnit = DataSizeFormatter.SelectUnit(bytes, unit);
-            return string.Format(L("performance.capacityValue"), displayUnit.Convert(bytes), displayUnit.Symbol);
+            return string.Format(CultureInfo.CurrentCulture, L("performance.capacityValue"), displayUnit.Convert(bytes), displayUnit.Symbol);
         }
         var animation = TimeSpan.FromMilliseconds(Math.Min(600, App.Settings.PerformanceRefreshMilliseconds));
         Sample("CPU", () =>
@@ -126,8 +127,8 @@ public partial class PerformancePage
             _sampler ??= CreateSampler();
             var sample = _sampler.Sample();
             _workingSet = sample.WorkingSet;
-            CpuUsage.Value = string.Format(L("performance.percentValue"), sample.Cpu);
-            ProcessCpuUsage.Value = string.Format(L("performance.percentValue"), sample.ProcessCpu);
+            CpuUsage.Value = string.Format(CultureInfo.CurrentCulture, L("performance.percentValue"), sample.Cpu);
+            ProcessCpuUsage.Value = string.Format(CultureInfo.CurrentCulture, L("performance.percentValue"), sample.ProcessCpu);
             CpuBar.SetValues(sample.Cpu, 100 - sample.Cpu, 0, animation);
         }, () =>
         {

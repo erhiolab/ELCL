@@ -221,6 +221,16 @@
 - [`LocalMinecraftWorldManager.SetDataPackSelectionAsync`](local-worlds.md#localminecraftworldmanager-setdatapackselectionasync)
 - [`LocalMinecraftWorldManager.ResetIconAsync`](local-worlds.md#localminecraftworldmanager-reseticonasync)
 
+## 服务器列表与状态
+
+- [`MinecraftServerList.ReadAsync`](servers.md#minecraftserverlist-readasync)
+- [`MinecraftServerList.AddAsync`](servers.md#minecraftserverlist-addasync)
+- [`MinecraftServerList.RenameAsync`](servers.md#minecraftserverlist-renameasync)
+- [`MinecraftServerList.RemoveAsync`](servers.md#minecraftserverlist-removeasync)
+- [`MinecraftServerAddress.TryParse`](servers.md#minecraftserveraddress-tryparse)
+- [`MinecraftServerAddress.ToString`](servers.md#minecraftserveraddress-tostring)
+- [`MinecraftServerStatusClient.PingAsync`](servers.md#minecraftserverstatusclient-pingasync)
+
 ## 整合包
 
 [阅读本篇](modpacks.md)

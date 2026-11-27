@@ -1,0 +1,237 @@
+﻿<UserControl
+    x:Class="ErhioLab.Craft.Launcher.Views.Launch.VersionServersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ErhioLab.Craft.Launcher.Controls"
+    xmlns:icons="clr-namespace:ErhioLab.Craft.Launcher.Icons"
+    xmlns:local="clr-namespace:ErhioLab.Craft.Launcher.Views.Launch"
+    Background="{DynamicResource PageSurfaceBrush}"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <Grid
+        Margin="{StaticResource FormPageContentMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition
+                Height="Auto" />
+            <RowDefinition
+                Height="*" />
+            <RowDefinition
+                Height="Auto" />
+        </Grid.RowDefinitions>
+        <controls:LauncherCard
+            Margin="0,0,0,14"
+            Header="{DynamicResource I18n.servers.title}">
+            <StackPanel>
+                <WrapPanel>
+                    <Button
+                        Margin="0,0,8,0"
+                        Click="OpenAdd_Click"
+                        Content="{DynamicResource I18n.servers.add}"
+                        Style="{StaticResource CompactActionButtonStyle}" />
+                    <Button
+                        x:Name="RefreshAllButton"
+                        Click="RefreshAll_Click"
+                        Content="{DynamicResource I18n.servers.refreshAll}"
+                        Style="{StaticResource CompactActionButtonStyle}" />
+                </WrapPanel>
+                <controls:AnimatedReveal
+                    x:Name="AddForm">
+                    <StackPanel>
+                        <Grid
+                            Style="{StaticResource FormFollowingSettingRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="155" />
+                                <ColumnDefinition
+                                    Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Text="{DynamicResource I18n.servers.name}" />
+                            <TextBox
+                                x:Name="NameBox"
+                                Grid.Column="1"
+                                MaxLength="128"
+                                Style="{StaticResource FormTextBoxStyle}" />
+                        </Grid>
+                        <Grid
+                            Style="{StaticResource FormFollowingSettingRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="155" />
+                                <ColumnDefinition
+                                    Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Text="{DynamicResource I18n.servers.address}" />
+                            <TextBox
+                                x:Name="AddressBox"
+                                Grid.Column="1"
+                                MaxLength="320"
+                                Style="{StaticResource FormTextBoxStyle}"
+                                ToolTip="{DynamicResource I18n.servers.addressHint}" />
+                        </Grid>
+                        <WrapPanel
+                            HorizontalAlignment="Right"
+                            Margin="{StaticResource FormSectionSpacing}">
+                            <Button
+                                Margin="0,0,8,0"
+                                Click="CancelAdd_Click"
+                                Content="{DynamicResource I18n.common.cancel}"
+                                Style="{StaticResource CompactActionButtonStyle}" />
+                            <Button
+                                Click="SaveAdd_Click"
+                                Content="{DynamicResource I18n.servers.add}"
+                                Style="{StaticResource CompactActionButtonStyle}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </controls:AnimatedReveal>
+            </StackPanel>
+        </controls:LauncherCard>
+        <Border
+            Grid.Row="1"
+            Padding="12"
+            Style="{StaticResource PanelCardStyle}">
+            <Grid>
+                <ListBox
+                    x:Name="ServerList"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    SelectionChanged="ServerList_SelectionChanged"
+                    MouseDoubleClick="ServerList_DoubleClick"
+                    ScrollViewer.CanContentScroll="True"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.ScrollUnit="Pixel"
+                    VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ListBox.ItemContainerStyle>
+                        <Style
+                            TargetType="ListBoxItem"
+                            BasedOn="{StaticResource SelectableListRowStyle}">
+                            <Setter
+                                Property="MinHeight"
+                                Value="76" />
+                            <Setter
+                                Property="HorizontalContentAlignment"
+                                Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate
+                            DataType="{x:Type local:VersionServersPage+ServerRow}">
+                            <Grid
+                                Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="54" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                    <ColumnDefinition
+                                        Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid
+                                    Width="40"
+                                    Height="40"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                                    <Path
+                                        Width="25"
+                                        Height="25"
+                                        Data="{x:Static icons:LauncherIcons.Server}"
+                                        Stretch="Uniform"
+                                        Stroke="{DynamicResource TextMutedBrush}"
+                                        StrokeLineJoin="Round"
+                                        StrokeThickness="1.5">
+                                        <Path.Style>
+                                            <Style
+                                                TargetType="Path">
+                                                <Style.Triggers>
+                                                    <DataTrigger
+                                                        Binding="{Binding HasIcon}"
+                                                        Value="True">
+                                                        <Setter
+                                                            Property="Visibility"
+                                                            Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                    <Image
+                                        Source="{Binding Icon}"
+                                        Stretch="Uniform"
+                                        RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                </Grid>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center">
+                                    <TextBlock
+                                        FontWeight="SemiBold"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding Name}" />
+                                    <TextBlock
+                                        Margin="0,3,0,0"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        Text="{Binding Summary}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding Summary}" />
+                                    <controls:MinecraftDescriptionTextBlock
+                                        Margin="0,3,0,0"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        SingleLine="True"
+                                        Spans="{Binding Description}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding DescriptionText}"
+                                        Visibility="{Binding DescriptionVisibility}" />
+                                </StackPanel>
+                                <StackPanel
+                                    Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource VersionListActionsStyle}">
+                                    <controls:IconButton
+                                        Click="Join_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Launch}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.servers.join}" />
+                                    <controls:IconButton
+                                        Click="Refresh_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Refresh}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.servers.refresh}" />
+                                    <controls:IconButton
+                                        Click="Rename_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Edit}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.servers.rename}" />
+                                    <controls:IconButton
+                                        Click="Delete_Click"
+                                        Icon="{x:Static icons:LauncherIcons.Delete}"
+                                        Style="{StaticResource VersionListActionButtonStyle}"
+                                        Tag="{Binding}"
+                                        ToolTip="{DynamicResource I18n.common.delete}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock
+                    x:Name="ListStatus"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextMutedBrush}"
+                    TextWrapping="Wrap"
+                    IsHitTestVisible="False" />
+            </Grid>
+        </Border>
+        <controls:LocalItemSelectionBar
+            x:Name="SelectionBar"
+            Grid.Row="2" />
+    </Grid>
+</UserControl>

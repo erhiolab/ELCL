@@ -20,20 +20,20 @@ internal sealed partial class MinecraftWorldMetadata
             }
 
             if (tag != 8 || start >= 0) throw new InvalidDataException("世界名称标签的类型无效或重复.");
-            start = reader._offset;
+            start = reader.Offset;
             current = reader.ReadString();
-            end = reader._offset;
+            end = reader.Offset;
         }
 
         if (current == value) return null;
         bool insert = start < 0;
-        if (insert) start = end = reader._offset - 1;
+        if (insert) start = end = reader.Offset - 1;
         return output => reader.WriteName(output, value, start, end, insert);
     }
 
     private void WriteName(Stream output, string value, int start, int end, bool insert)
     {
-        output.Write(bytes.AsSpan(0, start));
+        output.Write(Bytes.AsSpan(0, start));
         if (insert)
         {
             output.WriteByte(8);
@@ -41,6 +41,6 @@ internal sealed partial class MinecraftWorldMetadata
         }
 
         WriteNbtString(output, value);
-        output.Write(bytes.AsSpan(end));
+        output.Write(Bytes.AsSpan(end));
     }
 }

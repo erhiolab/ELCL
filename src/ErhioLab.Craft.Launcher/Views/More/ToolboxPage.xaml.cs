@@ -1,6 +1,7 @@
 using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -56,7 +57,7 @@ public partial class ToolboxPage
         }
         string message = LocalizationManager.Get(messageKey);
         App.Logger.Information("Toolbox", $"查看今日人品: date={date:yyyy-MM-dd}, score={score}, message={messageKey}.");
-        LauncherDialogs.Information(string.Format(LocalizationManager.Get("toolbox.luckTitle"), date),
+        LauncherDialogs.Information(string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("toolbox.luckTitle"), date),
             string.Format(LocalizationManager.Get("toolbox.luckResult"), score, message));
     }
 

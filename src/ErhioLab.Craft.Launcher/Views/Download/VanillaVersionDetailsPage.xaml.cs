@@ -1,5 +1,6 @@
 using ErhioLab.Craft.Launcher.Localization;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -599,7 +600,7 @@ public partial class VanillaVersionDetailsPage
             {
                 if (dates.TryGetValue(choice.Label, out DateOnly modified))
                 {
-                    choice.SetDetail(string.Format(LocalizationManager.Get("loader.updatedAt"), modified));
+                    choice.SetDetail(string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("loader.updatedAt"), modified));
                 }
             }
         }
@@ -632,19 +633,19 @@ public partial class VanillaVersionDetailsPage
             string date;
             if (version.ReleaseTime is { } releaseTime)
             {
-                date = string.Format(LocalizationManager.Get("loader.releasedAtTime"), releaseTime.ToLocalTime());
+                date = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("loader.releasedAtTime"), releaseTime.ToLocalTime());
             }
             else if (version.ReleaseDate is { } releaseDate)
             {
-                date = string.Format(LocalizationManager.Get("loader.releasedAt"), releaseDate);
+                date = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("loader.releasedAt"), releaseDate);
             }
             else if (version.LastModifiedDate is { } modifiedDate)
             {
-                date = string.Format(LocalizationManager.Get("loader.updatedAt"), modifiedDate);
+                date = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("loader.updatedAt"), modifiedDate);
             }
             else if (version.BuildDate is { } buildDate)
             {
-                date = string.Format(LocalizationManager.Get("loader.builtAt"), buildDate);
+                date = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("loader.builtAt"), buildDate);
             }
             else
             {

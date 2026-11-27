@@ -513,7 +513,7 @@ public partial class VersionWorldsPage
         public string Summary => string.Join(" · ", new[]
         {
             World.GameMode is { } mode ? L("mode." + mode.ToString().ToLowerInvariant()) : L("mode.unknown"),
-            World.LastPlayed is { } time ? string.Format(L("lastPlayed"), time.ToLocalTime()) : L("lastPlayedUnknown"),
+            World.LastPlayed is { } time ? string.Format(CultureInfo.CurrentCulture, L("lastPlayed"), time.ToLocalTime()) : L("lastPlayedUnknown"),
             World.Size is { } size ? Size(size) : L("sizeUnknown"),
             World.GameVersion,
             World.MetadataError is not null ? L("metadataError") : World.UsedPreviousMetadata ? L("previousMetadata") : null
