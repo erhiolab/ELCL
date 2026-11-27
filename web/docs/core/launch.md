@@ -97,7 +97,7 @@ await MinecraftLaunchFiles.ExtractNativesAsync(files, nativesDirectory, cancella
 
 从计划中的 native JAR 提取本地库，跳过 `META-INF` 和元数据声明的排除项，拒绝 ZIP 路径越界。
 
-调用前先补齐 native JAR。每次运行使用独立目录，游戏退出后由调用方清理，避免多实例争用。
+调用前先补齐 native JAR。可以为每次运行使用独立目录，游戏退出后由调用方清理。要跨实例复用时，应先提取到临时目录，再发布完整结果；缓存键需区分 JAR 内容、解包顺序、排除规则和目标架构。不要覆盖或回收正在被进程使用的目录。
 
 ## `MinecraftLaunchFiles.MaterializeLegacyAssetsAsync` {#minecraftlaunchfiles-materializelegacyassetsasync}
 

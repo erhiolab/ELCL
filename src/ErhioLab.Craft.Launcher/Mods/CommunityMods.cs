@@ -4,12 +4,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Mods;
 using ErhioLab.Craft.Launcher.Localization;
@@ -48,7 +47,6 @@ internal static class CommunityMods
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> Images = new();
     private static readonly ConcurrentDictionary<string, Task<ModProject?>> LocalProjects = new();
     private static readonly SemaphoreSlim LocalLookup = new(2);
-    private static readonly string Cache = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "community");
     internal static event Action<string>? Installed;
     internal static string L(string key) => LocalizationManager.Get("mods." + key);
     internal static bool IsTranslationEnabled => ModLocalization.IsEnabled(App.Settings);
@@ -70,16 +68,20 @@ internal static class CommunityMods
         await LocalLookup.WaitAsync();
         try
         {
-            string path = CachePath("projects", mod.Sha1.ToLowerInvariant(), ".json");
-            if (File.Exists(path))
+            string path = LauncherCache.Shared.Community("projects", mod.Sha1.ToLowerInvariant(), ".json");
+            if (File.Exists(path) && !CacheFileTree.IsLinked(path))
             {
                 try
                 {
-                    if (JsonSerializer.Deserialize<ModProject>(await File.ReadAllTextAsync(path)) is { } cached) return cached;
+                    if (JsonSerializer.Deserialize<ModProject>(await File.ReadAllBytesAsync(path)) is { } cached)
+                    {
+                        LauncherCache.Touch(path);
+                        return cached;
+                    }
                 }
-                catch (JsonException)
+                catch (Exception error) when (error is JsonException or FileNotFoundException or DirectoryNotFoundException)
                 {
-                    File.Delete(path);
+                    // 读取期间被回收或内容失效时重新获取.
                 }
             }
 
@@ -103,8 +105,8 @@ internal static class CommunityMods
         LocalProjects[sha1] = Task.FromResult<ModProject?>(project);
         try
         {
-            string path = CachePath("projects", sha1.ToLowerInvariant(), ".json");
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(project));
+            string path = LauncherCache.Shared.Community("projects", sha1.ToLowerInvariant(), ".json");
+            await LauncherCache.WriteAsync(path, JsonSerializer.SerializeToUtf8Bytes(project));
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
@@ -136,18 +138,18 @@ internal static class CommunityMods
         try
         {
             if (!IsTranslationEnabled) return null;
-            string path = CachePath("translations-v2", project is null ? name : project.Platform + ":" + project.Id, ".json");
-            if (File.Exists(path))
+            string path = LauncherCache.Shared.Community("translations-v2", project is null ? name : project.Platform + ":" + project.Id, ".json");
+            if (File.Exists(path) && !CacheFileTree.IsLinked(path))
             {
                 try
                 {
-                    var cached = JsonSerializer.Deserialize<McModTranslation?>(await File.ReadAllTextAsync(path));
+                    var cached = JsonSerializer.Deserialize<McModTranslation?>(await File.ReadAllBytesAsync(path));
                     var lifetime = cached is null ? TimeSpan.FromMinutes(10) : TimeSpan.FromDays(7);
                     if (DateTime.UtcNow - File.GetLastWriteTimeUtc(path) < lifetime) return cached;
                 }
-                catch (JsonException)
+                catch (Exception error) when (error is JsonException or FileNotFoundException or DirectoryNotFoundException)
                 {
-                    File.Delete(path);
+                    // 读取期间被回收或内容失效时重新获取.
                 }
             }
 
@@ -155,7 +157,7 @@ internal static class CommunityMods
                 project?.Platform == ModPlatform.CurseForge ? project.Slug : null,
                 project?.Platform == ModPlatform.Modrinth ? project.Slug : null)
             );
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(result));
+            await LauncherCache.WriteAsync(path, JsonSerializer.SerializeToUtf8Bytes(result));
             return result;
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or UnauthorizedAccessException or JsonException or TaskCanceledException)
@@ -181,12 +183,19 @@ internal static class CommunityMods
     {
         try
         {
-            string path = CachePath("icons", uri.AbsoluteUri, ".png");
-            if (File.Exists(path))
+            string path = LauncherCache.Shared.Community("icons", uri.AbsoluteUri, ".png");
+            if (File.Exists(path) && !CacheFileTree.IsLinked(path))
             {
-                var cached = Decode(await File.ReadAllBytesAsync(path));
-                if (cached is not null) return cached;
-                File.Delete(path);
+                try
+                {
+                    var cached = Decode(await File.ReadAllBytesAsync(path));
+                    if (cached is not null)
+                    {
+                        LauncherCache.Touch(path);
+                        return cached;
+                    }
+                }
+                catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { /* 已回收的图标重新下载. */ }
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -209,8 +218,13 @@ internal static class CommunityMods
             {
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                using var saved = File.Create(path);
+                using var saved = new MemoryStream();
                 encoder.Save(saved);
+                try { await LauncherCache.WriteAsync(path, saved.ToArray()); }
+                catch (Exception error) when (CacheFileTree.IsFileSystemError(error))
+                {
+                    App.Logger.Error("Cache", $"无法保存已下载的 Mods 图标: {uri.Host}.", error);
+                }
             }
 
             return image;
@@ -224,12 +238,6 @@ internal static class CommunityMods
 
     internal static ImageSource? Decode(byte[]? bytes) => ModIconDecoder.Decode(bytes);
 
-    private static string CachePath(string category, string value, string extension)
-    {
-        string directory = Path.Combine(Cache, category);
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value))) + extension);
-    }
 
     internal static string FileName(ModFile file, string? translated)
     {

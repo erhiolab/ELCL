@@ -1,5 +1,6 @@
 using System.IO;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,6 +11,7 @@ using ErhioLab.Craft.Launcher.Core;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Logging;
 using ErhioLab.Craft.Launcher.Accounts;
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Settings;
@@ -53,6 +55,7 @@ public partial class App
     private static LauncherAccountStore? _accountStore;
     private static LauncherSkinService? _skinService;
     private static AnalyticsEvents? _analytics;
+    private readonly CancellationTokenSource _cacheMaintenance = new();
     private static readonly HttpClient DownloadHttpClient = new();
     private static readonly DownloadManager DownloadEngine = new(DownloadHttpClient, diagnostic =>
     {
@@ -86,7 +89,7 @@ public partial class App
     internal static LauncherAccountStore Accounts => _accountStore ?? throw new InvalidOperationException("账户尚未初始化.");
     internal static LauncherSkinService Skins => _skinService ?? throw new InvalidOperationException("皮肤缓存尚未初始化.");
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         // 客户端决定数据目录, Core 仅接收日志目录并管理其中的文件.
         string dataDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL");
@@ -167,22 +170,21 @@ public partial class App
             }
         }
 
-        CleanupResult? cleanupResult = ReadCleanupResult(e.Args);
-        if (cleanupResult is not null)
+        CleanupResult? cleanupResult = null;
+        if (e.Args.Contains("--clear-elcl-cache", StringComparer.Ordinal))
         {
-            Logger.Information("Toolbox", "旧进程已退出, 清扫重启前可能重新写入的缓存及旧日志.");
+            Logger.Information("Cache", "旧进程已退出, 开始清理 ELCL 缓存.");
             try
             {
-                var remaining = ToolboxTools.Clean(Settings.GameFolders.Select(folder => folder.Path).ToArray(), dataDirectory, [],
-                    (path, error) => Logger.Error("Toolbox", $"重启清扫无法删除: {path}.", error));
-                cleanupResult = new CleanupResult(cleanupResult.Bytes + remaining.Bytes, cleanupResult.Files + remaining.Files,
-                    remaining.Skipped, remaining.Failed);
-                Logger.Information("Toolbox", $"完整清理完成: bytes={cleanupResult.Bytes}, files={cleanupResult.Files}, skipped={cleanupResult.Skipped}, failed={cleanupResult.Failed}.");
+                var logger = Logger;
+                cleanupResult = await Task.Run(() => LauncherCache.Shared.Sweep(clearAll: true, DateTime.UtcNow,
+                    (path, error) => logger.Error("Cache", $"无法清理 ELCL 缓存: {path}.", error)));
+                LogCleanup(logger, "手动清理完成", cleanupResult);
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            catch (Exception error) when (CacheFileTree.IsFileSystemError(error))
             {
-                Logger.Error("Toolbox", "重启后的缓存清扫未能全部完成.", error);
-                cleanupResult = cleanupResult with { Failed = cleanupResult.Failed + 1 };
+                Logger.Error("Cache", "重启后的缓存清理失败.", error);
+                cleanupResult = new CleanupResult(0, 0, 0, 1);
             }
         }
 
@@ -192,20 +194,49 @@ public partial class App
         _analytics.SetEnabled(AnonymousAnalyticsEnabled);
         _accountStore = new LauncherAccountStore(Path.Combine(dataDirectory, "accounts.json"));
         BackgroundStore.Load();
-        _skinService = new LauncherSkinService(Path.Combine(dataDirectory, "cache", "skins"));
+        _skinService = new LauncherSkinService(LauncherCache.Shared);
         Logger.Information("App", $"启动器启动, 核心版本: {CoreInfo.Version}, 数据目录: {dataDirectory}");
         base.OnStartup(e);
         // 文件转交与数据初始化通过后才创建窗口, 避免提前退出时仍由 StartupUri 构造界面.
         MainWindow mainWindow = new();
         MainWindow = mainWindow;
-        mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag);
+        mainWindow.Language = System.Windows.Markup.XmlLanguage.GetLanguage(CultureInfo.CurrentUICulture.IetfLanguageTag);
         mainWindow.Show();
         _ = JavaCatalog.InitializeIfEmptyAsync();
         Skins.RefreshAll();
         _ = _analytics.LauncherOpenedAsync();
+        var maintenanceToken = _cacheMaintenance.Token;
+        var maintenanceLogger = Logger;
+        _ = Task.Run(() => RunCacheMaintenanceAsync(maintenanceLogger, maintenanceToken), maintenanceToken);
         if (cleanupResult is { } cleaned)
-            Dispatcher.BeginInvoke(() => Notifications.LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupCompleted"),
-                cleaned.Files, DataSizeFormatter.Format(cleaned.Bytes, Settings.MemoryUnit, "0.00", minimumPower: 2), cleaned.Skipped, cleaned.Failed)), System.Windows.Threading.DispatcherPriority.ContextIdle);
+            _ = Dispatcher.BeginInvoke(() => ShowCleanupResult(cleaned), System.Windows.Threading.DispatcherPriority.ContextIdle);
+    }
+
+    private static async Task RunCacheMaintenanceAsync(SessionFileLogger logger, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMinutes(2), token).ConfigureAwait(false);
+            while (!token.IsCancellationRequested)
+            {
+                var result = LauncherCache.Shared.Sweep(clearAll: false, DateTime.UtcNow,
+                    (path, error) => logger.Error("Cache", $"无法回收过期缓存: {path}.", error), token);
+                if (result.Files > 0 || result.Failed > 0) LogCleanup(logger, "过期缓存清理完成", result);
+                await Task.Delay(TimeSpan.FromHours(6), token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+    }
+
+    private static void LogCleanup(SessionFileLogger logger, string action, CleanupResult result) =>
+        logger.Information("Cache", $"{action}: bytes={result.Bytes}, files={result.Files}, skipped={result.Skipped}, failed={result.Failed}.");
+
+    internal static void ShowCleanupResult(CleanupResult result)
+    {
+        string message = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Get("toolbox.cleanupCompleted"),
+            result.Files, DataSizeFormatter.Format(result.Bytes, Settings.MemoryUnit, "0.00", minimumPower: 2), result.Skipped, result.Failed);
+        if (result.Skipped > 0 || result.Failed > 0) Notifications.LauncherToasts.Information(message);
+        else Notifications.LauncherToasts.Success(message);
     }
 
     /// <summary>保存并立即应用新设置.</summary>
@@ -327,7 +358,7 @@ public partial class App
     }
 
     /// <summary>先启动新进程, 成功后退出当前进程.</summary>
-    internal static void Restart(CleanupResult? cleanup = null)
+    internal static void Restart(bool clearCache = false)
     {
         string executable = Environment.ProcessPath ?? throw new InvalidOperationException("无法确定启动器程序路径.");
         var start = new ProcessStartInfo(executable)
@@ -338,14 +369,9 @@ public partial class App
             start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, typeof(App).Assembly.GetName().Name + ".dll"));
         using var current = Process.GetCurrentProcess();
         start.ArgumentList.Add("--restart-parent");
-        start.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        start.ArgumentList.Add(current.StartTime.ToUniversalTime().Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        if (cleanup is not null)
-        {
-            start.ArgumentList.Add("--finish-cleanup");
-            foreach (long value in new[] { cleanup.Bytes, cleanup.Files, cleanup.Skipped, cleanup.Failed })
-                start.ArgumentList.Add(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        }
+        start.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        start.ArgumentList.Add(current.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture));
+        if (clearCache) start.ArgumentList.Add("--clear-elcl-cache");
         using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动新的启动器进程.");
         Current.Shutdown();
     }
@@ -364,18 +390,6 @@ public partial class App
         catch (ArgumentException) { /* 旧进程已经退出.  */ }
         catch (InvalidOperationException) { /* 查询时旧进程恰好退出.  */ }
         catch (System.ComponentModel.Win32Exception error) { throw new IOException("无法等待旧启动器退出.", error); }
-    }
-
-    private static CleanupResult? ReadCleanupResult(string[] args)
-    {
-        int index = Array.IndexOf(args, "--finish-cleanup");
-        if (index < 0 || index + 4 >= args.Length) return null;
-        var values = new long[4];
-        for (int offset = 0; offset < values.Length; offset++)
-            if (!long.TryParse(args[index + offset + 1], System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out values[offset]) || values[offset] < 0) return null;
-        if (values.Skip(1).Any(value => value > int.MaxValue)) return null;
-        return new CleanupResult(values[0], (int)values[1], (int)values[2], (int)values[3]);
     }
 
     /// <summary>只预览窗口透明度, 不在拖动滑块时反复写入配置.</summary>
@@ -399,6 +413,8 @@ public partial class App
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _cacheMaintenance.Cancel();
+        _cacheMaintenance.Dispose();
         _fileActivation?.Dispose();
         _analytics?.Dispose();
         try

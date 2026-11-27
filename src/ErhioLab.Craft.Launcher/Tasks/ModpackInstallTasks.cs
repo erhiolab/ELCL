@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Modpacks;
@@ -46,7 +47,7 @@ internal static class ModpackInstallTasks
             { LocalizedName = () => LocalizationManager.Get(key), PlannedBytes = Math.Max(1, bytes) };
 
         ModpackDefinition? pack = localPack;
-        string? workingDirectory = onlineFile is null ? null : Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "modpack-download", Guid.NewGuid().ToString("N"));
+        string? workingDirectory = onlineFile is null ? null : LauncherCache.Shared.Workspace("modpack-download");
         List<LauncherTaskStage> stages = [];
         if (onlineFile is not null)
         {
@@ -62,9 +63,10 @@ internal static class ModpackInstallTasks
         {
             var definition = pack ?? throw new InvalidDataException(CommunityResourceCatalog.L("invalidArchive"));
             App.Logger.Information("Modpacks", $"准备整合包: 格式={definition.Format}, 游戏={definition.GameVersion}, 名称={name}.");
-            var catalog = await new MinecraftVersionCatalogClient(Http).GetCatalogAsync(
-                settings.VersionListSource == VersionListSource.MirrorFirst ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official, context.CancellationToken);
-            var version = catalog.Versions.FirstOrDefault(item => item.Id == definition.GameVersion) ?? throw new InvalidDataException(string.Format(LocalizationManager.Get("modpack.gameUnavailable"), definition.GameVersion));
+            var preferred = settings.VersionListSource == VersionListSource.MirrorFirst ? MinecraftManifestSource.Mirror : MinecraftManifestSource.Official;
+            var version = await LauncherVersionCatalogCache.FindAsync(LauncherCache.Shared, new MinecraftVersionCatalogClient(Http), definition.GameVersion, preferred,
+                error => App.Logger.Warning("Cache", $"整合包安装版本列表缓存读取或刷新失败: {error.Message}"), context.CancellationToken)
+                ?? throw new InvalidDataException(string.Format(LocalizationManager.Get("modpack.gameUnavailable"), definition.GameVersion));
             if (Directory.Exists(directory) || File.Exists(directory)) throw new IOException(LocalizationManager.Get("install.versionExists"));
             operation = App.Tasks.CreateMinecraftInstall(version, name, gameDirectory, source, options, definition.Loaders, context.Owner);
             string reservation = Path.Combine(gameDirectory, "versions", ".elcl-import-" + Guid.NewGuid().ToString("N"));
@@ -97,9 +99,9 @@ internal static class ModpackInstallTasks
 
         void CleanupWorkingArchive()
         {
-            if (workingDirectory is null || !Directory.Exists(workingDirectory)) return;
-            File.Delete(Path.Combine(workingDirectory, onlineFile!.FileName));
-            Directory.Delete(workingDirectory);
+            if (workingDirectory is not null)
+                LauncherCache.Shared.RemoveWorkspace(workingDirectory,
+                    (entry, error) => App.Logger.Error("Cache", $"无法清理整合包下载缓存: {entry}.", error));
         }
 
         async Task CleanupAsync()

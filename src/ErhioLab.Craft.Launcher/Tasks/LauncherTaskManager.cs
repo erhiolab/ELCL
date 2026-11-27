@@ -1,10 +1,9 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Core.Java;
@@ -57,15 +56,14 @@ internal sealed class LauncherTaskManager
         if (Tasks.Any(task => task != owner && task.IsActive && string.Equals(task.TargetPath, versionFolder, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException(LocalizationManager.Get("install.alreadyRunning"));
 
-        string cacheName = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(version.MetadataUrl.AbsoluteUri)));
-        string metadataPath = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version-json", cacheName + ".json");
+        string metadataPath = LauncherCache.Shared.VersionJson(version.MetadataUrl);
         MinecraftVanillaDownloadPlan? plan = null;
         MinecraftLoaderInstallPlan? loaderPlan = null;
         bool folderCreated = false;
         bool clientAdded = false;
         bool versionWritten = false;
         var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp);
-        string workDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install", Guid.NewGuid().ToString("N"));
+        string workDirectory = LauncherCache.Shared.Workspace("loader-install");
         DownloadOptions downloadOptions = options;
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> execute) =>
             new(LocalizationManager.Get(key), execute) { LocalizedName = () => LocalizationManager.Get(key) };
@@ -75,6 +73,7 @@ internal sealed class LauncherTaskManager
             Stage("install.versionJson", async context =>
             {
                 App.Logger.Information("Installer", $"准备安装版本: {installedName}, 文件下载源优先: {preferredSource}.");
+                LauncherCache.Shared.MarkMetadataUsed(metadataPath);
                 DownloadFileRequest metadata = MinecraftVanillaDownloadPlanner.VersionMetadata(version, metadataPath, preferredSource);
                 if (version.Sha1 is null || (await MinecraftVanillaDownloadPlanner.MissingFilesAsync([metadata], context.CancellationToken)).Count > 0)
                     await context.DownloadAsync(new DownloadTaskRequest(version.Id, [metadata]), downloadOptions);
@@ -260,15 +259,8 @@ internal sealed class LauncherTaskManager
         if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any()) Directory.Delete(path);
     }
 
-    private static void CleanupLoaderWorkDirectory(string path)
-    {
-        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "loader-install"));
-        string full = Path.GetFullPath(path);
-        if (!string.Equals(Path.GetDirectoryName(full), root, StringComparison.OrdinalIgnoreCase)) throw new IOException("安装工作目录超出预期范围.");
-        ValidatePlainDirectory(root);
-        ValidatePlainDirectory(full);
-        if (Directory.Exists(full)) Directory.Delete(full, true);
-    }
+    private static void CleanupLoaderWorkDirectory(string path) => LauncherCache.Shared.RemoveWorkspace(path,
+        (entry, error) => App.Logger.Error("Cache", $"无法清理加载器安装缓存: {entry}.", error));
 
     /// <summary>创建一个可显示在任务管理页的自定义文件下载任务.</summary>
     internal LauncherTask StartCustomDownload(string destination, Uri source, DownloadOptions options)

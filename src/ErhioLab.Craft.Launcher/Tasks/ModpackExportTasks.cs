@@ -1,6 +1,7 @@
 using System.IO;
 using System.IO.Compression;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Modpacks;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Mods;
@@ -18,7 +19,7 @@ internal static class ModpackExportTasks
         string output = Path.GetFullPath(outputPath);
         if (output.StartsWith(scan.VersionDirectory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             throw new IOException(L("packExport.outsideVersion"));
-        string work = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "pack-export", Guid.NewGuid().ToString("N")));
+        string work = LauncherCache.Shared.Workspace("pack-export");
         string innerName = VersionExportPage.SafeName(options.Name + "-" + options.Version) + ".mrpack";
         string pack = includeLauncher ? Path.Combine(work, innerName) : output;
         ModpackExportResult? result = null;
@@ -26,7 +27,7 @@ internal static class ModpackExportTasks
         string current = "";
         var write = new LauncherTaskStage(L("packExport.writeStage"), async context =>
         {
-            Directory.CreateDirectory(work);
+            if (includeLauncher) Directory.CreateDirectory(work);
             try
             {
                 var progress = new Progress<ModpackExportProgress>(value =>
@@ -80,16 +81,7 @@ internal static class ModpackExportTasks
 
         void Cleanup()
         {
-            string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "pack-export")) + Path.DirectorySeparatorChar;
-            if (!work.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new IOException("导出临时目录超出缓存目录.");
-            try
-            {
-                if (Directory.Exists(work)) Directory.Delete(work, true);
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-                App.Logger.Error("Modpacks", $"未能清理导出缓存: {work}.", error);
-            }
+            LauncherCache.Shared.RemoveWorkspace(work, (entry, error) => App.Logger.Error("Cache", $"无法清理整合包导出缓存: {entry}.", error));
         }
     }
 

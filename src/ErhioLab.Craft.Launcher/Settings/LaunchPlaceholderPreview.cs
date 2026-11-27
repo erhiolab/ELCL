@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Accounts;
@@ -26,7 +27,7 @@ internal static class LaunchPlaceholderPreview
             LauncherVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(App).Assembly.GetName().Version?.ToString(),
             LauncherDirectory = AppContext.BaseDirectory,
             LauncherExecutablePath = Environment.ProcessPath,
-            CacheDirectory = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache"),
+            CacheDirectory = LauncherCache.Shared.Root,
             JavaDirectory = GetJavaDirectory(java),
             GameDirectory = gameDirectory,
             GameInstanceDirectory = versionDirectory ?? string.Empty,

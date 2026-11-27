@@ -1,6 +1,8 @@
 using System.IO;
 using System.IO.Compression;
 
+using ErhioLab.Craft.Launcher.Caching;
+
 namespace ErhioLab.Craft.Launcher.Launching;
 
 internal sealed record VersionLogFile(string Path, string Name, DateTime Modified, long Size, int? EntryIndex = null, string? EntryName = null)
@@ -53,7 +55,7 @@ internal static class VersionLogFiles
         return result.OrderByDescending(file => file.Modified).ThenBy(file => file.Name, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
-    internal static async Task<OpenedVersionLog> OpenAsync(VersionLogFile file, string cacheRoot, CancellationToken token)
+    internal static async Task<OpenedVersionLog> OpenAsync(VersionLogFile file, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         if (!file.IsCompressed)
@@ -63,7 +65,7 @@ internal static class VersionLogFiles
             return new OpenedVersionLog(file.Path);
         }
 
-        string directory = Path.Combine(Path.GetFullPath(cacheRoot), Guid.NewGuid().ToString("N"));
+        string directory = LauncherCache.Shared.Workspace("game-logs");
         Directory.CreateDirectory(directory);
         var opened = new OpenedVersionLog(Path.Combine(directory, "log.txt"), directory);
         try
@@ -121,8 +123,8 @@ internal sealed class OpenedVersionLog(string path, string? temporaryDirectory =
     public void Dispose()
     {
         if (temporaryDirectory is null) return;
-        // 只删除本次创建的固定文件与空目录, 不递归删除或使用压缩包中的路径.
-        File.Delete(Path);
-        if (Directory.Exists(temporaryDirectory)) Directory.Delete(temporaryDirectory);
+        var result = LauncherCache.Shared.RemoveWorkspace(temporaryDirectory,
+            (path, error) => App.Logger.Error("Cache", $"无法清理解压的日志: {path}.", error));
+        if (result.Skipped != 0 || result.Failed != 0) throw new IOException("未能完全清理解压的日志.");
     }
 }

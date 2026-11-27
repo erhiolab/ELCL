@@ -1,13 +1,12 @@
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.ComponentModel;
 
 using ErhioLab.Craft.Launcher.Accounts;
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Accounts;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Core.Java;
@@ -127,10 +126,8 @@ internal sealed class GameLaunchService
         // Java 清单与通用设置分别取快照, 运行中的任务不受后续排序或导入配置影响.
         IReadOnlyList<LauncherJavaInstallation> javaCandidates = App.JavaCatalog.Installations.ToArray();
         string runId = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.CurrentCulture) + "-" + Guid.NewGuid().ToString("N")[..8];
-        string runDirectory = exportPath is null
-            ? Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch", runId)
-            : Path.Combine(versionDirectory, "ELCL", "export-runtime", runId);
-        string natives = Path.Combine(runDirectory, "natives");
+        string? exportRuntime = exportPath is null ? null : Path.Combine(versionDirectory, "ELCL", "export-runtime", runId);
+        List<LauncherCache.RuntimeCacheLease> runtimeLeases = [];
         MinecraftManifestSource source = settings.FileDownloadSource == VersionListSource.OfficialFirst ? MinecraftManifestSource.Official : MinecraftManifestSource.Mirror;
         DownloadOptions downloads = new(settings.DownloadMaxConnections, (long)(settings.DownloadSpeedLimitMiBPerSecond * 1024 * 1024));
         MinecraftLaunchVersion? version = null;
@@ -245,17 +242,28 @@ internal sealed class GameLaunchService
                 }),
                 Stage("gameLaunch.prepare", async task =>
                 {
-                    await Task.Run(() => MinecraftLaunchFiles.ExtractNativesAsync(files!, natives, task.CancellationToken), task.CancellationToken);
-                    string patchDirectory = Path.Combine(runDirectory, "patches");
+                    string natives;
+                    if (exportRuntime is not null)
+                    {
+                        natives = Path.Combine(exportRuntime, "natives");
+                        await Task.Run(() => MinecraftLaunchFiles.ExtractNativesAsync(files!, natives, task.CancellationToken), task.CancellationToken);
+                    }
+                    else
+                    {
+                        var lease = await Task.Run(() => LaunchRuntimeCache.PrepareNativesAsync(LauncherCache.Shared, files!,
+                            JavaArchitecture(java!), LogCacheError, task.CancellationToken), task.CancellationToken);
+                        runtimeLeases.Add(lease);
+                        natives = lease.Path;
+                    }
                     bool customAgent = MinecraftLaunchBuilder.SplitArguments(settings.JvmArguments).Any(value => value.StartsWith("-javaagent:", StringComparison.Ordinal));
                     string? wrapper = !settings.DisableJavaLaunchWrapper && !customAgent
-                        ? await LaunchPatches.ExtractAsync("JavaWrapper.jar", patchDirectory, task.CancellationToken)
+                        ? await PreparePatchAsync("JavaWrapper.jar", task.CancellationToken)
                         : null;
                     using var metadata = JsonDocument.Parse(version!.Json);
                     bool lwjgl341 = metadata.RootElement.GetProperty("libraries").EnumerateArray()
                         .Any(value => value.TryGetProperty("name", out var coordinate) && coordinate.GetString() == "org.lwjgl:lwjgl:3.4.1");
                     string? agent = !settings.DisableLwjglUnsafeAgent && lwjgl341
-                        ? await LaunchPatches.ExtractAsync("LwjglUnsafeAgent.jar", patchDirectory, task.CancellationToken)
+                        ? await PreparePatchAsync("LwjglUnsafeAgent.jar", task.CancellationToken)
                         : null;
                     var info = await Task.Run(() => LocalMinecraftVersionScanner.Scan(gameDirectory).FirstOrDefault(value => string.Equals(value.FolderPath, versionDirectory, StringComparison.OrdinalIgnoreCase)), task.CancellationToken);
                     context = LaunchPlaceholderPreview.Create(info, settings, account) with
@@ -288,7 +296,7 @@ internal sealed class GameLaunchService
                     task.CancellationToken.ThrowIfCancellationRequested();
                     if (exportPath is not null)
                     {
-                        await LaunchScriptExporter.WriteAsync(exportPath, runDirectory, MinecraftLaunchBuilder.CreateStartInfo(version!, files!, options!), settings, context!, task.CancellationToken);
+                        await LaunchScriptExporter.WriteAsync(exportPath, exportRuntime!, MinecraftLaunchBuilder.CreateStartInfo(version!, files!, options!), settings, context!, task.CancellationToken);
                         exported = true;
                         return;
                     }
@@ -306,6 +314,7 @@ internal sealed class GameLaunchService
                     var start = MinecraftLaunchBuilder.CreateStartInfo(version!, files!, options!);
                     string log = Path.Combine(AppContext.BaseDirectory, "ELCL", "logs", "game", runId + ".log");
                     running = RunningGame.Start(start, log, accessToken, session?.MicrosoftRefreshToken, settings.GamePriority);
+                    foreach (var lease in runtimeLeases) lease.Attach(running.Process);
                     App.Logger.Information("Launch", $"游戏进程已创建: PID={running.Process.Id}, 日志={log}.");
                     while (!running.Process.HasExited)
                     {
@@ -337,7 +346,7 @@ internal sealed class GameLaunchService
                 if (exportPath is not null) return;
                 var game = running ?? throw new InvalidOperationException("启动完成时没有可跟踪的游戏进程.");
                 var runningTask = App.Tasks.TrackRunningGame(name, versionDirectory, game.Process.Id,
-                    runningTask => WatchGameAsync(game, runDirectory, name, settings.GameWindowTitle, context!, java?.Version, runningTask),
+                    runningTask => WatchGameAsync(game, runtimeLeases, name, settings.GameWindowTitle, context!, java?.Version, runningTask),
                     game.TerminateAsync, logPath: game.LogPath);
                 runningTask.JavaExecutablePath = java?.Path;
                 handedOff = true;
@@ -360,11 +369,22 @@ internal sealed class GameLaunchService
                 running.Dispose();
             }
 
-            if (!handedOff && !exported) CleanupRunDirectory(runDirectory, exportPath is null ? null : Path.Combine(versionDirectory, "ELCL", "export-runtime"));
+            if (!handedOff)
+                foreach (var lease in runtimeLeases) lease.Dispose();
+            if (!exported && exportRuntime is not null)
+                new CacheFileTree(LogCacheError).Sweep(exportRuntime, static _ => true);
+        }
+
+        async Task<string> PreparePatchAsync(string patch, CancellationToken token)
+        {
+            if (exportRuntime is not null) return await LaunchPatches.ExtractAsync(patch, Path.Combine(exportRuntime, "patches"), token);
+            var lease = await Task.Run(() => LaunchPatches.GetSharedAsync(patch, LogCacheError, token), token);
+            runtimeLeases.Add(lease);
+            return Path.Combine(lease.Path, patch);
         }
     }
 
-    private static async Task<int> WatchGameAsync(RunningGame running, string runDirectory, string name,
+    private static async Task<int> WatchGameAsync(RunningGame running, IReadOnlyList<LauncherCache.RuntimeCacheLease> runtimeLeases, string name,
         string title, MinecraftLaunchPlaceholderContext context, string? javaVersion, LauncherTask task)
     {
         try
@@ -413,7 +433,7 @@ internal sealed class GameLaunchService
         finally
         {
             running.Dispose();
-            CleanupRunDirectory(runDirectory);
+            foreach (var lease in runtimeLeases) lease.Dispose();
         }
     }
 
@@ -444,13 +464,15 @@ internal sealed class GameLaunchService
     internal static async Task<string> FetchParentAsync(string id, MinecraftManifestSource source, DownloadOptions options,
         LauncherTaskContext task, CancellationToken cancellationToken)
     {
-        var catalog = await new MinecraftVersionCatalogClient(MetadataHttp).GetCatalogAsync(source, cancellationToken);
-        var version = catalog.Versions.FirstOrDefault(value => value.Id == id)
+        var version = await LauncherVersionCatalogCache.FindAsync(LauncherCache.Shared, new MinecraftVersionCatalogClient(MetadataHttp), id, source,
+            error => App.Logger.Warning("Cache", $"父版本列表缓存读取或刷新失败: {error.Message}"), cancellationToken)
                       ?? throw new FileNotFoundException(string.Format(L("gameLaunch.parentMissing"), id));
-        string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(version.MetadataUrl.AbsoluteUri)));
-        string path = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version-json", hash + ".json");
+        string path = LauncherCache.Shared.VersionJson(version.MetadataUrl);
+        LauncherCache.Shared.MarkMetadataUsed(path);
         await VerifyAndDownloadAsync([MinecraftVanillaDownloadPlanner.VersionMetadata(version, path, source)], options, task, id);
-        return await File.ReadAllTextAsync(path, cancellationToken);
+        string json = await File.ReadAllTextAsync(path, cancellationToken);
+        LauncherCache.Touch(path);
+        return json;
     }
 
     private static (int? Width, int? Height) WindowDimensions(LauncherSettings settings)
@@ -470,22 +492,7 @@ internal sealed class GameLaunchService
                                                                      || java.Architecture.Contains("arm64", StringComparison.OrdinalIgnoreCase) ? "aarch64"
         : java.Architecture.Contains("64", StringComparison.Ordinal) ? "amd64" : "x86";
 
-    private static void CleanupRunDirectory(string directory, string? exportRoot = null)
-    {
-        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "launch")) + Path.DirectorySeparatorChar;
-        string full = Path.GetFullPath(directory);
-        bool exportWorkspace = exportRoot is not null
-            && string.Equals(Path.GetDirectoryName(full), Path.GetFullPath(exportRoot), StringComparison.OrdinalIgnoreCase);
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) && !exportWorkspace) throw new InvalidOperationException("运行缓存清理路径越界.");
-        try
-        {
-            if (Directory.Exists(full)) Directory.Delete(full, true);
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            App.Logger.Error("Launch", "无法清理本次运行的本地库缓存.", error);
-        }
-    }
+    private static void LogCacheError(string path, Exception error) => App.Logger.Error("Cache", $"无法清理启动文件: {path}.", error);
 
     private static string L(string key) => LocalizationManager.Get(key);
 }

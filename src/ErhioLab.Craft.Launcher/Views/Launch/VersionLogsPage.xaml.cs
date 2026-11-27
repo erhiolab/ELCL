@@ -129,8 +129,7 @@ public partial class VersionLogsPage
         LauncherToasts.Information(L("versionLogs.opening"));
         try
         {
-            string cacheRoot = Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "game-logs");
-            opened = await Task.Run(() => VersionLogFiles.OpenAsync(item.File, cacheRoot, cancellation.Token), cancellation.Token);
+            opened = await Task.Run(() => VersionLogFiles.OpenAsync(item.File, cancellation.Token), cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             _viewer.ShowFile(opened.Path, item.Name, opened.IsTemporary);
             _opened = opened;

@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using ErhioLab.Craft.Launcher.Core.Downloads;
 using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Notifications;
-using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.SystemTools;
 
 using Microsoft.Win32;
@@ -72,29 +71,53 @@ public partial class ToolboxPage
         if (owner is not null) owner.IsEnabled = false;
         CleanupButton.IsEnabled = false;
         string[] games = App.Settings.GameFolders.Select(folder => folder.Path).ToArray();
-        string[] active = App.Tasks.Tasks.Where(task => task.IsActive && task.TargetPath is not null).Select(task => task.TargetPath!).ToArray();
         App.Logger.Information("Toolbox", $"开始清理游戏垃圾: 游戏目录数={games.Length}.");
         LauncherToasts.Information(LocalizationManager.Get("toolbox.cleanupStarted"));
-        bool cleaned = false;
         try
         {
-            var result = await Task.Run(() => ToolboxTools.Clean(games, Path.Combine(AppContext.BaseDirectory, "ELCL"), active,
+            var result = await Task.Run(() => ToolboxTools.CleanGameFiles(games, Path.Combine(AppContext.BaseDirectory, "ELCL"),
                 (path, error) => App.Logger.Error("Toolbox", $"无法清理文件: {path}.", error)));
             App.Logger.Information("Toolbox", $"清理完成: bytes={result.Bytes}, files={result.Files}, skipped={result.Skipped}, failed={result.Failed}.");
-            cleaned = true;
-            LauncherToasts.Success(string.Format(LocalizationManager.Get("toolbox.cleanupRestarting"), result.Files,
-                DataSizeFormatter.Format(result.Bytes, App.Settings.MemoryUnit, "0.00", minimumPower: 2)));
-            await Task.Delay(600);
-            App.Restart(result);
+            App.ShowCleanupResult(result);
         }
         catch (Exception error)
         {
-            App.Logger.Error("Toolbox", cleaned ? "清理后自动重启失败." : "清理游戏垃圾失败.", error);
-            LauncherToasts.Error(LocalizationManager.Get(cleaned ? "toolbox.cleanupRestartFailed" : "toolbox.cleanupFailed"));
+            App.Logger.Error("Toolbox", "清理游戏垃圾失败.", error);
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.cleanupFailed"));
         }
         finally
         {
             CleanupButton.IsEnabled = true;
+            if (owner is not null) owner.IsEnabled = true;
+        }
+    }
+
+    private async void ClearCache_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Tasks.Tasks.Any(task => task.IsActive))
+        {
+            LauncherToasts.Information(LocalizationManager.Get("toolbox.cleanupBusy"));
+            return;
+        }
+
+        Window? owner = Window.GetWindow(this);
+        if (owner is not null) owner.IsEnabled = false;
+        CacheCleanupButton.IsEnabled = false;
+        try
+        {
+            App.Logger.Information("Cache", "手动清理 ELCL 缓存, 将在重启时执行.");
+            LauncherToasts.Information(LocalizationManager.Get("toolbox.clearCacheRestarting"));
+            await Task.Delay(600);
+            App.Restart(clearCache: true);
+        }
+        catch (Exception error)
+        {
+            App.Logger.Error("Cache", "无法重启并清理 ELCL 缓存.", error);
+            LauncherToasts.Error(LocalizationManager.Get("toolbox.clearCacheRestartFailed"));
+        }
+        finally
+        {
+            CacheCleanupButton.IsEnabled = true;
             if (owner is not null) owner.IsEnabled = true;
         }
     }

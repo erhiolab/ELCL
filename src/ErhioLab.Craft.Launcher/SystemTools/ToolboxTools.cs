@@ -3,9 +3,9 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ErhioLab.Craft.Launcher.SystemTools;
+using ErhioLab.Craft.Launcher.Caching;
 
-internal sealed record CleanupResult(long Bytes, int Files, int Skipped, int Failed);
+namespace ErhioLab.Craft.Launcher.SystemTools;
 
 internal static class ToolboxTools
 {
@@ -26,103 +26,52 @@ internal static class ToolboxTools
         return prefix + Random.Shared.Next(1, 7);
     }
 
-    internal static CleanupResult Clean(IReadOnlyList<string> gameDirectories, string launcherDataDirectory,
-        IReadOnlyCollection<string> activePaths, Action<string, Exception> onError)
+    internal static CleanupResult CleanGameFiles(IReadOnlyList<string> gameDirectories, string launcherDataDirectory,
+        Action<string, Exception> onError, CancellationToken token = default)
     {
-        var roots = new List<string>();
-        var data = Path.GetFullPath(launcherDataDirectory);
-        roots.Add(Path.Combine(data, "cache"));
-        roots.Add(Path.Combine(data, "logs"));
+        var tree = new CacheFileTree(onError, token);
+        string data = Path.TrimEndingDirectorySeparator(Path.GetFullPath(launcherDataDirectory));
         string[] garbageDirectories = ["logs", "crash-reports", "cache", ".cache", "server-resource-packs"];
         foreach (var game in gameDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var root = Path.GetFullPath(game);
-            if (IsLink(root)) continue;
-            foreach (var name in garbageDirectories) roots.Add(Path.Combine(root, name));
-            var versions = Path.Combine(root, "versions");
-            if (!Directory.Exists(versions) || IsLink(versions)) continue;
+            token.ThrowIfCancellationRequested();
             try
             {
-                foreach (var version in Directory.EnumerateDirectories(versions))
-                {
-                    if (IsLink(version)) continue;
-                    foreach (var name in garbageDirectories) roots.Add(Path.Combine(version, name));
-                }
+                var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(game));
+                var versions = Path.Combine(root, "versions");
+                if (root.Equals(Path.GetPathRoot(root), StringComparison.OrdinalIgnoreCase)
+                    || Within(root, data) || CacheFileTree.IsLinked(root)) { tree.Skip(); continue; }
+                if (!Directory.Exists(root)) continue;
+                if (!Directory.Exists(versions) && !File.Exists(Path.Combine(root, "launcher_profiles.json"))
+                    && !Path.GetFileName(root).Equals(".minecraft", StringComparison.OrdinalIgnoreCase)) { tree.Skip(); continue; }
+
+                CleanDirectory(root);
+                if (CacheFileTree.IsLinked(versions)) { tree.Skip(); continue; }
+                if (!Directory.Exists(versions)) continue;
+                foreach (var version in Directory.EnumerateDirectories(versions)) CleanDirectory(version);
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            catch (Exception error) when (CacheFileTree.IsFileSystemError(error) || error is ArgumentException or NotSupportedException)
             {
-                onError(versions, error);
+                tree.Fail(game, error);
             }
         }
+        return tree.Result;
 
-        long bytes = 0;
-        int files = 0, skipped = 0, failed = 0;
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var root in roots)
+        void CleanDirectory(string directory)
         {
-            var pending = new Stack<string>();
-            pending.Push(root);
-            while (pending.TryPop(out var directory))
+            foreach (var name in garbageDirectories)
             {
-                if (!visited.Add(directory) || !Directory.Exists(directory)) continue;
-                try
+                string path = Path.Combine(directory, name);
+                if (Within(path, data) || Within(data, path))
                 {
-                    if (IsLink(directory) || activePaths.Any(path => Within(directory, path)))
-                    {
-                        skipped++;
-                        continue;
-                    }
-
-                    foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
-                    {
-                        var attributes = File.GetAttributes(entry);
-                        if (attributes.HasFlag(FileAttributes.ReparsePoint))
-                        {
-                            skipped++;
-                            continue;
-                        }
-
-                        if (attributes.HasFlag(FileAttributes.Directory))
-                        {
-                            pending.Push(entry);
-                            continue;
-                        }
-
-                        if (string.Equals(entry, Path.Combine(data, "logs", "Log1.txt"), StringComparison.OrdinalIgnoreCase)
-                            || activePaths.Any(path => Within(entry, path)))
-                        {
-                            skipped++;
-                            continue;
-                        }
-
-                        try
-                        {
-                            var info = new FileInfo(entry);
-                            var length = info.Length;
-                            info.Delete();
-                            bytes += length;
-                            files++;
-                        }
-                        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-                        {
-                            failed++;
-                            onError(entry, error);
-                        }
-                    }
+                    tree.Skip();
+                    continue;
                 }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-                {
-                    failed++;
-                    onError(directory, error);
-                }
+                tree.Sweep(path, static _ => true);
             }
         }
-
-        return new CleanupResult(bytes, files, skipped, failed);
     }
 
-    private static bool IsLink(string path) => Directory.Exists(path) && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
-
-    private static bool Within(string path, string root) => string.Equals(Path.GetFullPath(path), Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase)
-                                                            || Path.GetFullPath(path).StartsWith(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    private static bool Within(string path, string root) => path.Equals(root, StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 }

@@ -12,8 +12,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Minecraft;
-using ErhioLab.Craft.Launcher.Core.Storage;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
@@ -26,7 +26,6 @@ public partial class VanillaVersionsPage
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
     private readonly MinecraftVersionCatalogClient _catalogClient = new(HttpClient);
-    private readonly JsonFileStore<MinecraftVersionCatalog> _catalogCache = new(Path.Combine(AppContext.BaseDirectory, "ELCL", "cache", "version_catalog.json"));
     private readonly Dictionary<FrameworkElement, int> _groupAnimationVersions = [];
     private readonly CancellationTokenSource _pageCancellation = new();
     private MinecraftVersionCatalog? _catalog;
@@ -78,17 +77,7 @@ public partial class VanillaVersionsPage
     {
         try
         {
-            if (!File.Exists(_catalogCache.FilePath))
-            {
-                return;
-            }
-
-            MinecraftVersionCatalog cached = _catalogCache.Load(new MinecraftVersionCatalog(
-                MinecraftManifestSource.Official, string.Empty, string.Empty, []));
-            if (!IsValidCatalog(cached))
-            {
-                throw new JsonException(LocalizationManager.Get("versionCatalog.cacheIncomplete"));
-            }
+            if (LauncherVersionCatalogCache.Load(LauncherCache.Shared) is not { } cached) return;
 
             _catalog = cached;
             ApplySearch();
@@ -129,8 +118,9 @@ public partial class VanillaVersionsPage
             {
                 _catalog = catalog;
                 ApplySearch();
-                TrySaveCache(catalog);
             }
+            await LauncherVersionCatalogCache.SaveAsync(LauncherCache.Shared, catalog,
+                error => App.Logger.Error("Cache", "保存游戏版本列表缓存失败.", error), cancellationToken);
             App.Logger.Information("Download", $"版本列表获取完成, 实际来源: {catalog.Source}, 数量: {catalog.Versions.Count}.");
             if (changed || manualRefresh)
             {
@@ -153,25 +143,6 @@ public partial class VanillaVersionsPage
             _loading = false;
         }
     }
-
-    private void TrySaveCache(MinecraftVersionCatalog catalog)
-    {
-        try
-        {
-            _catalogCache.Save(catalog);
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            App.Logger.Error("Download", "保存游戏版本缓存失败.", error);
-        }
-    }
-
-    private static bool IsValidCatalog(MinecraftVersionCatalog? catalog) =>
-        catalog is { Versions.Count: > 0 } &&
-        !string.IsNullOrWhiteSpace(catalog.LatestReleaseId) &&
-        !string.IsNullOrWhiteSpace(catalog.LatestPreviewId) &&
-        catalog.Versions.Any(version => version.Id == catalog.LatestReleaseId) &&
-        catalog.Versions.Any(version => version.Id == catalog.LatestPreviewId);
 
     private static bool CatalogsEqual(MinecraftVersionCatalog oldCatalog, MinecraftVersionCatalog newCatalog) =>
         oldCatalog.LatestReleaseId == newCatalog.LatestReleaseId &&

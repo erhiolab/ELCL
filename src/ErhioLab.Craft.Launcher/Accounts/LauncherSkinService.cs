@@ -1,12 +1,12 @@
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
+using ErhioLab.Craft.Launcher.Caching;
 using ErhioLab.Craft.Launcher.Core.Accounts;
 
 namespace ErhioLab.Craft.Launcher.Accounts;
@@ -14,12 +14,13 @@ namespace ErhioLab.Craft.Launcher.Accounts;
 internal sealed record SkinAvatar(BitmapSource Face, BitmapSource Hat, BitmapSource Skin);
 
 /// <summary>缓存 Microsoft 账户的皮肤 PNG, 并从脸部及帽子层生成共用头像.</summary>
-internal sealed class LauncherSkinService(string cacheDirectory)
+internal sealed class LauncherSkinService(LauncherCache cache)
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private static readonly MinecraftSkinClient SkinClient = new(HttpClient);
     private readonly Dictionary<Guid, SkinAvatar> _avatars = [];
     private readonly HashSet<Guid> _refreshing = [];
+    private readonly ConcurrentDictionary<string, Lazy<Task<byte[]>>> _capeRequests = new(StringComparer.OrdinalIgnoreCase);
 
     internal event Action<Guid>? AvatarChanged;
 
@@ -31,6 +32,7 @@ internal sealed class LauncherSkinService(string cacheDirectory)
         try
         {
             avatar = CreateAvatar(File.ReadAllBytes(path));
+            LauncherCache.Touch(path);
             _avatars[uuid] = avatar;
             return avatar;
         }
@@ -44,7 +46,10 @@ internal sealed class LauncherSkinService(string cacheDirectory)
     internal byte[]? GetCachedSkinBytes(Guid uuid)
     {
         string path = CachePath(uuid);
-        return File.Exists(path) ? File.ReadAllBytes(path) : null;
+        if (!File.Exists(path)) return null;
+        byte[] bytes = File.ReadAllBytes(path);
+        LauncherCache.Touch(path);
+        return bytes;
     }
 
     internal void RefreshAll()
@@ -54,49 +59,57 @@ internal sealed class LauncherSkinService(string cacheDirectory)
 
     internal Task<MinecraftPlayerAppearance> GetAppearanceAsync(Guid uuid, CancellationToken cancellationToken = default) => ExecuteAuthenticatedAsync(uuid, token => SkinClient.GetAppearanceAsync(token, cancellationToken));
 
-    internal async Task<byte[]> DownloadCapeAsync(Guid uuid, MinecraftPlayerCape cape, CancellationToken cancellationToken = default)
+    internal Task<byte[]> DownloadCapeAsync(Guid uuid, MinecraftPlayerCape cape, CancellationToken cancellationToken = default)
     {
-        string path = CapeCachePath(uuid, cape);
-        if (File.Exists(path))
+        cancellationToken.ThrowIfCancellationRequested();
+        string path = CapeCachePath(cape);
+        var request = _capeRequests.GetOrAdd(path, _ => new Lazy<Task<byte[]>>(() => LoadCapeAsync()));
+        return request.Value.WaitAsync(cancellationToken);
+
+        async Task<byte[]> LoadCapeAsync()
         {
             try
             {
-                byte[] cached = await File.ReadAllBytesAsync(path, cancellationToken);
-                if (IsValidCape(cached))
+                var shared = await ReadCapeAsync(path, cape);
+                if (shared is not null) return shared;
+                string legacy = Path.Combine(cache.Capes, uuid.ToString("N"), Path.GetFileName(path));
+                byte[] png = await ReadCapeAsync(legacy, cape) ?? await ReadCapeAsync(path, cape) ?? await SkinClient.DownloadCapeAsync(cape);
+                if (!IsValidCape(png)) throw new InvalidDataException("披风图片尺寸无效.");
+                try { await LauncherCache.WriteAsync(path, png); }
+                catch (Exception error) when (CacheFileTree.IsFileSystemError(error))
                 {
-                    App.Logger.Information("Skins", $"已从缓存读取披风: account={uuid:N}, cape={cape.Id}.");
-                    return cached;
+                    App.Logger.Error("Skins", $"无法保存披风缓存: {cape.Id}.", error);
                 }
-
-                File.Delete(path);
-                App.Logger.Warning("Skins", $"披风缓存无效，重新下载: account={uuid:N}, cape={cape.Id}.");
+                return png;
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-                App.Logger.Warning("Skins", $"无法读取披风缓存，重新下载: account={uuid:N}, cape={cape.Id}, {error.Message}");
-            }
+            finally { _capeRequests.TryRemove(path, out _); }
         }
+    }
 
-        byte[] png = await SkinClient.DownloadCapeAsync(cape, cancellationToken);
-        if (!IsValidCape(png)) throw new InvalidDataException("披风图片尺寸无效.");
-        cancellationToken.ThrowIfCancellationRequested();
-        if (App.Accounts.MicrosoftAccounts.All(account => account.Uuid != uuid)) return png;
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+    private static async Task<byte[]?> ReadCapeAsync(string path, MinecraftPlayerCape cape)
+    {
         try
         {
-            await File.WriteAllBytesAsync(temporary, png, cancellationToken);
-            File.Move(temporary, path, true);
+            if (!File.Exists(path) || CacheFileTree.IsLinked(path) || new FileInfo(path).Length > 2 * 1024 * 1024) return null;
+            byte[] bytes = await File.ReadAllBytesAsync(path);
+            if (!IsValidCape(bytes)) return null;
+            LauncherCache.Touch(path);
+            return bytes;
         }
-        finally { File.Delete(temporary); }
-        App.Logger.Information("Skins", $"披风已缓存: account={uuid:N}, cape={cape.Id}.");
-        return png;
+        catch (Exception error) when (CacheFileTree.IsFileSystemError(error))
+        {
+            App.Logger.Warning("Skins", $"无法读取披风缓存: {cape.Id}, {error.Message}");
+            return null;
+        }
     }
 
     internal void RemoveCapeCache(Guid uuid, MinecraftPlayerCape cape)
     {
-        try { File.Delete(CapeCachePath(uuid, cape)); }
+        try
+        {
+            string path = CapeCachePath(cape);
+            if (!CacheFileTree.IsLinked(path)) File.Delete(path);
+        }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             App.Logger.Warning("Skins", $"无法删除无效披风缓存: account={uuid:N}, cape={cape.Id}, {error.Message}");
@@ -132,26 +145,15 @@ internal sealed class LauncherSkinService(string cacheDirectory)
         _ = RefreshAsync(uuid, force);
     }
 
-    internal void RemoveCache(Guid uuid)
-    {
-        RemoveSkinCache(uuid);
-        try
-        {
-            string capeDirectory = Path.Combine(cacheDirectory, "capes", uuid.ToString("N"));
-            if (Directory.Exists(capeDirectory)) Directory.Delete(capeDirectory, recursive: true);
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            App.Logger.Warning("Skins", $"无法删除披风缓存: {uuid:N}, {error.Message}");
-        }
-    }
+    internal void RemoveCache(Guid uuid) => RemoveSkinCache(uuid);
 
     private void RemoveSkinCache(Guid uuid)
     {
         _avatars.Remove(uuid);
         try
         {
-            File.Delete(CachePath(uuid));
+            string path = CachePath(uuid);
+            if (!CacheFileTree.IsLinked(path)) File.Delete(path);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
@@ -196,18 +198,7 @@ internal sealed class LauncherSkinService(string cacheDirectory)
     private async Task StoreSkinAsync(Guid uuid, byte[] bytes)
     {
         SkinAvatar avatar = CreateAvatar(bytes);
-        Directory.CreateDirectory(cacheDirectory);
-        string path = CachePath(uuid);
-        string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            await File.WriteAllBytesAsync(temporary, bytes);
-            File.Move(temporary, path, true);
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
+        await LauncherCache.WriteAsync(CachePath(uuid), bytes);
 
         _avatars[uuid] = avatar;
         AvatarChanged?.Invoke(uuid);
@@ -235,12 +226,12 @@ internal sealed class LauncherSkinService(string cacheDirectory)
         }
     }
 
-    private string CachePath(Guid uuid) => Path.Combine(cacheDirectory, uuid.ToString("N") + ".png");
+    private string CachePath(Guid uuid) => Path.Combine(cache.Skins, uuid.ToString("N") + ".png");
 
-    private string CapeCachePath(Guid uuid, MinecraftPlayerCape cape)
+    private string CapeCachePath(MinecraftPlayerCape cape)
     {
-        string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cape.Id + "\n" + cape.Url.AbsoluteUri)));
-        return Path.Combine(cacheDirectory, "capes", uuid.ToString("N"), key + ".png");
+        string key = LauncherCache.Key(cape.Id + "\n" + cape.Url.AbsoluteUri);
+        return Path.Combine(cache.Capes, key + ".png");
     }
 
     private static bool IsValidCape(ReadOnlySpan<byte> png)
