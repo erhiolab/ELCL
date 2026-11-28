@@ -41,7 +41,7 @@ foreach (var version in versions)
 | `Loader`、`LoaderVersion` | 加载器及其版本，无法确认时为空。 |
 | `Error`、`IsValid` | 元数据是否读取成功。 |
 
-版本识别优先使用 `clientVersion`、Forge／NeoForge 的游戏参数、继承链与 Maven 坐标。元数据不足时只识别完整明确的安装命名格式，不从任意自定义名字里截取数字。
+版本识别优先使用 `clientVersion`、Forge／NeoForge 的游戏参数、继承链与 Maven 坐标，其中包括独立安装的 OptiFine。发现原版入口且没有加载器依赖时，不会因为安装名含有加载器名称就把它标记为加载器版本。元数据不足时只识别完整明确的安装命名格式，不从任意自定义名字里截取数字。
 
 远古版本会保留完整 ID，例如 `rd-132211`、`c0.0.13a_03`、`in-20100125`、`a1.2.6` 和 `b1.8.1`。
 

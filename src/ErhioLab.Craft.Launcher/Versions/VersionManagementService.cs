@@ -11,7 +11,7 @@ using ErhioLab.Craft.Launcher.Tasks;
 namespace ErhioLab.Craft.Launcher.Versions;
 
 /// <summary>把版本目录操作/文件补全接入配置/安装档案和任务管理.</summary>
-internal static class VersionManagementService
+internal static partial class VersionManagementService
 {
     internal static event Action<string, LocalMinecraftVersion?>? Changed;
 
@@ -110,7 +110,7 @@ internal static class VersionManagementService
         });
     }
 
-    private static void RequireUnreferenced(string gameDirectory, LocalMinecraftVersion version)
+    internal static void RequireUnreferenced(string gameDirectory, LocalMinecraftVersion version)
     {
         var references = MinecraftVersionDirectory.GetReferences(gameDirectory, version.FolderPath);
         if (references.Count > 0) throw new InvalidOperationException(string.Format(L("versionSettings.referenced"), string.Join(", ", references)));

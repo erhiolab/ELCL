@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 using System.Windows;
 
 using ErhioLab.Craft.Launcher.Caching;
@@ -12,6 +13,7 @@ using ErhioLab.Craft.Launcher.Launching;
 using ErhioLab.Craft.Launcher.Localization;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
+using ErhioLab.Craft.Launcher.Versions;
 
 namespace ErhioLab.Craft.Launcher.Tasks;
 
@@ -39,14 +41,15 @@ internal sealed class LauncherTaskManager
     }
 
     internal MinecraftInstallOperation CreateMinecraftInstall(MinecraftVersion version, string installedName, string gameDirectory,
-        MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null, LauncherTask? owner = null)
+        MinecraftManifestSource preferredSource, DownloadOptions options, IReadOnlyList<MinecraftLoaderSelection>? loaders = null,
+        LauncherTask? owner = null, VersionLoaderEdit? edit = null)
     {
         MinecraftLoaderSelection[] selections = loaders?.ToArray() ?? [];
         MinecraftVanillaDownloadPlanner.ValidateVersionName(installedName);
         MinecraftLoaderInstaller.ValidateSelections(version.Id, selections);
         gameDirectory = Path.GetFullPath(gameDirectory);
         string baseName = installedName;
-        string versionFolder = Path.Combine(gameDirectory, "versions", installedName);
+        string versionFolder = edit?.StagingDirectory ?? Path.Combine(gameDirectory, "versions", installedName);
         string clientPath = Path.Combine(versionFolder, installedName + ".jar");
         string versionJsonPath = Path.Combine(versionFolder, installedName + ".json");
         ValidateInstallDirectory(versionFolder);
@@ -62,7 +65,7 @@ internal sealed class LauncherTaskManager
         bool folderCreated = false;
         bool clientAdded = false;
         bool versionWritten = false;
-        var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp, options);
+        var loaderInstaller = new MinecraftLoaderInstaller(InstallerHttp, options) { VersionOutputDirectory = edit?.StagingDirectory };
         string workDirectory = LauncherCache.Shared.Workspace("loader-install");
         DownloadOptions downloadOptions = options;
         LauncherTaskStage Stage(string key, Func<LauncherTaskContext, Task> execute) =>
@@ -79,6 +82,7 @@ internal sealed class LauncherTaskManager
                     await context.DownloadAsync(new DownloadTaskRequest(version.Id, [metadata]), downloadOptions);
                 string json = await File.ReadAllTextAsync(metadataPath, context.CancellationToken);
                 plan = MinecraftVanillaDownloadPlanner.ParseVersion(json, version.Id, gameDirectory, baseName, preferredSource);
+                if (edit is not null) plan = plan with { Client = plan.Client with { DestinationPath = clientPath } };
                 long supportBytes = plan.Libraries.Sum(LauncherTaskContext.EstimatedSize);
                 if (plan.LoggingConfiguration is { } logFile) supportBytes += LauncherTaskContext.EstimatedSize(logFile);
                 context.ConfigureStageWeights([
@@ -101,8 +105,15 @@ internal sealed class LauncherTaskManager
             Stage("install.client", async context =>
             {
                 folderCreated = ReserveVersionFolder(versionFolder);
+                if (edit is not null && !folderCreated) throw new IOException(LocalizationManager.Get("install.unsafeDirectory"));
                 if (File.Exists(versionJsonPath)) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
                 bool clientExisted = File.Exists(clientPath);
+                if (edit is not null && !CacheFileTree.IsLinked(edit.ClientPath) && plan!.Client.ExpectedSha1 is not null)
+                {
+                    var installedClient = plan.Client with { DestinationPath = edit.ClientPath };
+                    if ((await MinecraftVanillaDownloadPlanner.MissingFilesAsync([installedClient], context.CancellationToken)).Count == 0)
+                        await Task.Run(() => File.Copy(edit.ClientPath, clientPath, false), context.CancellationToken);
+                }
                 DownloadFileRequest[] allFiles = [plan!.Client];
                 IReadOnlyList<DownloadFileRequest> files = await MinecraftVanillaDownloadPlanner.MissingFilesAsync(allFiles, context.CancellationToken);
                 if (files.Count > 0)
@@ -130,10 +141,19 @@ internal sealed class LauncherTaskManager
                 {
                     ValidateInstallDirectory(versionFolder);
                     if (File.Exists(versionJsonPath)) throw new InvalidOperationException(LocalizationManager.Get("install.versionExists"));
-                    await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, baseName, context.CancellationToken);
+                    if (edit is null)
+                        await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(plan, gameDirectory, baseName, context.CancellationToken);
+                    else
+                    {
+                        var json = JsonNode.Parse(plan.VersionJson)!.AsObject();
+                        json["id"] = installedName;
+                        json["clientVersion"] = version.Id;
+                        await File.WriteAllTextAsync(versionJsonPath, json.ToJsonString(), context.CancellationToken);
+                    }
                     versionWritten = true;
-                    await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
-                        installedName, cancellationToken: context.CancellationToken);
+                    if (edit is null)
+                        await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName,
+                            installedName, cancellationToken: context.CancellationToken);
                 }
             }),
             .. (selections.Length == 0 ? Array.Empty<LauncherTaskStage>() : new[]
@@ -177,8 +197,20 @@ internal sealed class LauncherTaskManager
                 {
                     await MinecraftLoaderInstaller.WriteVersionAsync(loaderPlan!, context.CancellationToken);
                     versionWritten = true;
-                    await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName, installedName, cancellationToken: context.CancellationToken);
+                    string? managedMod = loaderPlan!.VersionFiles.FirstOrDefault(path =>
+                        VersionManagementService.SamePath(Path.GetDirectoryName(path), Path.Combine(versionFolder, "mods")));
+                    await VersionLoaderMetadata.StampAsync(versionJsonPath, selections, managedMod, context.CancellationToken);
+                    if (edit is null)
+                        await LauncherProfileCompatibility.RegisterVersionAsync(gameDirectory, versionFolder, installedName, installedName, cancellationToken: context.CancellationToken);
                     CleanupLoaderWorkDirectory(workDirectory);
+                })
+            }),
+            .. (edit is null ? [] : new[]
+            {
+                Stage("versionEdit.apply", async context =>
+                {
+                    await edit.ApplyAsync(versionJsonPath, clientPath, context.CancellationToken);
+                    edit.Cleanup();
                 })
             })
         ];
@@ -188,6 +220,11 @@ internal sealed class LauncherTaskManager
             {
                 try
                 {
+                    if (edit is not null)
+                    {
+                        if (folderCreated) edit.Cleanup();
+                        return;
+                    }
                     if (folderCreated || clientAdded || versionWritten || loaderPlan?.VersionFiles.Count > 0)
                     {
                         ValidateInstallDirectory(versionFolder);

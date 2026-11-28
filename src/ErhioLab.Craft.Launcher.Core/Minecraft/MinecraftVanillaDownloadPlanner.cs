@@ -144,6 +144,7 @@ public static class MinecraftVanillaDownloadPlanner
         string destination = Path.Combine(versionFolder, installedName + ".json");
         string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
         JsonNode root = JsonNode.Parse(plan.VersionJson) ?? throw new InvalidDataException("版本 JSON 无效.");
+        root["clientVersion"] ??= root["id"]?.DeepClone();
         root["id"] = installedName;
         try
         {

@@ -96,6 +96,7 @@
                         Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button
+                    x:Name="DetailsBackButton"
                     Click="BackButton_Click"
                     Style="{StaticResource DetailsBackButtonStyle}"
                     ToolTip="{DynamicResource I18n.versionDetails.backToVersionList}">
@@ -318,6 +319,7 @@
         </ScrollViewer>
 
         <Button
+            x:Name="SubmitButton"
             Grid.Row="2"
             Width="150"
             Height="44"
@@ -327,6 +329,7 @@
             <StackPanel
                 Orientation="Horizontal">
                 <Path
+                    x:Name="SubmitIcon"
                     VerticalAlignment="Center"
                     Width="17"
                     Height="17"
@@ -338,6 +341,7 @@
                     StrokeLineJoin="Round"
                     Stretch="Uniform" />
                 <TextBlock
+                    x:Name="SubmitText"
                     Margin="9,0,0,0"
                     VerticalAlignment="Center"
                     FontSize="{DynamicResource BodyFontSize}"

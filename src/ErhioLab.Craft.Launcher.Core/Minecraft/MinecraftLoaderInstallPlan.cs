@@ -22,6 +22,8 @@ public sealed class MinecraftLoaderInstallPlan
                                                                                  && processors.OfType<JsonObject>().Any(processor => processor["sides"] is not JsonArray sides || sides.Any(side => side?.GetValue<string>() == "client")));
 
     internal JsonObject VersionJson { get; set; } = new();
+    internal string? VersionOutputDirectory { get; init; }
+    internal string VersionDirectory => VersionOutputDirectory ?? MinecraftLaunchVersion.SafePath(GameDirectory, "versions/" + InstalledName);
     internal List<DownloadFileRequest> Dependencies { get; } = [];
     internal List<(JsonObject Metadata, string Installer, string Extracted)> ForgeProfiles { get; } = [];
     internal List<(string ClassPath, string MainClass, string[] Args)> Processes { get; } = [];

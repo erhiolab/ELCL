@@ -36,6 +36,19 @@ var selections = new[]
 
 构造方法只保留调用方的 HTTP 客户端及选项，不发出请求，也不接管客户端生命周期。省略选项时，加载器元数据请求默认最多重试 1 次、单次 30 秒。选项影响安装元数据下载和文件地址解析；安装包与依赖由 `download` 回调按自己的选项提交。
 
+### `VersionOutputDirectory` {#minecraftloaderinstaller-versionoutputdirectory}
+
+如果准备调用方自己的临时安装或替换流程，可以在创建安装器时指定独占的版本文件输出目录。不指定时，仍写入 `<游戏目录>/versions/<安装名>`。
+
+```csharp
+var stagedInstaller = new MinecraftLoaderInstaller(http, options)
+{
+    VersionOutputDirectory = Path.Combine(workDirectory, "staged-version")
+};
+```
+
+将 `stagedInstaller` 用于下方的准备和执行流程。`WriteVersionAsync` 写入的 JSON、客户端 JAR，以及处理器放入版本目录的文件会使用该位置。共享库仍写入 `gameDirectory`，不改变版本标识，也不影响 `BaseClientJarPath` 指向的输入。调用方须保证输出目录可写、没有同名目标；核心不会自动把暂存结果部署到已有版本，也不会替调用方回滚或清理。
+
 ## `MinecraftLoaderInstaller.DefaultVersionName` {#minecraftloaderinstaller-defaultversionname}
 
 根据游戏版本和加载器选择生成默认安装名。

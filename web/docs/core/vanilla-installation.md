@@ -126,7 +126,7 @@ await MinecraftVanillaDownloadPlanner.WriteInstalledVersionAsync(
     plan, gameDirectory, installedName, cancellationToken);
 ```
 
-使用临时文件替换，JSON 的 `id` 改为安装名。此方法会替换同名 JSON，不再替你校验所有文件；应用应提前检查同名冲突，只在下载成功后调用。
+使用临时文件替换，JSON 的 `id` 改为安装名，`clientVersion` 保留原版标识，便于以后识别游戏版本。此方法会替换同名 JSON，不再替你校验所有文件；应用应提前检查同名冲突，只在下载成功后调用。
 
 失败或取消时，由调用方清理本次未完成目标和独占工作目录。已经校验的共享支持库与资源可以保留。
 

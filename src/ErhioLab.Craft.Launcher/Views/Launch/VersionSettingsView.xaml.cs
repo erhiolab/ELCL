@@ -39,6 +39,8 @@ public partial class VersionSettingsView
     private readonly VersionExportPage _exportPage;
     private readonly AnimatedPageHost _pageHost;
     private readonly Stack<FrameworkElement> _modHistory = new();
+    private CancellationTokenSource? _loaderEditPending;
+    private VanillaVersionDetailsPage? _loaderEditPage;
     internal event Action? BackRequested;
 
     public VersionSettingsView()
@@ -74,7 +76,11 @@ public partial class VersionSettingsView
         _serversPage.JoinRequested += address => Version is { } version
             ? App.GameLauncher.StartServerAsync(_gameDirectory, version, address) : Task.CompletedTask;
         _dataPacksPage.BackRequested += () => CloseModPage();
-        Unloaded += (_, _) => _launchSettingsPage.FlushPendingChanges();
+        Unloaded += (_, _) =>
+        {
+            _launchSettingsPage.FlushPendingChanges();
+            CloseLoaderEdit();
+        };
         LocalizationManager.Changed += (_, _) => RefreshSummary();
     }
 
@@ -127,6 +133,7 @@ public partial class VersionSettingsView
         SidebarHost.Content = sidebar;
         sidebar.SelectionChanged += item =>
         {
+            CloseLoaderEdit(backToOverview: false);
             _launchSettingsPage.FlushPendingChanges();
             _modHistory.Clear();
             var route = byItem[item];
@@ -151,6 +158,7 @@ public partial class VersionSettingsView
 
     internal void SetVersion(string gameDirectory, LocalMinecraftVersion version)
     {
+        CloseLoaderEdit(backToOverview: false);
         _launchSettingsPage.SetVersionContext(gameDirectory, version);
         _gameDirectory = Path.GetFullPath(gameDirectory);
         Version = version;
@@ -173,7 +181,7 @@ public partial class VersionSettingsView
 
     internal bool TryCloseLog()
     {
-        return CloseModPage() || _logsPage.CloseLog();
+        return CloseLoaderEdit() || CloseModPage() || _logsPage.CloseLog();
     }
 
     private bool CloseModPage()
@@ -190,7 +198,52 @@ public partial class VersionSettingsView
         ModsButton.Visibility = Directory.Exists(Path.Combine(version.FolderPath, "mods")) || version.Loader is "Forge" or "NeoForge" or "Fabric" or "Quilt" or "LiteLoader"
             ? Visibility.Visible
             : Visibility.Collapsed;
-        ExportButton.IsEnabled = RepairButton.IsEnabled = version.IsValid;
+        ModifyButton.IsEnabled = ExportButton.IsEnabled = RepairButton.IsEnabled = version.IsValid;
+    }
+
+    private async void Modify_Click(object sender, RoutedEventArgs e)
+    {
+        if (Version is not { IsValid: true } version || _loaderEditPending is not null) return;
+        using var cancellation = new CancellationTokenSource();
+        _loaderEditPending = cancellation;
+        string gameDirectory = _gameDirectory;
+        App.Logger.Information("Versions", $"准备修改版本的加载器: {version.FolderPath}.");
+        LauncherToasts.Information(L("versionEdit.preparing"));
+        try
+        {
+            var edit = await VersionManagementService.PrepareLoaderEditAsync(gameDirectory, version, cancellation.Token);
+            if (cancellation.IsCancellationRequested || !ReferenceEquals(Version, version) || !IsLoaded
+                || !ReferenceEquals(_pageHost.CurrentPage, OverviewPage)) return;
+            var page = new VanillaVersionDetailsPage(edit.BaseVersion, edit);
+            page.BackRequested += () => CloseLoaderEdit();
+            _loaderEditPage = page;
+            _pageHost.Navigate(page);
+            App.Logger.Information("Versions", $"已打开加载器修改页: {version.FolderPath}.");
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException
+                                         or ArgumentException or System.Text.Json.JsonException or MinecraftVersionCatalogException)
+        {
+            App.Logger.Error("Versions", $"无法准备加载器修改页: {version.FolderPath}.", error);
+            if (!cancellation.IsCancellationRequested)
+                LauncherToasts.Error(string.Format(L("versionSettings.operationFailed"), error.Message));
+        }
+        finally
+        {
+            if (ReferenceEquals(_loaderEditPending, cancellation)) _loaderEditPending = null;
+        }
+    }
+
+    private bool CloseLoaderEdit(bool backToOverview = true)
+    {
+        bool open = _loaderEditPage is not null || _loaderEditPending is not null;
+        _loaderEditPending?.Cancel();
+        _loaderEditPending = null;
+        if (_loaderEditPage is not { } page) return open;
+        _loaderEditPage = null;
+        page.StopLoading();
+        if (backToOverview) _pageHost.Navigate(OverviewPage, back: true);
+        return true;
     }
 
     private void Rename_Click(object sender, RoutedEventArgs e)

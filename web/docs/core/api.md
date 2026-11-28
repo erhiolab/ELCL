@@ -69,6 +69,7 @@
 
 - [`MinecraftLoaderInstaller.DefaultVersionName`](loader-installation.md#minecraftloaderinstaller-defaultversionname)
 - [`MinecraftLoaderInstaller` 构造方法](loader-installation.md#minecraftloaderinstaller-constructor)
+- [`MinecraftLoaderInstaller.VersionOutputDirectory`](loader-installation.md#minecraftloaderinstaller-versionoutputdirectory)
 - [`MinecraftLoaderInstaller.ValidateSelections`](loader-installation.md#minecraftloaderinstaller-validateselections)
 - [`MinecraftLoaderInstaller.PrepareAsync`](loader-installation.md#minecraftloaderinstaller-prepareasync)
 - [`MinecraftLoaderInstaller.RunProcessorsAsync`](loader-installation.md#minecraftloaderinstaller-runprocessorsasync)

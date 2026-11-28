@@ -10,10 +10,12 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 using ErhioLab.Craft.Launcher.Core.Minecraft;
+using ErhioLab.Craft.Launcher.Dialogs;
 using ErhioLab.Craft.Launcher.Icons;
 using ErhioLab.Craft.Launcher.Notifications;
 using ErhioLab.Craft.Launcher.Settings;
 using ErhioLab.Craft.Launcher.Tasks;
+using ErhioLab.Craft.Launcher.Versions;
 
 namespace ErhioLab.Craft.Launcher.Views.Download;
 
@@ -23,6 +25,7 @@ public partial class VanillaVersionDetailsPage
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
     private readonly MinecraftVersion _version;
+    private readonly VersionLoaderEditContext? _edit;
     private readonly MinecraftLoaderVersionClient _loaderClient = new(HttpClient);
     private readonly CancellationTokenSource _pageCancellation = new();
     private readonly Dictionary<LoaderSection, (ToggleButton Header, FrameworkElement Content)> _sectionControls = [];
@@ -47,14 +50,28 @@ public partial class VanillaVersionDetailsPage
     internal event Action? BackRequested;
 
     /// <summary>创建指定游戏版本的下载详情页.</summary>
-    internal VanillaVersionDetailsPage(MinecraftVersion version)
+    internal VanillaVersionDetailsPage(MinecraftVersion version, VersionLoaderEditContext? edit = null)
     {
         _version = version;
+        _edit = edit;
         _automaticVersionName = version.Id;
         InitializeComponent();
         LocalizationManager.Changed += LocalizationChanged;
         VersionIcon.Data = LauncherIcons.ForVersion(version.Kind);
         VersionNameBox.Text = version.Id;
+        if (edit is not null)
+        {
+            VersionNameBox.Text = edit.Installed.Id;
+            VersionNameBox.IsReadOnly = true;
+            VersionNameBox.ToolTip = version.Id;
+            DetailsBackButton.SetResourceReference(ToolTipProperty, "I18n.versionEdit.back");
+            SubmitText.SetResourceReference(TextBlock.TextProperty, "I18n.versionEdit.submit");
+            SubmitIcon.Data = LauncherIcons.Edit;
+            foreach (var selection in edit.Loaders)
+                LoaderSections.First(section => section.Kind == selection.Kind).SetInstalled(selection.Version);
+            RefreshCompatibility();
+            RefreshSubmit();
+        }
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -237,6 +254,7 @@ public partial class VanillaVersionDetailsPage
         ToggleButton header = parent.Children.OfType<ToggleButton>().First();
         _sectionControls[section] = (header, content);
         content.Height = section.IsExpanded ? double.NaN : 0;
+        if (section.SelectedVersion is not null) RefreshCompatibility();
     }
 
     private void LoaderHeader_Click(object sender, RoutedEventArgs e)
@@ -246,14 +264,10 @@ public partial class VanillaVersionDetailsPage
             return;
         }
 
+        if (section.HasError) _ = LoadSectionAsync(section);
         if (!section.HasVersions)
         {
             header.IsChecked = false;
-            if (section.HasError)
-            {
-                _ = LoadSectionAsync(section);
-            }
-
             return;
         }
 
@@ -288,9 +302,13 @@ public partial class VanillaVersionDetailsPage
 
         section.Select(selected);
         RefreshCompatibility();
-        string suggested = MinecraftLoaderInstaller.DefaultVersionName(_version.Id, SelectedLoaders());
-        if (VersionNameBox.Text == _automaticVersionName) VersionNameBox.Text = suggested;
-        _automaticVersionName = suggested;
+        if (_edit is null)
+        {
+            string suggested = MinecraftLoaderInstaller.DefaultVersionName(_version.Id, SelectedLoaders());
+            if (VersionNameBox.Text == _automaticVersionName) VersionNameBox.Text = suggested;
+            _automaticVersionName = suggested;
+        }
+        else RefreshSubmit();
         App.Logger.Information("Download", $"{section.Kind} 版本选择: {choice.Label}.");
         if (_sectionControls.TryGetValue(section, out var controls))
         {
@@ -365,12 +383,13 @@ public partial class VanillaVersionDetailsPage
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
     {
-        DetachWindow();
-        _pageCancellation.Cancel();
+        StopLoading();
         BackRequested?.Invoke();
     }
 
-    private void OwnerWindow_Closed(object? sender, EventArgs e)
+    private void OwnerWindow_Closed(object? sender, EventArgs e) => StopLoading();
+
+    internal void StopLoading()
     {
         DetachWindow();
         _pageCancellation.Cancel();
@@ -392,8 +411,14 @@ public partial class VanillaVersionDetailsPage
         RefreshCompatibility();
     }
 
-    private void StartDownloadButton_Click(object sender, RoutedEventArgs e)
+    private async void StartDownloadButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_edit is not null)
+        {
+            await SubmitEditAsync(_edit);
+            return;
+        }
+
         string name = VersionNameBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 128 || name is "." or ".." ||
             name.EndsWith('.') || name.EndsWith(' ') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
@@ -433,6 +458,36 @@ public partial class VanillaVersionDetailsPage
         }
     }
 
+    private void RefreshSubmit()
+    {
+        if (_edit is not { } edit) return;
+        var choices = SelectedLoaders();
+        SubmitButton.IsEnabled = choices.All(choice => !string.IsNullOrWhiteSpace(choice.Version.Version))
+            && !choices.Select(choice => (choice.Kind, choice.Version.Version)).ToHashSet()
+                .SetEquals(edit.Loaders.Select(choice => (choice.Kind, choice.Version.Version)));
+    }
+
+    private async Task SubmitEditAsync(VersionLoaderEditContext edit)
+    {
+        if (!SubmitButton.IsEnabled) return;
+        var choices = SelectedLoaders();
+        if (!await LauncherDialogs.ConfirmAsync(LocalizationManager.Get("versionEdit.submit"),
+                LocalizationManager.Get("versionEdit.confirm"), confirmText: LocalizationManager.Get("versionEdit.submit"))
+            || _pageCancellation.IsCancellationRequested) return;
+        try
+        {
+            VersionManagementService.ModifyLoaders(edit, choices);
+            LauncherToasts.Information(LocalizationManager.Get("versionEdit.queued"));
+            StopLoading();
+            BackRequested?.Invoke();
+        }
+        catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            App.Logger.Error("Versions", $"无法创建加载器修改任务: {edit.Installed.FolderPath}.", error);
+            LauncherToasts.Error(error.Message);
+        }
+    }
+
     private static HttpClient CreateHttpClient()
     {
         HttpClient client = new();
@@ -452,6 +507,7 @@ public partial class VanillaVersionDetailsPage
         private bool _isExpanded;
         private IReadOnlyList<LoaderChoice> _choices = [];
         private IReadOnlyList<MinecraftLoaderVersion> _allVersions = [];
+        private MinecraftLoaderVersion? _installed;
 
         internal LoaderSection(MinecraftLoaderKind kind, string name)
         {
@@ -532,19 +588,31 @@ public partial class VanillaVersionDetailsPage
 
         internal MinecraftLoaderVersion? SelectedVersion { get; private set; }
 
+        internal void SetInstalled(MinecraftLoaderVersion installed)
+        {
+            _installed = installed;
+            SelectedVersion = installed;
+            SetVersions([]);
+        }
+
         internal void SetLoading()
         {
             IsLoading = true;
             HasLoaded = false;
             HasError = false;
-            StatusText = LocalizationManager.Get("versionDetails.loading");
+            if (SelectedVersion is null) StatusText = LocalizationManager.Get("versionDetails.loading");
         }
 
         internal void SetVersions(IReadOnlyList<MinecraftLoaderVersion> versions)
         {
             IsLoading = false;
             HasLoaded = true;
+            if (_installed is { } installed && !versions.Any(version => version.Version == installed.Version))
+                versions = [installed, .. versions];
+            var selected = SelectedVersion;
             _allVersions = versions;
+            if (selected is not null)
+                SelectedVersion = versions.FirstOrDefault(version => version.Version == selected.Version) ?? selected;
             ShowCompatibleVersions(_ => true);
         }
 
@@ -555,15 +623,15 @@ public partial class VanillaVersionDetailsPage
                 return;
             }
 
-            MinecraftLoaderVersion[] visible = _allVersions.Where(isCompatible).ToArray();
+            MinecraftLoaderVersion[] visible = _allVersions.Where(version => version.Version == SelectedVersion?.Version || isCompatible(version)).ToArray();
             HasVersions = visible.Length > 0;
             if (Choices.Count != visible.Length + (HasVersions ? 1 : 0)
-                || !Choices.Skip(1).Select(choice => choice.Label).SequenceEqual(visible.Select(version => version.Version)))
+                || !Choices.Skip(1).Select(choice => choice.Version?.Version).SequenceEqual(visible.Select(version => version.Version)))
             {
-                Choices = HasVersions ? [new LoaderChoice(null, LocalizationManager.Get("common.none"), LocalizationManager.Get("versionDetails.doNotAddLoader")), .. visible.Select(version => new LoaderChoice(version, version.Version, DescribeVersion(version)))] : [];
+                Choices = HasVersions ? [new LoaderChoice(null, LocalizationManager.Get("common.none"), LocalizationManager.Get("versionDetails.doNotAddLoader")), .. visible.Select(version => new LoaderChoice(version, VersionLabel(version), DescribeVersion(version)))] : [];
             }
 
-            StatusText = SelectedVersion is not null ? string.Format(LocalizationManager.Get("loader.selected"), SelectedVersion.Version) : _allVersions.Count == 0 ? LocalizationManager.Get("common.none") : HasVersions ? LocalizationManager.Get("versionDetails.availableToAdd") : LocalizationManager.Get("versionDetails.noCompatibleVersions");
+            StatusText = SelectedVersion is not null ? string.Format(LocalizationManager.Get("loader.selected"), VersionLabel(SelectedVersion)) : _allVersions.Count == 0 ? LocalizationManager.Get("common.none") : HasVersions ? LocalizationManager.Get("versionDetails.availableToAdd") : LocalizationManager.Get("versionDetails.noCompatibleVersions");
         }
 
         internal void SetError()
@@ -584,8 +652,11 @@ public partial class VanillaVersionDetailsPage
         internal void Select(MinecraftLoaderVersion? version)
         {
             SelectedVersion = version;
-            StatusText = version is null ? LocalizationManager.Get("versionDetails.availableToAdd") : string.Format(LocalizationManager.Get("loader.selected"), version.Version);
+            StatusText = version is null ? LocalizationManager.Get("versionDetails.availableToAdd") : string.Format(LocalizationManager.Get("loader.selected"), VersionLabel(version));
         }
+
+        private static string VersionLabel(MinecraftLoaderVersion version) => string.IsNullOrWhiteSpace(version.Version)
+            ? LocalizationManager.Get("versionEdit.unknownLoaderVersion") : version.Version;
 
         internal void ApplyModifiedDates(IReadOnlyDictionary<string, DateOnly> dates)
         {

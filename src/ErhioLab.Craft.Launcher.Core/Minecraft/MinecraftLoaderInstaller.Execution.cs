@@ -93,7 +93,7 @@ public sealed partial class MinecraftLoaderInstaller
     public static async Task WriteVersionAsync(MinecraftLoaderInstallPlan plan, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string folder = Safe(plan.GameDirectory, "versions/" + plan.InstalledName);
+        string folder = plan.VersionDirectory;
         Directory.CreateDirectory(folder);
         string destination = Path.Combine(folder, plan.InstalledName + ".json");
         if (File.Exists(destination)) throw new IOException("同名版本已经存在.");

@@ -138,19 +138,24 @@ public static class LocalMinecraftVersionScanner
                     ("net.neoforged", "neoforge" or "forge") => "NeoForge",
                     ("net.minecraftforge", "forge" or "fmlloader") => "Forge",
                     ("com.mumfrey", "liteloader") => "LiteLoader",
+                    ("optifine", "OptiFine") => "OptiFine",
                     _ => null
                 };
                 if (loader is not null)
                 {
                     string version = parts[2];
                     string? gameVersion = ReadString(root, "clientVersion") ?? ReadString(root, "inheritsFrom");
-                    if (loader == "Forge" && gameVersion is not null && version.StartsWith(gameVersion + "-", StringComparison.OrdinalIgnoreCase))
+                    string separator = loader == "OptiFine" ? "_" : "-";
+                    if (loader is "Forge" or "NeoForge" or "OptiFine" && gameVersion is not null
+                        && version.StartsWith(gameVersion + separator, StringComparison.OrdinalIgnoreCase))
                         version = version[(gameVersion.Length + 1)..];
                     return (loader, version);
                 }
             }
         }
 
+        // 原版入口及其依赖优先于显示名称, 避免移除加载器后仍按旧名称显示.
+        if (ReadString(root, "mainClass") is "net.minecraft.client.main.Main" or "net.minecraft.client.Minecraft") return (null, null);
         System.Text.RegularExpressions.Match? match = MatchLoaderName(id);
         if (match is not null) return (match.Groups["loader"].Value, match.Groups["version"].Value);
         return (null, null);

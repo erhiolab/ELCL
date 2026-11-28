@@ -140,6 +140,11 @@
                             Header="{DynamicResource I18n.versionSettings.management}">
                             <WrapPanel>
                                 <Button
+                                    x:Name="ModifyButton"
+                                    Click="Modify_Click"
+                                    Content="{DynamicResource I18n.versionEdit.modify}"
+                                    Style="{StaticResource PageActionButtonStyle}" />
+                                <Button
                                     x:Name="ExportButton"
                                     Click="Export_Click"
                                     Content="{DynamicResource I18n.versionSettings.export}"

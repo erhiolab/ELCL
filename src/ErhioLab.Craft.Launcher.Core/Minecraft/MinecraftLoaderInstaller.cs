@@ -11,6 +11,9 @@ namespace ErhioLab.Craft.Launcher.Core.Minecraft;
 /// <summary>安装加载器; 网络/下载队列/工作目录和 Java 进程均由调用方提供.</summary>
 public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient, DownloadOptions downloadOptions)
 {
+    /// <summary>可选的版本文件输出目录. 不改变共享库、安装工作目录或最终版本标识.</summary>
+    public string? VersionOutputDirectory { get; init; }
+
     /// <summary>使用默认的加载器元数据下载策略.</summary>
     public MinecraftLoaderInstaller(HttpClient httpClient) : this(httpClient, new DownloadOptions { MaxRetries = 1 }) { }
 
@@ -49,6 +52,7 @@ public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient, Down
         {
             GameDirectory = Path.GetFullPath(gameDirectory), WorkDirectory = Path.GetFullPath(workDirectory),
             GameVersion = gameVersion, InstalledName = installedName, Source = preferredSource, Download = download, Log = log,
+            VersionOutputDirectory = VersionOutputDirectory is { } output ? Path.GetFullPath(output) : null,
             BaseVersionJsonPath = Path.GetFullPath(baseVersionJsonPath ?? Safe(gameDirectory, $"versions/{gameVersion}/{gameVersion}.json")),
             BaseClientJarPath = Path.GetFullPath(baseClientJarPath ?? Safe(gameDirectory, $"versions/{gameVersion}/{gameVersion}.jar")),
             VersionJson = new JsonObject { ["id"] = installedName, ["inheritsFrom"] = gameVersion, ["clientVersion"] = gameVersion, ["libraries"] = new JsonArray() }
@@ -255,7 +259,7 @@ public sealed partial class MinecraftLoaderInstaller(HttpClient httpClient, Down
         plan.GeneratedFiles.Add((patched, null));
         if (withForge)
         {
-            string mods = Safe(plan.GameDirectory, $"versions/{plan.InstalledName}/mods/{fileName}");
+            string mods = Safe(plan.VersionDirectory, $"mods/{fileName}");
             plan.Copies.Add((patched, mods));
             return;
         }
